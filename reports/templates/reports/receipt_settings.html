@@ -1,0 +1,480 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Receipt Settings | TindaTech POS</title>
+    {% load static %}
+    <link rel="icon" type="image/png" href="{% static 'images/weblogo.png' %}">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: { sans: ['Poppins', 'ui-sans-serif', 'system-ui', 'sans-serif'] },
+                    colors: {
+                        brand: { DEFAULT: '#4349E8', dark: '#3338D0', soft: '#EEEFFD' },
+                        canvas: '#EEF0FA',
+                        ink: '#16161D'
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        .field {
+            width: 100%;
+            border-radius: 0.75rem;
+            border: 1px solid #e2e8f0;
+            background: rgb(238 240 250 / 0.6);
+            padding: 0.75rem 1rem;
+            font-size: 0.875rem;
+            color: #16161D;
+            outline: none;
+            transition: border-color .15s, background-color .15s, box-shadow .15s;
+        }
+        .field:focus {
+            border-color: #4349E8;
+            background: #fff;
+            box-shadow: 0 0 0 3px #4349E833;
+        }
+        /* Paper size segmented control */
+        .seg input:checked + span {
+            background: #4349E8;
+            color: #fff;
+            box-shadow: 0 4px 10px #4349E84d;
+        }
+        .seg input:focus-visible + span { outline: 2px solid #4349E8; outline-offset: 2px; }
+        /* Toggle switch */
+        .switch-track { transition: background-color .15s; }
+        .switch-knob { transition: transform .15s; }
+        .switch input:checked ~ .switch-track { background: #4349E8; }
+        .switch input:checked ~ .switch-track .switch-knob { transform: translateX(1.25rem); }
+        .switch input:focus-visible ~ .switch-track { outline: 2px solid #4349E8; outline-offset: 2px; }
+        /* Preview paper */
+        .paper {
+            font-family: Arial, Helvetica, sans-serif;
+            font-size: 12px;
+            color: #111827;
+            transition: width .15s;
+        }
+        .paper[data-size="58"] { width: 58mm; font-size: 10px; }
+        .paper[data-size="80"] { width: 80mm; font-size: 12px; }
+    </style>
+</head>
+
+<body class="bg-canvas font-sans text-slate-800 antialiased">
+
+    <!-- Mobile top bar -->
+    <header class="sticky top-0 z-30 flex items-center justify-between bg-canvas/90 px-4 py-3 backdrop-blur lg:hidden">
+        <div class="flex items-center gap-2">
+            <img src="{% static 'images/weblogo.png' %}" alt="" class="h-9 w-9 rounded-xl object-cover">
+            <span class="font-semibold text-ink">TindaTech POS</span>
+        </div>
+        <button id="menu-open" type="button" aria-label="Open menu"
+                class="rounded-full bg-white p-2.5 text-slate-600 shadow-sm hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-brand">
+            <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75"><path stroke-linecap="round" d="M4 6h16M4 12h16M4 18h16"/></svg>
+        </button>
+    </header>
+
+    <div id="backdrop" class="fixed inset-0 z-40 hidden bg-slate-900/40 lg:hidden"></div>
+
+    <!-- Sidebar -->
+    <aside id="sidebar"
+           class="fixed inset-y-0 left-0 z-50 flex w-72 -translate-x-full flex-col bg-white transition-transform duration-200 lg:inset-y-4 lg:left-4 lg:w-64 lg:translate-x-0 lg:rounded-3xl lg:shadow-sm">
+
+        <div class="flex items-center justify-between px-6 pb-2 pt-6">
+            <div class="flex items-center gap-3">
+                <img src="{% static 'images/weblogo.png' %}" alt="TindaTech POS logo" class="h-10 w-10 rounded-xl object-cover">
+                <p class="font-semibold leading-tight text-ink">TindaTech POS</p>
+            </div>
+            <button id="menu-close" type="button" aria-label="Close menu"
+                    class="rounded-full p-1.5 text-slate-500 hover:bg-slate-100 lg:hidden">
+                <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75"><path stroke-linecap="round" d="M6 6l12 12M18 6L6 18"/></svg>
+            </button>
+        </div>
+
+        <nav class="flex-1 space-y-5 overflow-y-auto px-4 py-4 text-sm">
+
+            <div>
+                <p class="mb-2 px-3 text-[11px] font-medium uppercase tracking-wider text-slate-400">Menu</p>
+                <a href="/dashboard/"
+                   class="flex items-center gap-3 rounded-xl px-3 py-2.5 text-slate-600 transition hover:bg-brand-soft hover:text-brand">
+                    <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75"><path stroke-linecap="round" stroke-linejoin="round" d="M4 13h6V4H4v9zm10 7h6V4h-6v16zM4 20h6v-3H4v3z"/></svg>
+                    Dashboard
+                </a>
+            </div>
+
+            <div>
+                <p class="mb-2 px-3 text-[11px] font-medium uppercase tracking-wider text-slate-400">Sales</p>
+                <div class="space-y-1">
+                    <a href="{% url 'sales_history' %}" class="flex items-center gap-3 rounded-xl px-3 py-2.5 text-slate-600 transition hover:bg-brand-soft hover:text-brand">
+                        <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75"><path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l3 2M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                        Sales History
+                    </a>
+                    <a href="{% url 'sales_report' %}" class="flex items-center gap-3 rounded-xl px-3 py-2.5 text-slate-600 transition hover:bg-brand-soft hover:text-brand">
+                        <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75"><path stroke-linecap="round" stroke-linejoin="round" d="M9 17v-6m4 6V7m4 10v-3M5 21h14a1 1 0 001-1V4a1 1 0 00-1-1H5a1 1 0 00-1 1v16a1 1 0 001 1z"/></svg>
+                        Sales Reports
+                    </a>
+                    <a href="{% url 'sales_analytics' %}" class="flex items-center gap-3 rounded-xl px-3 py-2.5 text-slate-600 transition hover:bg-brand-soft hover:text-brand">
+                        <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75"><path stroke-linecap="round" stroke-linejoin="round" d="M3 3v18h18M7 14l4-4 3 3 5-6"/></svg>
+                        Sales Analytics
+                    </a>
+                    <a href="{% url 'electronic_journal' %}" class="flex items-center gap-3 rounded-xl px-3 py-2.5 text-slate-600 transition hover:bg-brand-soft hover:text-brand">
+                        <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6.25v11.5M5 5.5a2 2 0 012-2h4.5a2.5 2.5 0 01.5.05 2.5 2.5 0 01.5-.05H17a2 2 0 012 2v13a2 2 0 01-2 2h-4.5a.5.5 0 00-.5.5.5.5 0 00-.5-.5H7a2 2 0 01-2-2v-13z"/></svg>
+                        Electronic Journal
+                    </a>
+                </div>
+            </div>
+
+            <div>
+                <p class="mb-2 px-3 text-[11px] font-medium uppercase tracking-wider text-slate-400">Catalog</p>
+                <div class="space-y-1">
+                    <a href="/products/" class="flex items-center gap-3 rounded-xl px-3 py-2.5 text-slate-600 transition hover:bg-brand-soft hover:text-brand">
+                        <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75"><path stroke-linecap="round" stroke-linejoin="round" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/></svg>
+                        Products
+                    </a>
+                    <a href="/products/categories/" class="flex items-center gap-3 rounded-xl px-3 py-2.5 text-slate-600 transition hover:bg-brand-soft hover:text-brand">
+                        <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75"><path stroke-linecap="round" stroke-linejoin="round" d="M7 7h.01M7 3h5a2 2 0 011.4.6l7 7a2 2 0 010 2.8l-5 5a2 2 0 01-2.8 0l-7-7A2 2 0 015 10V5a2 2 0 012-2z"/></svg>
+                        Categories
+                    </a>
+                </div>
+            </div>
+
+            <div>
+                <p class="mb-2 px-3 text-[11px] font-medium uppercase tracking-wider text-slate-400">Inventory</p>
+                <div class="space-y-1">
+                    <a href="/inventory/stock/" class="flex items-center gap-3 rounded-xl px-3 py-2.5 text-slate-600 transition hover:bg-brand-soft hover:text-brand">
+                        <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75"><path stroke-linecap="round" stroke-linejoin="round" d="M4 7h16M4 12h16M4 17h16"/></svg>
+                        Stock Levels
+                    </a>
+                    <a href="/inventory/receive/" class="flex items-center gap-3 rounded-xl px-3 py-2.5 text-slate-600 transition hover:bg-brand-soft hover:text-brand">
+                        <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4v12m0 0l-4-4m4 4l4-4M4 20h16"/></svg>
+                        Receive Stock
+                    </a>
+                </div>
+            </div>
+
+            <div>
+                <p class="mb-2 px-3 text-[11px] font-medium uppercase tracking-wider text-slate-400">Reading</p>
+                <div class="space-y-1">
+                    <a href="{% url 'x_reading' %}" class="flex items-center gap-3 rounded-xl px-3 py-2.5 text-slate-600 transition hover:bg-brand-soft hover:text-brand">
+                        <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75"><path stroke-linecap="round" stroke-linejoin="round" d="M9 17v-2m3 2v-4m3 4V9m2 12H7a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h7l5 5v11a2 2 0 0 1-2 2Z"/></svg>
+                        X Reading
+                    </a>
+                    <a href="{% url 'z_reading' %}" class="flex items-center gap-3 rounded-xl px-3 py-2.5 text-slate-600 transition hover:bg-brand-soft hover:text-brand">
+                        <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75"><path stroke-linecap="round" stroke-linejoin="round" d="M9 14h6m-6-4h6m2 11H7a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h7l5 5v16Z"/></svg>
+                        Z Reading
+                    </a>
+                </div>
+            </div>
+
+            <div>
+                <p class="mb-2 px-3 text-[11px] font-medium uppercase tracking-wider text-slate-400">User Management</p>
+                <div class="space-y-1">
+                    <a href="{% url 'account_settings' %}" class="flex items-center gap-3 rounded-xl px-3 py-2.5 text-slate-600 transition hover:bg-brand-soft hover:text-brand">
+                        <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/>
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+                        </svg>
+                        Account Settings
+                    </a>
+                    <a href="{% url 'manage_accounts' %}" class="flex items-center gap-3 rounded-xl px-3 py-2.5 text-slate-600 transition hover:bg-brand-soft hover:text-brand">
+                        <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75"><path stroke-linecap="round" stroke-linejoin="round" d="M16 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2m16 0v-2a4 4 0 00-3-3.87M14 3.13a4 4 0 010 7.75M14 7a4 4 0 11-8 0 4 4 0 018 0z"/></svg>
+                        Manage Accounts
+                    </a>
+                    <a href="{% url 'receipt_settings' %}" aria-current="page"
+                       class="flex items-center gap-3 rounded-xl bg-brand px-3 py-2.5 font-medium text-white shadow-lg shadow-brand/30">
+                        <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75"><path stroke-linecap="round" stroke-linejoin="round" d="M9 7h6m-6 4h6m-6 4h3M6 3h12a1 1 0 011 1v17l-3-2-2 2-2-2-2 2-2-2-3 2V4a1 1 0 011-1z"/></svg>
+                        Receipt Settings
+                    </a>
+                </div>
+            </div>
+        </nav>
+
+        <div class="space-y-3 p-4">
+            <form id="logout-form" method="post" action="{% url 'logout' %}">
+                {% csrf_token %}
+                <button type="button" id="signout-btn"
+                    class="flex w-full items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-600 transition hover:border-red-600 hover:bg-red-600 hover:text-white focus:outline-none focus:ring-2 focus:ring-red-500">
+                    <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75"><path stroke-linecap="round" stroke-linejoin="round" d="M15 16l4-4m0 0l-4-4m4 4H9m4 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/></svg>
+                    Sign out
+                </button>
+            </form>
+        </div>
+    </aside>
+
+    <!-- Main content -->
+    <main class="min-h-screen px-4 pb-8 pt-4 sm:px-8 lg:ml-72 lg:py-8 lg:pr-8">
+        <div class="mx-auto max-w-5xl">
+
+            <!-- Page header -->
+            <div class="mb-7 flex flex-wrap items-center justify-between gap-4">
+                <div>
+                    <h1 class="text-3xl font-semibold tracking-tight text-ink">Receipt Settings</h1>
+                    <p class="mt-1 text-sm text-slate-500">Customize the store information and printed receipt.</p>
+                </div>
+            </div>
+
+            <!-- Sign out confirmation modal -->
+            <div id="signout-modal"
+                 class="fixed inset-0 z-50 hidden items-center justify-center bg-slate-900/50 p-4"
+                 role="dialog" aria-modal="true" aria-labelledby="signout-title">
+                <div class="w-full max-w-sm rounded-3xl bg-white p-6 shadow-xl">
+                    <div class="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-red-100">
+                        <svg class="h-6 w-6 text-red-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75"><path stroke-linecap="round" stroke-linejoin="round" d="M15 16l4-4m0 0l-4-4m4 4H9m4 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/></svg>
+                    </div>
+                    <h3 id="signout-title" class="text-center text-lg font-semibold text-ink">Are you sure you want to sign out?</h3>
+                    <div class="mt-6 flex gap-3">
+                        <button type="button" id="signout-cancel"
+                                class="flex-1 rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-medium text-slate-700 transition hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-slate-300">Cancel</button>
+                        <button type="button" id="signout-confirm"
+                                class="flex-1 rounded-xl bg-red-600 px-4 py-2.5 text-sm font-medium text-white transition hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2">Yes</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Messages -->
+            {% if messages %}
+                <div class="mb-5 space-y-3">
+                    {% for message in messages %}
+                        <div class="flex items-start gap-3 rounded-2xl px-4 py-3 text-sm shadow-sm
+                            {% if message.tags == 'error' %}bg-red-50 text-red-800{% else %}bg-emerald-50 text-emerald-800{% endif %}"
+                             role="status">
+                            <svg class="mt-0.5 h-5 w-5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="{% if message.tags == 'error' %}M12 9v4m0 4h.01M10.3 4.3L2.6 18a2 2 0 001.7 3h15.4a2 2 0 001.7-3L13.7 4.3a2 2 0 00-3.4 0z{% else %}M5 13l4 4L19 7{% endif %}"/></svg>
+                            <p>{{ message }}</p>
+                        </div>
+                    {% endfor %}
+                </div>
+            {% endif %}
+
+            <form method="post" class="grid grid-cols-1 gap-5 lg:grid-cols-5">
+                {% csrf_token %}
+
+                <!-- Form column -->
+                <div class="space-y-5 lg:col-span-3">
+
+                    <!-- Store information -->
+                    <section class="rounded-3xl bg-white p-6 shadow-sm" aria-labelledby="store-title">
+                        <div class="mb-5 flex items-start gap-3">
+                            <span class="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-brand-soft text-brand">
+                                <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75"><path stroke-linecap="round" stroke-linejoin="round" d="M3 9l1.5-5h15L21 9M3 9v11h18V9M3 9h18M9 20v-6h6v6"/></svg>
+                            </span>
+                            <div>
+                                <h2 id="store-title" class="text-xl font-semibold text-ink">Store information</h2>
+                                <p class="mt-1 text-sm text-slate-500">Shown at the top of every receipt.</p>
+                            </div>
+                        </div>
+
+                        <div class="space-y-4">
+                            <div>
+                                <label for="store_name" class="mb-2 block text-sm font-medium text-ink">
+                                    Store name <span class="text-red-500">*</span>
+                                </label>
+                                <input id="store_name" name="store_name" required maxlength="150"
+                                       value="{{ receipt_settings.store_name }}" class="field">
+                            </div>
+
+                            <div>
+                                <label for="store_address" class="mb-2 block text-sm font-medium text-ink">Store address</label>
+                                <textarea id="store_address" name="store_address" maxlength="255" rows="2"
+                                          class="field resize-none">{{ receipt_settings.store_address }}</textarea>
+                            </div>
+
+                            <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                                <div>
+                                    <label for="contact_number" class="mb-2 block text-sm font-medium text-ink">Contact number</label>
+                                    <input id="contact_number" name="contact_number" maxlength="30"
+                                           value="{{ receipt_settings.contact_number }}" class="field">
+                                </div>
+                                <div>
+                                    <label for="tin_number" class="mb-2 block text-sm font-medium text-ink">TIN number</label>
+                                    <input id="tin_number" name="tin_number" maxlength="30"
+                                           value="{{ receipt_settings.tin_number }}" class="field">
+                                </div>
+                            </div>
+                        </div>
+                    </section>
+
+                    <!-- Receipt appearance -->
+                    <section class="rounded-3xl bg-white p-6 shadow-sm" aria-labelledby="look-title">
+                        <div class="mb-5 flex items-start gap-3">
+                            <span class="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-brand-soft text-brand">
+                                <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75"><path stroke-linecap="round" stroke-linejoin="round" d="M9 7h6m-6 4h6m-6 4h3M6 3h12a1 1 0 011 1v17l-3-2-2 2-2-2-2 2-2-2-3 2V4a1 1 0 011-1z"/></svg>
+                            </span>
+                            <div>
+                                <h2 id="look-title" class="text-xl font-semibold text-ink">Receipt appearance</h2>
+                                <p class="mt-1 text-sm text-slate-500">Paper size, footer and what to show.</p>
+                            </div>
+                        </div>
+
+                        <div class="space-y-5">
+                            <div>
+                                <p id="paper-label" class="mb-2 text-sm font-medium text-ink">Default paper size</p>
+                                <div class="seg flex gap-1 rounded-full bg-canvas p-1" role="radiogroup" aria-labelledby="paper-label">
+                                    <label class="flex-1 cursor-pointer">
+                                        <input type="radio" name="paper_size" value="58" class="sr-only"
+                                               {% if receipt_settings.paper_size == "58" %}checked{% endif %}>
+                                        <span class="block rounded-full px-4 py-2 text-center text-sm font-medium text-slate-600 transition hover:bg-white">58mm thermal</span>
+                                    </label>
+                                    <label class="flex-1 cursor-pointer">
+                                        <input type="radio" name="paper_size" value="80" class="sr-only"
+                                               {% if receipt_settings.paper_size != "58" %}checked{% endif %}>
+                                        <span class="block rounded-full px-4 py-2 text-center text-sm font-medium text-slate-600 transition hover:bg-white">80mm thermal</span>
+                                    </label>
+                                </div>
+                            </div>
+
+                            <div>
+                                <label for="receipt_footer" class="mb-2 block text-sm font-medium text-ink">Footer message</label>
+                                <input id="receipt_footer" name="receipt_footer" maxlength="255"
+                                       value="{{ receipt_settings.receipt_footer }}" class="field">
+                            </div>
+
+                            <div class="divide-y divide-slate-100 rounded-2xl border border-slate-100">
+                                <label class="switch flex cursor-pointer items-center justify-between gap-4 px-4 py-3.5">
+                                    <span>
+                                        <span class="block text-sm font-medium text-ink">Show contact number</span>
+                                        <span class="block text-xs text-slate-500">Print the contact number on receipts.</span>
+                                    </span>
+                                    <input type="checkbox" name="show_contact" class="sr-only"
+                                           {% if receipt_settings.show_contact %}checked{% endif %}>
+                                    <span class="switch-track relative h-6 w-11 shrink-0 rounded-full bg-slate-300">
+                                        <span class="switch-knob absolute left-0.5 top-0.5 h-5 w-5 rounded-full bg-white shadow"></span>
+                                    </span>
+                                </label>
+
+                                <label class="switch flex cursor-pointer items-center justify-between gap-4 px-4 py-3.5">
+                                    <span>
+                                        <span class="block text-sm font-medium text-ink">Show TIN</span>
+                                        <span class="block text-xs text-slate-500">Print the TIN number on receipts.</span>
+                                    </span>
+                                    <input type="checkbox" name="show_tin" class="sr-only"
+                                           {% if receipt_settings.show_tin %}checked{% endif %}>
+                                    <span class="switch-track relative h-6 w-11 shrink-0 rounded-full bg-slate-300">
+                                        <span class="switch-knob absolute left-0.5 top-0.5 h-5 w-5 rounded-full bg-white shadow"></span>
+                                    </span>
+                                </label>
+                            </div>
+                        </div>
+                    </section>
+
+                    <button type="submit"
+                            class="inline-flex w-full items-center justify-center gap-2 rounded-full bg-brand px-5 py-3 text-sm font-semibold text-white shadow-lg shadow-brand/30 transition hover:bg-brand-dark focus:outline-none focus:ring-2 focus:ring-brand focus:ring-offset-2">
+                        <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
+                        Save Receipt Settings
+                    </button>
+                </div>
+
+                <!-- Live preview column -->
+                <aside class="lg:col-span-2" aria-label="Receipt preview">
+                    <div class="rounded-3xl bg-white p-6 shadow-sm lg:sticky lg:top-8">
+                        <div class="mb-4 flex items-center justify-between">
+                            <h2 class="text-sm font-semibold text-ink">Live preview</h2>
+                            <span class="rounded-full bg-brand-soft px-2.5 py-0.5 text-xs font-medium text-brand">Sample</span>
+                        </div>
+
+                        <div class="overflow-x-auto rounded-2xl bg-canvas p-4">
+                            <div id="paper" class="paper mx-auto max-w-full rounded-2xl bg-white p-4 shadow-sm" data-size="80">
+                                <div class="text-center">
+                                    <div id="pv-name" class="break-words text-lg font-extrabold"></div>
+                                    <p id="pv-address" class="mt-1 break-words text-gray-500"></p>
+                                    <p id="pv-contact" class="mt-0.5 text-gray-500"></p>
+                                    <p id="pv-tin" class="mt-0.5 text-gray-500"></p>
+                                </div>
+
+                                <div class="my-3 border-t border-dashed border-gray-400"></div>
+
+                                <div class="space-y-1">
+                                    <div class="flex justify-between"><span>Sample item x2</span><span>₱50.00</span></div>
+                                    <div class="flex justify-between"><span>Sample item x1</span><span>₱25.00</span></div>
+                                </div>
+
+                                <div class="my-3 border-t border-dashed border-gray-400"></div>
+
+                                <div class="flex justify-between text-base font-extrabold"><span>TOTAL</span><span>₱75.00</span></div>
+
+                                <div class="my-3 border-t border-dashed border-gray-400"></div>
+
+                                <p id="pv-footer" class="break-words text-center font-bold"></p>
+                            </div>
+                        </div>
+                    </div>
+                </aside>
+            </form>
+        </div>
+    </main>
+
+    <script>
+        // Sidebar drawer
+        (function () {
+            var sidebar = document.getElementById('sidebar');
+            var backdrop = document.getElementById('backdrop');
+            function open() { sidebar.classList.remove('-translate-x-full'); backdrop.classList.remove('hidden'); }
+            function close() { sidebar.classList.add('-translate-x-full'); backdrop.classList.add('hidden'); }
+            document.getElementById('menu-open').addEventListener('click', open);
+            document.getElementById('menu-close').addEventListener('click', close);
+            backdrop.addEventListener('click', close);
+            document.addEventListener('keydown', function (e) { if (e.key === 'Escape') close(); });
+        })();
+
+        // Sign out modal
+        (function () {
+            const modal = document.getElementById('signout-modal');
+            const openBtn = document.getElementById('signout-btn');
+            const cancelBtn = document.getElementById('signout-cancel');
+            const confirmBtn = document.getElementById('signout-confirm');
+            const form = document.getElementById('logout-form');
+
+            function openModal() { modal.classList.remove('hidden'); modal.classList.add('flex'); cancelBtn.focus(); }
+            function closeModal() { modal.classList.add('hidden'); modal.classList.remove('flex'); openBtn.focus(); }
+
+            openBtn.addEventListener('click', openModal);
+            cancelBtn.addEventListener('click', closeModal);
+            confirmBtn.addEventListener('click', () => form.submit());
+            modal.addEventListener('click', (e) => { if (e.target === modal) closeModal(); });
+            document.addEventListener('keydown', (e) => {
+                if (e.key === 'Escape' && !modal.classList.contains('hidden')) closeModal();
+            });
+        })();
+
+        // Live receipt preview
+        (function () {
+            const $ = (id) => document.getElementById(id);
+            const f = {
+                name: $("store_name"), address: $("store_address"),
+                contact: $("contact_number"), tin: $("tin_number"),
+                footer: $("receipt_footer")
+            };
+            const showContact = document.querySelector('input[name="show_contact"]');
+            const showTin = document.querySelector('input[name="show_tin"]');
+            const paper = $("paper");
+
+            function setLine(el, text) {
+                el.textContent = text;
+                el.style.display = text ? "" : "none";
+            }
+
+            function render() {
+                $("pv-name").textContent = f.name.value.trim() || "STORE NAME";
+                setLine($("pv-address"), f.address.value.trim());
+                setLine($("pv-contact"),
+                    showContact.checked && f.contact.value.trim() ? "Tel: " + f.contact.value.trim() : "");
+                setLine($("pv-tin"),
+                    showTin.checked && f.tin.value.trim() ? "TIN: " + f.tin.value.trim() : "");
+                setLine($("pv-footer"), f.footer.value.trim());
+
+                const checked = document.querySelector('input[name="paper_size"]:checked');
+                paper.dataset.size = checked ? checked.value : "80";
+            }
+
+            document.querySelector("form[method='post']").addEventListener("input", render);
+            document.querySelector("form[method='post']").addEventListener("change", render);
+            render();
+        })();
+    </script>
+</body>
+</html>

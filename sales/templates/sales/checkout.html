@@ -1,0 +1,761 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Checkout | TindaTech POS</title>
+    {% load static %}
+    <link rel="icon" type="image/png"
+    href="{% static 'images/weblogo.png' %}">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: { sans: ['Poppins', 'ui-sans-serif', 'system-ui', 'sans-serif'] },
+                    colors: {
+                        brand: { DEFAULT: '#4349E8', dark: '#3338D0', soft: '#EEEFFD' },
+                        canvas: '#EEF0FA',
+                        ink: '#16161D'
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        html { font-size: 112.5%; }
+        .tabular { font-variant-numeric: tabular-nums; }
+        [hidden] { display: none !important; }
+        .hero-card {
+            background: linear-gradient(135deg, #4F55F0 0%, #3A40DC 55%, #3035C9 100%);
+        }
+    </style>
+</head>
+
+<body class="bg-canvas font-sans text-slate-800 antialiased lg:flex lg:h-screen lg:flex-col lg:overflow-hidden">
+
+    <!-- Top bar -->
+    <header class="shrink-0 px-3 pt-3">
+        <div class="flex items-center justify-between gap-4 rounded-2xl bg-white px-4 py-2.5 shadow-sm sm:px-5">
+            <div class="flex items-center gap-3">
+                <img src="{% static 'images/weblogo.png' %}" alt="TindaTech POS logo"
+                     class="h-10 w-10 rounded-xl object-cover">
+                <div class="leading-tight">
+                    <p class="text-base font-semibold text-ink">TindaTech POS</p>
+                    <p class="text-xs font-medium text-brand">Checkout</p>
+                </div>
+            </div>
+
+            <nav class="flex items-center gap-2 text-sm">
+                <a href="/dashboard/"
+                   class="rounded-full bg-brand-soft px-4 py-2 font-medium text-brand transition hover:bg-brand hover:text-white focus:outline-none focus:ring-2 focus:ring-brand">Dashboard</a>
+                <a href="{% url 'sales_history' %}"
+                   class="rounded-full border border-slate-200 px-4 py-2 font-medium text-slate-600 transition hover:bg-brand-soft hover:text-brand focus:outline-none focus:ring-2 focus:ring-brand">Sales history</a>
+                <span class="ml-2 hidden items-center gap-2 border-l border-slate-200 pl-4 sm:flex">
+                    <span class="flex h-9 w-9 items-center justify-center rounded-full bg-brand text-sm font-semibold uppercase text-white" aria-hidden="true">{{ request.user.username|slice:":1" }}</span>
+                    <span class="text-sm font-medium text-ink">{{ request.user.username }}</span>
+                </span>
+            </nav>
+        </div>
+    </header>
+
+    <main class="flex min-h-0 flex-1 flex-col gap-3 p-3 lg:flex-row">
+
+        <!-- ============ LEFT: CART ============ -->
+        <section class="flex min-h-0 flex-col overflow-hidden rounded-3xl bg-white shadow-sm lg:w-[36%] lg:shrink-0 xl:w-[34%]" aria-label="Shopping cart">
+
+            <!-- Cart summary strip -->
+            <div class="flex items-center justify-between px-5 pt-5 pb-3">
+                <div>
+                    <h1 class="text-xl font-semibold text-ink">Current sale</h1>
+                    <p class="text-xs text-slate-500">Tap a product tile to add it</p>
+                </div>
+                <span id="item-count" class="tabular rounded-full bg-brand-soft px-3.5 py-1 text-sm font-semibold text-brand">0 items</span>
+            </div>
+
+            {% if messages %}
+            <div class="space-y-2 px-5 pb-3" role="alert">
+                {% for message in messages %}
+                <div class="flex items-start gap-3 rounded-2xl border border-red-200 bg-red-50 px-4 py-2.5 text-sm text-red-700">
+                    <svg class="mt-0.5 h-4 w-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v4m0 4h.01M10.3 3.9L2.4 17.5A2 2 0 004.1 20.5h15.8a2 2 0 001.7-3L13.7 3.9a2 2 0 00-3.4 0z"/></svg>
+                    <span>{{ message }}</span>
+                </div>
+                {% endfor %}
+            </div>
+            {% endif %}
+
+            <!-- Table header -->
+            <div class="mx-3 grid grid-cols-[1fr_auto] rounded-xl bg-canvas px-4 py-2 text-xs font-semibold uppercase tracking-wide text-slate-500">
+                <span>Item</span>
+                <span>Price</span>
+            </div>
+
+            <!-- Cart list -->
+            <div class="min-h-[12rem] flex-1 overflow-y-auto px-3 pb-3 pt-2 lg:min-h-0">
+                <div id="cart-empty" class="flex h-full flex-col items-center justify-center px-5 py-10 text-center">
+                    <span class="flex h-14 w-14 items-center justify-center rounded-2xl bg-brand-soft text-brand">
+                        <svg class="h-7 w-7" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" d="M3 4h2l2.4 10.2a1 1 0 001 .8h8.9a1 1 0 001-.8L20 8H6M9 20h.01M17 20h.01"/></svg>
+                    </span>
+                    <p class="mt-3 font-semibold text-slate-700">Cart is empty</p>
+                    <p class="mt-1 text-sm text-slate-500">Pick a product to start a sale.</p>
+                </div>
+                <ul id="cart-items" class="space-y-1"></ul>
+            </div>
+
+        </section>
+
+        <!-- ============ RIGHT: PRODUCTS (top) + PAYMENT (bottom) ============ -->
+        <div class="flex min-h-0 flex-1 flex-col gap-3">
+
+            <!-- Product tiles -->
+            <section class="flex min-h-0 flex-1 flex-col rounded-3xl bg-white p-4 shadow-sm" aria-label="Products">
+
+                <label for="search" class="sr-only">Search product name or barcode</label>
+                <div class="relative shrink-0">
+                    <svg class="pointer-events-none absolute right-4 top-1/2 h-5 w-5 -translate-y-1/2 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-4.3-4.3M17 10a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+                    <input id="search" type="text" autocomplete="off" autofocus
+                           placeholder="Product — search name or scan barcode, then press Enter"
+                           class="w-full rounded-full border border-slate-200 bg-canvas/60 py-3 pl-5 pr-12 text-base placeholder:text-slate-400 focus:border-brand focus:bg-white focus:outline-none focus:ring-2 focus:ring-brand/30">
+                </div>
+
+                <div id="product-list" class="mt-3 grid max-h-[28rem] flex-1 auto-rows-min grid-cols-2 gap-3 overflow-y-auto pr-1 sm:grid-cols-3 lg:max-h-none xl:grid-cols-4 2xl:grid-cols-5">
+                    {% for product in products %}
+                    <button type="button"
+                        class="product group flex min-h-[6.5rem] flex-col overflow-hidden rounded-2xl border border-slate-100 bg-canvas/60 text-left shadow-sm transition hover:border-brand hover:bg-brand-soft focus:outline-none focus:ring-2 focus:ring-brand focus:ring-offset-1 active:scale-[0.97]"
+                        data-id="{{ product.id }}"
+                        data-name="{{ product.name|escape }}"
+                        data-barcode="{{ product.barcode|default_if_none:''|escape }}"
+                        data-price="{{ product.selling_price }}"
+                        data-unit="{{ product.get_unit_display|escape }}">
+                        <span class="flex flex-1 flex-col items-center justify-center px-2.5 py-3 text-center">
+                            <span class="line-clamp-2 text-sm font-semibold leading-snug text-ink">{{ product.name }}</span>
+                            <span class="mt-0.5 block max-w-full truncate text-[0.7rem] text-slate-500">
+                                {{ product.get_unit_display }}{% if product.barcode %} · {{ product.barcode }}{% endif %}
+                            </span>
+                        </span>
+                        <span class="tabular block bg-brand py-1.5 text-center text-base font-bold text-white transition group-hover:bg-brand-dark">₱{{ product.selling_price }}</span>
+                    </button>
+                    {% empty %}
+                    <div class="col-span-full rounded-2xl border border-dashed border-slate-300 px-5 py-12 text-center">
+                        <p class="font-semibold text-slate-700">No active products</p>
+                        <p class="mt-1 text-sm text-slate-500">Add products in Django Admin first.</p>
+                    </div>
+                    {% endfor %}
+                </div>
+
+                <div id="no-match" hidden class="mt-3 rounded-2xl border border-dashed border-slate-300 px-5 py-10 text-center">
+                    <p class="font-semibold text-slate-700">No matching product</p>
+                    <p class="mt-1 text-sm text-slate-500">Check the spelling or barcode and try again.</p>
+                </div>
+            </section>
+
+            <!-- Total / payment -->
+            <section class="shrink-0 rounded-3xl bg-white shadow-sm lg:max-h-[58vh] lg:overflow-y-auto" aria-label="Payment">
+                <form method="post" action="{% url 'complete_sale' %}" id="checkout-form" class="grid gap-4 p-4 md:grid-cols-[0.8fr_1.7fr]">
+                    {% csrf_token %}
+                    <input type="hidden" name="cart" id="cart-data">
+
+                    <!-- Total + change -->
+                    <div class="flex flex-col gap-3 md:col-start-1 md:row-start-1">
+                        <div class="hero-card rounded-2xl p-4 text-white shadow-lg shadow-brand/25">
+                            <p class="text-sm font-medium uppercase tracking-wide text-indigo-100">Total</p>
+                            <p class="tabular text-4xl font-bold tracking-tight">₱<span id="total">0.00</span></p>
+                        </div>
+                        <div class="flex items-baseline justify-between rounded-2xl bg-emerald-50 px-4 py-3">
+                            <span class="text-sm font-semibold uppercase tracking-wide text-emerald-700">Change</span>
+                            <span class="tabular text-2xl font-bold text-emerald-700">₱<span id="change">0.00</span></span>
+                        </div>
+                    </div>
+
+                    <!-- Discount, charges, payment fields -->
+                    <div class="space-y-4 md:col-start-2 md:row-span-2 md:row-start-1
+                        [&_input]:w-full [&_input]:rounded-xl [&_input]:border [&_input]:border-slate-200 [&_input]:bg-white [&_input]:px-3 [&_input]:py-2 [&_input]:text-sm [&_input]:[font-variant-numeric:tabular-nums] [&_input]:focus:border-brand [&_input]:focus:outline-none [&_input]:focus:ring-2 [&_input]:focus:ring-brand/30
+                        [&_select]:w-full [&_select]:rounded-xl [&_select]:border [&_select]:border-slate-200 [&_select]:bg-white [&_select]:px-3 [&_select]:py-2 [&_select]:text-sm [&_select]:font-medium [&_select]:focus:border-brand [&_select]:focus:outline-none [&_select]:focus:ring-2 [&_select]:focus:ring-brand/30">
+
+                        <div>
+                            <p class="mb-2 text-xs font-semibold uppercase tracking-wider text-slate-400">Discount</p>
+                            <div class="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                                <div>
+                                    <label for="id_discount_type"
+                                           class="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-500">
+                                        Discount Type
+                                    </label>
+                                    {{ form.discount_type }}
+                                </div>
+
+                                <div id="regular-discount-fields">
+                                    <label for="id_regular_discount_percent"
+                                           class="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-500">
+                                        Regular Discount (%)
+                                    </label>
+                                    {{ form.regular_discount_percent }}
+                                </div>
+
+                                <div id="special-discount-fields" hidden>
+                                    <label for="id_special_discount_amount"
+                                           class="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-500">
+                                        Discount Amount (₱)
+                                    </label>
+                                    {{ form.special_discount_amount }}
+                                </div>
+
+                                <div id="discount-customer-field" hidden>
+                                    <label for="id_discount_customer_name"
+                                           class="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-500">
+                                        Eligible Customer Name
+                                    </label>
+                                    {{ form.discount_customer_name }}
+                                </div>
+
+                                <div id="discount-reference-field" hidden>
+                                    <label for="id_discount_reference"
+                                           class="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-500">
+                                        ID / Reference Number
+                                    </label>
+                                    {{ form.discount_reference }}
+                                </div>
+                            </div>
+                        </div>
+
+                        <div>
+                            <p class="mb-2 text-xs font-semibold uppercase tracking-wider text-slate-400">Additional charges</p>
+                            <div class="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+                                <div>
+                                    <label for="id_packaging_charge" class="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-500">Packaging (₱)</label>
+                                    {{ form.packaging_charge }}
+                                </div>
+                                <div>
+                                    <label for="id_delivery_charge" class="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-500">Delivery (₱)</label>
+                                    {{ form.delivery_charge }}
+                                </div>
+                                <div>
+                                    <label for="id_service_charge" class="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-500">Service (₱)</label>
+                                    {{ form.service_charge }}
+                                </div>
+                                <div class="space-y-1.5">
+                                    <label for="id_other_charge" class="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-500">Other (₱)</label>
+                                    {{ form.other_charge }}
+                                    {{ form.other_charge_description }}
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Payment method, amount, quick amounts -->
+                        <div>
+                            <p class="mb-2 text-xs font-semibold uppercase tracking-wider text-slate-400">Payment</p>
+                            <div class="space-y-2.5">
+                                <div class="grid grid-cols-2 gap-3">
+                                    <div>
+                                        <label for="id_payment_method" class="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-500">Payment</label>
+                                        {{ form.payment_method }}
+                                    </div>
+
+                                    <div>
+                                        <label for="id_amount_tendered" class="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-500">Received (₱)</label>
+                                        {{ form.amount_tendered }}
+                                    </div>
+                                </div>
+
+                                <div class="grid grid-cols-5 gap-1.5" role="group" aria-label="Quick amounts">
+                                    <button type="button" data-quick="exact"
+                                            class="rounded-full bg-brand px-1 py-2.5 text-xs font-semibold text-white shadow-sm shadow-brand/30 transition hover:bg-brand-dark focus:outline-none focus:ring-2 focus:ring-brand focus:ring-offset-1 active:scale-95">Exact</button>
+                                    <button type="button" data-quick="100" class="rounded-full bg-brand-soft px-1 py-2.5 text-xs font-semibold text-brand transition hover:bg-brand hover:text-white focus:outline-none focus:ring-2 focus:ring-brand active:scale-95">₱100</button>
+                                    <button type="button" data-quick="200" class="rounded-full bg-brand-soft px-1 py-2.5 text-xs font-semibold text-brand transition hover:bg-brand hover:text-white focus:outline-none focus:ring-2 focus:ring-brand active:scale-95">₱200</button>
+                                    <button type="button" data-quick="500" class="rounded-full bg-brand-soft px-1 py-2.5 text-xs font-semibold text-brand transition hover:bg-brand hover:text-white focus:outline-none focus:ring-2 focus:ring-brand active:scale-95">₱500</button>
+                                    <button type="button" data-quick="1000" class="rounded-full bg-brand-soft px-1 py-2.5 text-xs font-semibold text-brand transition hover:bg-brand hover:text-white focus:outline-none focus:ring-2 focus:ring-brand active:scale-95">₱1000</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Big action buttons -->
+                    <div class="flex gap-3 md:col-start-1 md:row-start-2 md:flex-col md:self-end">
+                        <button type="submit" id="pay-button"
+                                class="flex-[2] rounded-full bg-brand px-4 py-4 text-lg font-bold uppercase tracking-wide text-white shadow-lg shadow-brand/30 transition hover:bg-brand-dark focus:outline-none focus:ring-2 focus:ring-brand focus:ring-offset-2 active:scale-[0.98] md:order-1">
+                            Pay
+                        </button>
+                        <button type="button" id="clear-cart"
+                                class="flex flex-1 items-center justify-center gap-2 rounded-full bg-red-50 px-4 py-3 text-base font-semibold uppercase tracking-wide text-red-600 ring-1 ring-inset ring-red-200 transition hover:bg-red-600 hover:text-white focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 active:scale-[0.98] md:order-2">
+                            <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M6 7h12M9 7V4h6v3m-8 0l1 13h8l1-13M10 11v6m4-6v6"/></svg>
+                            Clear
+                        </button>
+                    </div>
+                </form>
+            </section>
+        </div>
+    </main>
+
+
+
+<script>
+const cart = new Map();
+
+const search = document.getElementById("search");
+const cartBody = document.getElementById("cart-items");
+const cartEmpty = document.getElementById("cart-empty");
+const totalDisplay = document.getElementById("total");
+const itemCount = document.getElementById("item-count");
+const noMatch = document.getElementById("no-match");
+const amountInput = document.getElementById("id_amount_tendered");
+const changeDisplay = document.getElementById("change");
+const checkoutForm = document.getElementById("checkout-form");
+const discountType = document.getElementById("id_discount_type");
+
+const regularDiscountInput =
+    document.getElementById("id_regular_discount_percent");
+const specialDiscountInput =
+    document.getElementById("id_special_discount_amount");
+const customerNameInput =
+    document.getElementById("id_discount_customer_name");
+const discountReferenceInput =
+    document.getElementById("id_discount_reference");
+
+const chargeInputs = [
+    document.getElementById("id_packaging_charge"),
+    document.getElementById("id_delivery_charge"),
+    document.getElementById("id_service_charge"),
+    document.getElementById("id_other_charge")
+];
+
+const productButtons = Array.from(
+    document.querySelectorAll(".product")
+);
+
+const money = value =>
+    Math.round((value + Number.EPSILON) * 100) / 100;
+
+const numberValue = input => {
+    const value = Number(input?.value || 0);
+    return Number.isFinite(value) ? Math.max(0, value) : 0;
+};
+
+function getSubtotal() {
+    let subtotal = 0;
+
+    cart.forEach(item => {
+        subtotal += item.price * item.quantity;
+    });
+
+    return money(subtotal);
+}
+
+function getDiscount(subtotal) {
+    const type = discountType.value;
+    let discount = 0;
+
+    if (type === "regular") {
+        const percent = numberValue(regularDiscountInput);
+
+        discount = subtotal * Math.min(percent, 100) / 100;
+    } else if (
+        ["senior", "pwd", "naac", "solo_parent"].includes(type)
+    ) {
+        discount = numberValue(specialDiscountInput);
+    }
+
+    return money(discount);
+}
+
+function getCharges() {
+    return money(
+        chargeInputs.reduce(
+            (sum, input) => sum + numberValue(input),
+            0
+        )
+    );
+}
+
+function getTotal() {
+    const subtotal = getSubtotal();
+    const discount = getDiscount(subtotal);
+    const charges = getCharges();
+
+    return money(Math.max(0, subtotal - discount + charges));
+}
+
+function updateChange() {
+    const total = getTotal();
+    const tendered = numberValue(amountInput);
+
+    changeDisplay.textContent = money(
+        Math.max(0, tendered - total)
+    ).toFixed(2);
+}
+
+function updateTotals() {
+    totalDisplay.textContent = getTotal().toFixed(2);
+    updateChange();
+}
+
+function updateDiscountFields() {
+    const type = discountType.value;
+
+    const regular = type === "regular";
+    const special = [
+        "senior", "pwd", "naac", "solo_parent"
+    ].includes(type);
+
+    document.getElementById("regular-discount-fields").hidden =
+        !regular;
+
+    document.getElementById("special-discount-fields").hidden =
+        !special;
+
+    document.getElementById("discount-customer-field").hidden =
+        !special;
+
+    document.getElementById("discount-reference-field").hidden =
+        !special;
+
+    regularDiscountInput.disabled = !regular;
+    specialDiscountInput.disabled = !special;
+    customerNameInput.disabled = !special;
+    discountReferenceInput.disabled = !special;
+
+    if (!regular) {
+        regularDiscountInput.value = "0";
+    }
+
+    if (!special) {
+        specialDiscountInput.value = "0";
+        customerNameInput.value = "";
+        discountReferenceInput.value = "";
+    }
+
+    updateTotals();
+}
+
+function addProduct(button) {
+    const id = button.dataset.id;
+    const existing = cart.get(id);
+
+    if (existing) {
+        existing.quantity += 1;
+    } else {
+        cart.set(id, {
+            id,
+            name: button.dataset.name,
+            price: Number(button.dataset.price),
+            unit: button.dataset.unit,
+            quantity: 1
+        });
+    }
+
+    renderCart();
+}
+
+productButtons.forEach(button => {
+    button.addEventListener("click", () => {
+        addProduct(button);
+    });
+});
+
+function filterProducts() {
+    const term = search.value.toLowerCase().trim();
+    let visible = 0;
+
+    productButtons.forEach(button => {
+        const name = button.dataset.name || "";
+        const barcode = button.dataset.barcode || "";
+        const text = (name + " " + barcode).toLowerCase();
+
+        button.hidden = !text.includes(term);
+
+        if (!button.hidden) visible++;
+    });
+
+    noMatch.hidden = !(
+        productButtons.length > 0 && visible === 0
+    );
+}
+
+search.addEventListener("input", filterProducts);
+
+search.addEventListener("keydown", event => {
+    if (event.key !== "Enter") return;
+
+    event.preventDefault();
+
+    const matches = productButtons.filter(
+        button => !button.hidden
+    );
+
+    if (matches.length === 1) {
+        addProduct(matches[0]);
+        search.value = "";
+        filterProducts();
+        search.focus();
+    } else if (matches.length > 1) {
+        alert(
+            "More than one product matches. Type more to narrow your search."
+        );
+    } else {
+        alert("No matching product found.");
+    }
+});
+
+function makeStepButton(label, ariaLabel, onClick) {
+    const button = document.createElement("button");
+
+    button.type = "button";
+    button.textContent = label;
+    button.className =
+        "flex h-9 w-9 items-center justify-center rounded-full " +
+        "bg-brand-soft text-lg font-bold text-brand transition " +
+        "hover:bg-brand hover:text-white focus:outline-none focus:ring-2 " +
+        "focus:ring-brand active:scale-95";
+
+    button.setAttribute("aria-label", ariaLabel);
+    button.addEventListener("click", onClick);
+
+    return button;
+}
+
+function renderCart() {
+    cartBody.replaceChildren();
+
+    let count = 0;
+
+    cart.forEach(item => {
+        count += item.quantity;
+
+        const row = document.createElement("li");
+        row.className = "rounded-2xl px-3 py-3 transition hover:bg-canvas/60";
+
+        const top = document.createElement("div");
+        top.className = "flex items-start justify-between gap-3";
+
+        const info = document.createElement("div");
+        info.className = "min-w-0";
+
+        const name = document.createElement("p");
+        name.className =
+            "truncate text-sm font-semibold text-ink";
+        name.textContent = item.name;
+
+        const meta = document.createElement("p");
+        meta.className = "tabular text-xs text-slate-500";
+        meta.textContent =
+            "₱" + item.price.toFixed(2) +
+            (item.unit ? " / " + item.unit : "");
+
+        info.append(name, meta);
+
+        const lineTotal = document.createElement("p");
+        lineTotal.className =
+            "tabular shrink-0 text-base font-bold text-ink";
+        lineTotal.textContent =
+            "₱" + money(item.price * item.quantity).toFixed(2);
+
+        top.append(info, lineTotal);
+
+        const controls = document.createElement("div");
+        controls.className =
+            "mt-2 flex items-center justify-between";
+
+        const stepper = document.createElement("div");
+        stepper.className = "flex items-center gap-1.5";
+
+        const quantityInput = document.createElement("input");
+        quantityInput.type = "number";
+        quantityInput.min = "0.001";
+        quantityInput.step = "0.001";
+        quantityInput.value = item.quantity;
+        quantityInput.className =
+            "tabular h-9 w-20 rounded-xl border border-slate-200 " +
+            "px-2 text-center text-sm font-semibold " +
+            "focus:border-brand focus:outline-none focus:ring-2 focus:ring-brand/30";
+        quantityInput.setAttribute(
+            "aria-label", "Quantity for " + item.name
+        );
+
+        quantityInput.addEventListener("change", () => {
+            const value = Number(quantityInput.value);
+
+            if (
+                Number.isFinite(value) &&
+                value > 0 &&
+                value === Math.round(value * 1000) / 1000
+            ) {
+                item.quantity = value;
+            } else {
+                alert("Enter a quantity with up to 3 decimal places.");
+                if (cart.has(item.id)) {
+                    item.quantity = Math.max(
+                        0.001,
+                        Math.floor(item.quantity * 1000) / 1000
+                    );
+                }
+            }
+
+            renderCart();
+        });
+
+        const minus = makeStepButton(
+            "−",
+            "Decrease quantity of " + item.name,
+            () => {
+                if (item.quantity > 1) {
+                    item.quantity -= 1;
+                } else {
+                    cart.delete(item.id);
+                }
+
+                renderCart();
+            }
+        );
+
+        const plus = makeStepButton(
+            "+",
+            "Increase quantity of " + item.name,
+            () => {
+                item.quantity += 1;
+                renderCart();
+            }
+        );
+
+        stepper.append(minus, quantityInput, plus);
+
+        const removeButton = document.createElement("button");
+        removeButton.type = "button";
+        removeButton.textContent = "Remove";
+        removeButton.className =
+            "rounded-full px-3 py-1.5 text-xs font-semibold " +
+            "text-red-600 transition hover:bg-red-50";
+
+        removeButton.addEventListener("click", () => {
+            cart.delete(item.id);
+            renderCart();
+        });
+
+        controls.append(stepper, removeButton);
+        row.append(top, controls);
+        cartBody.appendChild(row);
+    });
+
+    itemCount.textContent =
+        count + (count === 1 ? " item" : " items");
+
+    cartEmpty.hidden = cart.size > 0;
+    cartBody.hidden = cart.size === 0;
+
+    document.getElementById("cart-data").value = JSON.stringify(
+        Array.from(cart.values()).map(item => ({
+            product_id: item.id,
+            quantity: item.quantity
+        }))
+    );
+
+    updateTotals();
+}
+
+// Payment input and charges
+amountInput.addEventListener("input", updateChange);
+
+chargeInputs.forEach(input => {
+    input.addEventListener("input", updateTotals);
+    input.addEventListener("change", updateTotals);
+});
+
+regularDiscountInput.addEventListener("input", updateTotals);
+specialDiscountInput.addEventListener("input", updateTotals);
+
+// Discount selection
+discountType.addEventListener("change", updateDiscountFields);
+
+// Quick payment buttons
+document.querySelectorAll("[data-quick]").forEach(button => {
+    button.addEventListener("click", () => {
+        const value =
+            button.dataset.quick === "exact"
+                ? getTotal().toFixed(2)
+                : button.dataset.quick;
+
+        amountInput.value = value;
+        updateChange();
+    });
+});
+
+// Clear cart
+document.getElementById("clear-cart").addEventListener(
+    "click", () => {
+        if (cart.size === 0) return;
+
+        if (confirm("Remove all items from the cart?")) {
+            cart.clear();
+            renderCart();
+        }
+    }
+);
+
+// Checkout validation
+checkoutForm.addEventListener("submit", event => {
+    if (cart.size === 0) {
+        event.preventDefault();
+        alert("Please add at least one product.");
+        return;
+    }
+
+    const subtotal = getSubtotal();
+    const discount = getDiscount(subtotal);
+    const total = getTotal();
+
+    if (discount > subtotal) {
+        event.preventDefault();
+        alert("Discount cannot exceed the subtotal.");
+        return;
+    }
+
+    if (
+        discountType.value === "regular" &&
+        numberValue(regularDiscountInput) > 100
+    ) {
+        event.preventDefault();
+        alert("Regular discount cannot exceed 100%.");
+        return;
+    }
+
+    if (
+        ["senior", "pwd", "naac", "solo_parent"].includes(
+            discountType.value
+        )
+    ) {
+        if (!customerNameInput.value.trim()) {
+            event.preventDefault();
+            alert("Enter the eligible customer's name.");
+            customerNameInput.focus();
+            return;
+        }
+
+        if (!discountReferenceInput.value.trim()) {
+            event.preventDefault();
+            alert("Enter the applicable ID or reference number.");
+            discountReferenceInput.focus();
+            return;
+        }
+    }
+
+    if (numberValue(amountInput) < total) {
+        event.preventDefault();
+        alert(
+            "Payment is insufficient. Amount due: ₱" +
+            total.toFixed(2)
+        );
+        amountInput.focus();
+        return;
+    }
+
+    if (!confirm("Complete this sale?")) {
+        event.preventDefault();
+    }
+});
+
+updateDiscountFields();
+renderCart();
+</script>
+
+</body>
+</html>

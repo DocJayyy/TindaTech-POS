@@ -1,0 +1,55 @@
+
+from decimal import Decimal
+
+from django.core.exceptions import ValidationError
+from django.db import transaction
+
+from inventory.models import StockBatch, StockMovement
+
+
+@transaction.atomic
+def receive_stock(
+    *,
+    product,
+    quantity,
+    unit_cost,
+    supplier=None,
+    batch_code="",
+    expiration_date=None,
+    user=None,
+):
+    quantity = Decimal(str(quantity))
+    unit_cost = Decimal(str(unit_cost))
+
+    if quantity <= 0:
+        raise ValidationError("Quantity must be greater than zero.")
+
+    if unit_cost < 0:
+        raise ValidationError("Unit cost cannot be negative.")
+
+    if product.tracks_expiration and not expiration_date:
+        raise ValidationError(
+            "An expiration date is required for this product."
+        )
+
+    batch = StockBatch.objects.create(
+        product=product,
+        supplier=supplier,
+        batch_code=batch_code,
+        quantity_received=quantity,
+        quantity_remaining=quantity,
+        unit_cost=unit_cost,
+        expiration_date=expiration_date,
+    )
+
+    StockMovement.objects.create(
+        product=product,
+        batch=batch,
+        movement_type=StockMovement.MovementType.STOCK_IN,
+        quantity=quantity,
+        reference=f"RECEIVE-{batch.pk}",
+        notes="Stock received from supplier.",
+        created_by=user,
+    )
+
+    return batch

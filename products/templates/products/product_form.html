@@ -1,0 +1,377 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ page_title }} | TindaTech POS</title>
+    {% load static %}
+    <link rel="icon" type="image/png"
+      href="{% static 'images/weblogo.png' %}">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: { sans: ['Poppins', 'ui-sans-serif', 'system-ui', 'sans-serif'] },
+                    colors: {
+                        brand: { DEFAULT: '#4349E8', dark: '#3338D0', soft: '#EEEFFD' },
+                        canvas: '#EEF0FA',
+                        ink: '#16161D'
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        .tabular { font-variant-numeric: tabular-nums; }
+
+        /* Styles Django-rendered form widgets so forms.py needs no CSS classes */
+        .field input:not([type="checkbox"]):not([type="radio"]):not([type="hidden"]),
+        .field select,
+        .field textarea {
+            width: 100%;
+            border: 1px solid transparent;
+            border-radius: 0.75rem;
+            padding: 0.7rem 1rem;
+            font-size: 0.875rem;
+            line-height: 1.25rem;
+            color: #16161D;
+            background: #EEF0FA;
+            transition: background-color .15s, border-color .15s, box-shadow .15s;
+        }
+        .field textarea { min-height: 6rem; resize: vertical; }
+        .field input:focus, .field select:focus, .field textarea:focus {
+            outline: none;
+            background: #fff;
+            border-color: #4349E8;
+            box-shadow: 0 0 0 3px rgba(67, 73, 232, 0.2);
+        }
+        .field.has-error input:not([type="checkbox"]),
+        .field.has-error select,
+        .field.has-error textarea { border-color: #f87171; background: #fef2f2; }
+        .field input[type="checkbox"] {
+            width: 1.125rem;
+            height: 1.125rem;
+            accent-color: #4349E8;
+            flex-shrink: 0;
+        }
+    </style>
+</head>
+
+<body class="bg-canvas font-sans text-slate-800 antialiased">
+
+    <!-- Mobile top bar -->
+    <header class="sticky top-0 z-30 flex items-center justify-between bg-canvas/90 px-4 py-3 backdrop-blur lg:hidden">
+        <div class="flex items-center gap-2">
+            <img src="{% static 'images/weblogo.png' %}" alt="" class="h-9 w-9 rounded-xl object-cover">
+            <span class="font-semibold text-ink">TindaTech POS</span>
+        </div>
+        <button id="menu-open" type="button" aria-label="Open menu"
+                class="rounded-full bg-white p-2.5 text-slate-600 shadow-sm hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-brand">
+            <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75"><path stroke-linecap="round" d="M4 6h16M4 12h16M4 18h16"/></svg>
+        </button>
+    </header>
+
+    <!-- Mobile backdrop -->
+    <div id="backdrop" class="fixed inset-0 z-40 hidden bg-slate-900/40 lg:hidden"></div>
+
+    <!-- Sidebar -->
+    <aside id="sidebar"
+           class="fixed inset-y-0 left-0 z-50 flex w-72 -translate-x-full flex-col bg-white transition-transform duration-200 lg:inset-y-4 lg:left-4 lg:w-64 lg:translate-x-0 lg:rounded-3xl lg:shadow-sm">
+
+        <div class="flex items-center justify-between px-6 pb-2 pt-6">
+            <div class="flex items-center gap-3">
+                <img src="{% static 'images/weblogo.png' %}" alt="TindaTech POS logo"
+                     class="h-10 w-10 rounded-xl object-cover">
+                <p class="font-semibold leading-tight text-ink">TindaTech POS</p>
+            </div>
+            <button id="menu-close" type="button" aria-label="Close menu"
+                    class="rounded-full p-1.5 text-slate-500 hover:bg-slate-100 lg:hidden">
+                <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75"><path stroke-linecap="round" d="M6 6l12 12M18 6L6 18"/></svg>
+            </button>
+        </div>
+
+        <nav class="flex-1 space-y-5 overflow-y-auto px-4 py-4 text-sm">
+
+            <div>
+                <p class="mb-2 px-3 text-[11px] font-medium uppercase tracking-wider text-slate-400">Menu</p>
+                <a href="/dashboard/"
+                   class="flex items-center gap-3 rounded-xl px-3 py-2.5 text-slate-600 transition hover:bg-brand-soft hover:text-brand">
+                    <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75"><path stroke-linecap="round" stroke-linejoin="round" d="M4 13h6V4H4v9zm10 7h6V4h-6v16zM4 20h6v-3H4v3z"/></svg>
+                    Dashboard
+                </a>
+            </div>
+
+            <div>
+                <p class="mb-2 px-3 text-[11px] font-medium uppercase tracking-wider text-slate-400">Sales</p>
+                <div class="space-y-1">
+                    <a href="{% url 'sales_history' %}"
+                       class="flex items-center gap-3 rounded-xl px-3 py-2.5 text-slate-600 transition hover:bg-brand-soft hover:text-brand">
+                        <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75"><path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l3 2M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                        Sales History
+                    </a>
+                    <a href="{% url 'sales_report' %}"
+                       class="flex items-center gap-3 rounded-xl px-3 py-2.5 text-slate-600 transition hover:bg-brand-soft hover:text-brand">
+                        <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75"><path stroke-linecap="round" stroke-linejoin="round" d="M9 17v-6m4 6V7m4 10v-3M5 21h14a1 1 0 001-1V4a1 1 0 00-1-1H5a1 1 0 00-1 1v16a1 1 0 001 1z"/></svg>
+                        Sales Reports
+                    </a>
+                    <a href="{% url 'sales_analytics' %}"
+                        class="flex items-center gap-3 rounded-xl px-3 py-2.5 text-slate-600 transition hover:bg-brand-soft hover:text-brand">
+                        <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M3 3v18h18M7 14l4-4 3 3 5-6"/>
+                        </svg>
+                        Sales Analytics
+                    </a>
+                    <a href="{% url 'electronic_journal' %}"
+                        class="flex items-center gap-3 rounded-xl px-3 py-2.5 text-slate-600 transition hover:bg-brand-soft hover:text-brand">
+                            <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M12 6.25v11.5M5 5.5a2 2 0 012-2h4.5a2.5 2.5 0 01.5.05 2.5 2.5 0 01.5-.05H17a2 2 0 012 2v13a2 2 0 01-2 2h-4.5a.5.5 0 00-.5.5.5.5 0 00-.5-.5H7a2 2 0 01-2-2v-13z"/>
+                            </svg>
+                            Electronic Journal
+                    </a>
+                </div>
+            </div>
+
+            <div>
+                <p class="mb-2 px-3 text-[11px] font-medium uppercase tracking-wider text-slate-400">Catalog</p>
+                <div class="space-y-1">
+                    <a href="/products/" aria-current="page"
+                       class="flex items-center gap-3 rounded-xl bg-brand px-3 py-2.5 font-medium text-white shadow-lg shadow-brand/30">
+                        <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75"><path stroke-linecap="round" stroke-linejoin="round" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/></svg>
+                        Products
+                    </a>
+                    <a href="/products/categories/"
+                       class="flex items-center gap-3 rounded-xl px-3 py-2.5 text-slate-600 transition hover:bg-brand-soft hover:text-brand">
+                        <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75"><path stroke-linecap="round" stroke-linejoin="round" d="M7 7h.01M7 3h5a2 2 0 011.4.6l7 7a2 2 0 010 2.8l-5 5a2 2 0 01-2.8 0l-7-7A2 2 0 015 10V5a2 2 0 012-2z"/></svg>
+                        Categories
+                    </a>
+                </div>
+            </div>
+
+            <div>
+                <p class="mb-2 px-3 text-[11px] font-medium uppercase tracking-wider text-slate-400">Inventory</p>
+                <div class="space-y-1">
+                    <a href="/inventory/stock/"
+                       class="flex items-center gap-3 rounded-xl px-3 py-2.5 text-slate-600 transition hover:bg-brand-soft hover:text-brand">
+                        <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75"><path stroke-linecap="round" stroke-linejoin="round" d="M4 7h16M4 12h16M4 17h16"/></svg>
+                        Stock Levels
+                    </a>
+                    <a href="/inventory/receive/"
+                       class="flex items-center gap-3 rounded-xl px-3 py-2.5 text-slate-600 transition hover:bg-brand-soft hover:text-brand">
+                        <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4v12m0 0l-4-4m4 4l4-4M4 20h16"/></svg>
+                        Receive Stock
+                    </a>
+                </div>
+            </div>
+
+            <div>
+                <p class="mb-2 px-3 text-[11px] font-medium uppercase tracking-wider text-slate-400">Reading</p>
+                <div class="space-y-1">
+                    <a href="{% url 'x_reading' %}"
+                       class="flex items-center gap-3 rounded-xl px-3 py-2.5 text-slate-600 transition hover:bg-brand-soft hover:text-brand">
+                        <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75"><path stroke-linecap="round" stroke-linejoin="round" d="M9 17v-2m3 2v-4m3 4V9m2 12H7a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h7l5 5v11a2 2 0 0 1-2 2Z"/></svg>
+                        X Reading
+                    </a>
+                    <a href="{% url 'z_reading' %}"
+                       class="flex items-center gap-3 rounded-xl px-3 py-2.5 text-slate-600 transition hover:bg-brand-soft hover:text-brand">
+                        <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75"><path stroke-linecap="round" stroke-linejoin="round" d="M9 14h6m-6-4h6m2 11H7a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h7l5 5v16Z"/></svg>
+                        Z Reading
+                    </a>
+                </div>
+            </div>
+                        <div>
+                <p class="mb-2 px-3 text-[11px] font-medium uppercase tracking-wider text-slate-400">User Management</p>
+                <a href="{% url 'account_settings' %}"
+                   class="flex items-center gap-3 rounded-xl px-3 py-2.5 text-slate-600 transition hover:bg-brand-soft hover:text-brand">
+                    <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24"
+                         stroke="currentColor" stroke-width="1.75">
+                        <path stroke-linecap="round" stroke-linejoin="round"
+                              d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/>
+                        <path stroke-linecap="round" stroke-linejoin="round"
+                              d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+                    </svg>
+                    Account Settings
+                </a>
+                <a href="{% url 'manage_accounts' %}"
+                    class="flex items-center gap-3 rounded-xl px-3 py-2.5 text-slate-600 transition hover:bg-brand-soft hover:text-brand">
+                    <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24"
+                        stroke="currentColor" stroke-width="1.75">
+                        <path stroke-linecap="round" stroke-linejoin="round"
+                        d="M16 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2m16 0v-2a4 4 0 00-3-3.87M14 3.13a4 4 0 010 7.75M14 7a4 4 0 11-8 0 4 4 0 018 0z"/>
+                    </svg>
+                Manage Accounts
+                </a>
+                <a href="{% url 'receipt_settings' %}"
+                    class="flex items-center gap-3 rounded-xl px-3 py-2.5 font-medium text-slate-600 transition hover:bg-brand-soft hover:text-brand">
+                        <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24"stroke="currentColor" stroke-width="1.75">
+                            <path stroke-linecap="round" stroke-linejoin="round"d="M9 7h6m-6 4h6m-6 4h3M6 3h12a1 1 0 011 1v17l-3-2-2 2-2-2-2 2-2-2-3 2V4a1 1 0 011-1z"/>
+                        </svg>
+                        Receipt Settings
+                </a>
+            </div>
+        </nav>
+
+        <!-- Bottom: POS call-to-action + user -->
+        <div class="space-y-3 p-4">
+            <form id="logout-form" method="post" action="{% url 'logout' %}">
+                {% csrf_token %}
+                <button type="button" id="signout-btn"
+                    class="flex w-full items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-600 transition hover:border-red-600 hover:bg-red-600 hover:text-white focus:outline-none focus:ring-2 focus:ring-red-500">
+                    <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75"><path stroke-linecap="round" stroke-linejoin="round" d="M15 16l4-4m0 0l-4-4m4 4H9m4 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/></svg>
+                    Sign out
+                </button>
+            </form>
+        </div>
+    </aside>
+
+    <!-- Main content -->
+    <main class="min-h-screen px-4 pb-8 pt-4 sm:px-8 lg:ml-72 lg:py-8 lg:pr-8">
+        <div class="mx-auto max-w-3xl">
+
+            <!-- Page header -->
+            <div class="mb-7">
+                <nav aria-label="Breadcrumb" class="mb-3 flex items-center gap-2 text-sm text-slate-500">
+                    <a href="{% url 'product_list' %}"
+                       class="rounded-full bg-white px-3 py-1 font-medium text-brand shadow-sm transition hover:bg-brand-soft focus:outline-none focus:ring-2 focus:ring-brand">Products</a>
+                    <span aria-hidden="true">/</span>
+                    <span>{{ page_title }}</span>
+                </nav>
+                <h1 class="text-3xl font-semibold tracking-tight text-ink">{{ page_title }}</h1>
+                <p class="mt-1 text-sm text-slate-500">Enter the details of the grocery product.</p>
+            </div>
+
+            <!-- Sign out confirmation modal -->
+            <div id="signout-modal"
+                class="fixed inset-0 z-50 hidden items-center justify-center bg-slate-900/50 p-4"
+                role="dialog" aria-modal="true" aria-labelledby="signout-title">
+                <div class="w-full max-w-sm rounded-3xl bg-white p-6 shadow-xl">
+                    <div class="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-red-100">
+                        <svg class="h-6 w-6 text-red-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75"><path stroke-linecap="round" stroke-linejoin="round" d="M15 16l4-4m0 0l-4-4m4 4H9m4 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/></svg>
+                    </div>
+                    <h3 id="signout-title" class="text-center text-lg font-semibold text-ink">
+                        Are you sure you want to sign out?
+                    </h3>
+                    <div class="mt-6 flex gap-3">
+                        <button type="button" id="signout-cancel"
+                            class="flex-1 rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-medium text-slate-700 transition hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-slate-300">
+                            Cancel
+                        </button>
+                        <button type="button" id="signout-confirm"
+                            class="flex-1 rounded-xl bg-red-600 px-4 py-2.5 text-sm font-medium text-white transition hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2">
+                            Yes
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <form method="post" class="overflow-hidden rounded-3xl bg-white shadow-sm">
+                {% csrf_token %}
+
+                <div class="space-y-6 p-6 sm:p-8">
+
+                    {% if form.non_field_errors %}
+                        <div role="alert" class="flex gap-2.5 rounded-2xl bg-red-50 p-4 text-sm text-red-700">
+                            <svg class="mt-0.5 h-4 w-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                            <div>
+                                {% for error in form.non_field_errors %}<p>{{ error }}</p>{% endfor %}
+                            </div>
+                        </div>
+                    {% endif %}
+
+                    <div class="grid gap-5 md:grid-cols-2">
+                        {% for field in form %}
+                            {% if field.is_hidden %}
+                                {{ field }}
+                            {% elif field.name == 'tracks_expiration' or field.name == 'is_active' %}
+                                <div class="field md:col-span-2 {% if field.errors %}has-error{% endif %}">
+                                    <div class="flex items-start gap-3 rounded-2xl bg-canvas p-4">
+                                        <div class="pt-0.5">{{ field }}</div>
+                                        <div>
+                                            <label for="{{ field.id_for_label }}" class="text-sm font-medium text-ink">{{ field.label }}</label>
+                                            {% if field.help_text %}
+                                                <p class="mt-0.5 text-xs text-slate-500">{{ field.help_text }}</p>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                    {% for error in field.errors %}
+                                        <p class="mt-1.5 text-sm text-red-600">{{ error }}</p>
+                                    {% endfor %}
+                                </div>
+                            {% else %}
+                                <div class="field {% if field.widget_type == 'textarea' %}md:col-span-2{% endif %} {% if field.errors %}has-error{% endif %}">
+                                    <label for="{{ field.id_for_label }}" class="mb-1.5 block text-sm font-medium text-slate-700">
+                                        {{ field.label }}{% if field.field.required %}<span class="ml-0.5 text-red-500" aria-hidden="true">*</span>{% endif %}
+                                    </label>
+                                    {{ field }}
+                                    {% if field.help_text %}
+                                        <p class="mt-1.5 text-xs text-slate-500">{{ field.help_text }}</p>
+                                    {% endif %}
+                                    {% for error in field.errors %}
+                                        <p class="mt-1.5 text-sm text-red-600">{{ error }}</p>
+                                    {% endfor %}
+                                </div>
+                            {% endif %}
+                        {% endfor %}
+                    </div>
+                </div>
+
+                <div class="flex flex-wrap items-center justify-end gap-3 bg-canvas/60 px-6 py-4 sm:px-8">
+                    <a href="{% url 'product_list' %}"
+                       class="rounded-full bg-white px-6 py-2.5 text-sm font-medium text-slate-600 shadow-sm transition hover:bg-brand-soft hover:text-brand focus:outline-none focus:ring-2 focus:ring-brand">
+                        Cancel
+                    </a>
+                    <button type="submit"
+                            class="rounded-full bg-brand px-6 py-2.5 text-sm font-semibold text-white shadow-lg shadow-brand/30 transition hover:bg-brand-dark focus:outline-none focus:ring-2 focus:ring-brand focus:ring-offset-2">
+                        Save product
+                    </button>
+                </div>
+            </form>
+
+        </div>
+    </main>
+
+    <script>
+        (function () {
+            var sidebar = document.getElementById('sidebar');
+            var backdrop = document.getElementById('backdrop');
+            function open() { sidebar.classList.remove('-translate-x-full'); backdrop.classList.remove('hidden'); }
+            function close() { sidebar.classList.add('-translate-x-full'); backdrop.classList.add('hidden'); }
+            document.getElementById('menu-open').addEventListener('click', open);
+            document.getElementById('menu-close').addEventListener('click', close);
+            backdrop.addEventListener('click', close);
+            document.addEventListener('keydown', function (e) { if (e.key === 'Escape') close(); });
+        })();
+
+        // Sign out MODAL
+        (function () {
+            const modal = document.getElementById('signout-modal');
+            const openBtn = document.getElementById('signout-btn');
+            const cancelBtn = document.getElementById('signout-cancel');
+            const confirmBtn = document.getElementById('signout-confirm');
+            const form = document.getElementById('logout-form');
+
+            function openModal() {
+                modal.classList.remove('hidden');
+                modal.classList.add('flex');
+                cancelBtn.focus();
+            }
+            function closeModal() {
+                modal.classList.add('hidden');
+                modal.classList.remove('flex');
+                openBtn.focus();
+            }
+
+            openBtn.addEventListener('click', openModal);
+            cancelBtn.addEventListener('click', closeModal);
+            confirmBtn.addEventListener('click', () => form.submit());
+            modal.addEventListener('click', (e) => { if (e.target === modal) closeModal(); });
+            document.addEventListener('keydown', (e) => {
+                if (e.key === 'Escape' && !modal.classList.contains('hidden')) closeModal();
+            });
+        })();
+    </script>
+</body>
+</html>

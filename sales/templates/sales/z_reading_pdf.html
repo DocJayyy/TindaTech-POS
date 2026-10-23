@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Z Reading Report</title>
+
+    <style>
+        @page {
+            size: A4;
+            margin: 25px;
+        }
+
+        body {
+            font-family: Helvetica, sans-serif;
+            font-size: 11px;
+            color: #222;
+        }
+
+        h1 {
+            text-align: center;
+            margin-bottom: 5px;
+        }
+
+        .subtitle {
+            text-align: center;
+            color: #555;
+            margin-bottom: 25px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        td {
+            padding: 10px;
+            border-bottom: 1px solid #ddd;
+        }
+
+        td:last-child {
+            text-align: right;
+        }
+
+        .total {
+            font-weight: bold;
+            background-color: #f0f0f0;
+        }
+
+        .footer {
+            margin-top: 25px;
+            font-size: 9px;
+            color: #666;
+        }
+    </style>
+</head>
+
+<body>
+    <h1>TindaTech POS</h1>
+
+    <div class="subtitle">
+        Z Reading {{ session.z_number }}<br>
+        Closed:
+        {{ report.closed_at|default:session.closed_at|default:"—" }}
+    </div>
+
+    <p>
+        <strong>Cashier:</strong>
+        {{ report.cashier|default:session.cashier.username }}
+    </p>
+
+    <p>
+        <strong>Session:</strong>
+        #{{ session.id }}
+    </p>
+
+    <table>
+        <tr>
+            <td>Opening cash</td>
+            <td>PHP {{ report.opening_cash|default:"0.00" }}</td>
+        </tr>
+
+        <tr class="total">
+            <td>Total sales</td>
+            <td>PHP {{ report.total_sales|default:"0.00" }}</td>
+        </tr>
+
+        <tr>
+            <td>Cash sales</td>
+            <td>PHP {{ report.cash_sales|default:"0.00" }}</td>
+        </tr>
+
+        <tr>
+            <td>Non-cash sales</td>
+            <td>PHP {{ report.non_cash_sales|default:"0.00" }}</td>
+        </tr>
+
+        <tr>
+            <td>Cash refunds</td>
+            <td>PHP {{ report.cash_refunds|default:"0.00" }}</td>
+        </tr>
+
+        <tr>
+            <td>Completed transactions</td>
+            <td>{{ report.completed_transactions|default:0 }}</td>
+        </tr>
+
+        <tr>
+            <td>Voided transactions</td>
+            <td>{{ report.voided_transactions|default:0 }}</td>
+        </tr>
+
+        <tr class="total">
+            <td>Expected cash in drawer</td>
+            <td>PHP {{ report.expected_cash|default:"0.00" }}</td>
+        </tr>
+
+        <tr>
+            <td>Actual cash counted</td>
+            <td>PHP {{ report.actual_cash|default:"0.00" }}</td>
+        </tr>
+
+        <tr class="total">
+            <td>Cash variance</td>
+            <td>PHP {{ report.cash_variance|default:"0.00" }}</td>
+        </tr>
+    </table>
+
+    <div class="footer">
+        This Z Reading is a saved end-of-shift report.
+        The cashier session has been closed.
+    </div>
+</body>
+</html>

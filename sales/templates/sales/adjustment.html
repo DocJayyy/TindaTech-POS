@@ -1,0 +1,296 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sale Adjustment | TindaTech POS</title>
+    {% load static %}
+    <link rel="icon" type="image/png"
+    href="{% static 'images/weblogo.png' %}">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: { sans: ['Poppins', 'ui-sans-serif', 'system-ui', 'sans-serif'] },
+                    colors: {
+                        brand: { DEFAULT: '#4349E8', dark: '#3338D0', soft: '#EEEFFD' },
+                        canvas: '#EEF0FA',
+                        ink: '#16161D'
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        .tabular { font-variant-numeric: tabular-nums; }
+
+        /* Django form widgets */
+        input:not([type="checkbox"]):not([type="hidden"]),
+        select,
+        textarea {
+            display: block;
+            width: 100%;
+            border: 1px solid #e2e8f0;
+            border-radius: 0.75rem;
+            padding: 0.7rem 0.9rem;
+            background: white;
+            font-size: 0.875rem;
+        }
+
+        input[type="checkbox"] {
+            height: 1.1rem;
+            width: 1.1rem;
+            accent-color: #4349E8;
+        }
+
+        input:focus, select:focus, textarea:focus {
+            outline: 2px solid rgba(67, 73, 232, 0.35);
+            outline-offset: 1px;
+            border-color: #4349E8;
+        }
+    </style>
+</head>
+
+<body class="min-h-screen bg-canvas font-sans text-slate-800 antialiased">
+    <main class="mx-auto max-w-5xl px-4 py-8 sm:px-6">
+
+        <div class="mb-6 flex flex-wrap items-center justify-between gap-3">
+            <div class="flex items-center gap-4">
+                <img src="{% static 'images/weblogo.png' %}" alt="TindaTech POS logo"
+                     class="h-12 w-12 rounded-2xl object-cover shadow-sm">
+                <div>
+                    <p class="text-sm text-slate-500">TindaTech POS / Sales History</p>
+                    <h1 class="mt-0.5 text-3xl font-semibold tracking-tight text-ink">Sale Adjustment</h1>
+                    <p class="mt-1 text-sm text-slate-500">
+                        Receipt: {{ sale.receipt_number }}
+                    </p>
+                </div>
+            </div>
+
+            <a href="{% url 'sales_history' %}"
+               class="inline-flex items-center gap-2 rounded-full bg-white px-5 py-3 text-sm font-medium text-slate-700 shadow-sm transition hover:bg-brand-soft hover:text-brand focus:outline-none focus:ring-2 focus:ring-brand">
+                <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M19 12H5m6-6l-6 6 6 6"/></svg>
+                Back to Sales History
+            </a>
+        </div>
+
+        {% if messages %}
+            {% for message in messages %}
+                <div class="mb-4 rounded-2xl border border-emerald-200 bg-emerald-50 px-5 py-3.5 text-sm text-emerald-800">
+                    {{ message }}
+                </div>
+            {% endfor %}
+        {% endif %}
+
+        <section class="mb-6 rounded-3xl bg-white p-6 shadow-sm">
+            <h2 class="mb-4 text-xl font-semibold text-ink">Original Sale Details</h2>
+
+            <dl class="grid grid-cols-1 gap-4 sm:grid-cols-3">
+                <div class="rounded-2xl bg-canvas/70 p-4">
+                    <dt class="text-sm text-slate-500">Receipt Number</dt>
+                    <dd class="mt-1 font-semibold text-ink">{{ sale.receipt_number }}</dd>
+                </div>
+
+                <div class="rounded-2xl bg-canvas/70 p-4">
+                    <dt class="text-sm text-slate-500">Sale Date</dt>
+                    <dd class="tabular mt-1 font-semibold text-ink">{{ sale.created_at|date:"M d, Y h:i A" }}</dd>
+                </div>
+
+                <div class="rounded-2xl bg-brand-soft p-4">
+                    <dt class="text-sm text-brand">Original Total</dt>
+                    <dd class="tabular mt-1 text-lg font-bold text-brand">
+                        ₱{{ sale.total_amount|floatformat:2 }}
+                    </dd>
+                </div>
+
+                <div class="rounded-2xl bg-canvas/70 p-4">
+                    <dt class="text-sm text-slate-500">Sale Status</dt>
+                    <dd class="mt-1 font-semibold text-ink">{{ sale.get_status_display }}</dd>
+                </div>
+
+                <div class="rounded-2xl bg-canvas/70 p-4">
+                    <dt class="text-sm text-slate-500">Cashier</dt>
+                    <dd class="mt-1 font-semibold text-ink">{{ sale.cashier.username }}</dd>
+                </div>
+            </dl>
+        </section>
+
+        <section class="mb-6 rounded-3xl bg-white p-6 shadow-sm">
+            <h2 class="mb-4 text-xl font-semibold text-ink">Items in Original Sale</h2>
+
+            <div class="overflow-x-auto">
+                <table class="min-w-full text-sm">
+                    <thead class="text-left text-xs font-semibold uppercase tracking-wide text-slate-400">
+                        <tr>
+                            <th class="px-3 py-3">Product</th>
+                            <th class="px-3 py-3 text-right">Quantity</th>
+                            <th class="px-3 py-3 text-right">Line Total</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for item in sale.items.all %}
+                            <tr class="transition hover:bg-canvas/60">
+                                <td class="rounded-l-2xl px-3 py-3 font-medium text-ink">{{ item.product.name }}</td>
+                                <td class="tabular px-3 py-3 text-right text-slate-600">{{ item.quantity }}</td>
+                                <td class="tabular rounded-r-2xl px-3 py-3 text-right font-semibold text-ink">
+                                    ₱{{ item.line_total|floatformat:2 }}
+                                </td>
+                            </tr>
+                        {% empty %}
+                            <tr>
+                                <td colspan="3" class="px-3 py-6 text-center text-slate-500">
+                                    No sale items found.
+                                </td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+        <section class="mb-6 rounded-3xl bg-white p-6 shadow-sm">
+            <h2 class="mb-4 text-xl font-semibold text-ink">Create Adjustment</h2>
+
+            <div class="mb-5 flex gap-3 rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900">
+                <svg class="mt-0.5 h-5 w-5 shrink-0 text-amber-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v4m0 4h.01M10.3 3.9L1.8 18a2 2 0 001.7 3h17a2 2 0 001.7-3L13.7 3.9a2 2 0 00-3.4 0z"/></svg>
+                <p>
+                    Please verify the original receipt and quantities before submitting.
+                    Voids, returns, and refunds may affect stock and financial records.
+                </p>
+            </div>
+
+            <form method="post" class="space-y-5">
+                {% csrf_token %}
+
+                {% if form.non_field_errors %}
+                    <div class="rounded-2xl border border-red-200 bg-red-50 p-4 text-sm text-red-700">
+                        {{ form.non_field_errors }}
+                    </div>
+                {% endif %}
+
+                <div>
+                    <label for="{{ form.adjustment_type.id_for_label }}"
+                           class="mb-1.5 block text-sm font-medium text-slate-700">
+                        Adjustment Type
+                    </label>
+                    {{ form.adjustment_type }}
+                    {% for error in form.adjustment_type.errors %}
+                        <p class="mt-1 text-sm text-red-600">{{ error }}</p>
+                    {% endfor %}
+                    <p class="mt-1 text-xs text-slate-500">
+                        Choose Void, Return, or Refund.
+                    </p>
+                </div>
+
+                <div>
+                    <label for="{{ form.reason.id_for_label }}"
+                           class="mb-1.5 block text-sm font-medium text-slate-700">
+                        Reason
+                    </label>
+                    {{ form.reason }}
+                    {% for error in form.reason.errors %}
+                        <p class="mt-1 text-sm text-red-600">{{ error }}</p>
+                    {% endfor %}
+                </div>
+
+                <div>
+                    <label for="{{ form.refund_amount.id_for_label }}"
+                           class="mb-1.5 block text-sm font-medium text-slate-700">
+                        Refund Amount (₱)
+                    </label>
+                    {{ form.refund_amount }}
+                    {% for error in form.refund_amount.errors %}
+                        <p class="mt-1 text-sm text-red-600">{{ error }}</p>
+                    {% endfor %}
+                    <p class="mt-1 text-xs text-slate-500">
+                        Used for a refund. The server must validate the remaining refundable amount.
+                    </p>
+                </div>
+
+                <div>
+                    <label for="{{ form.sale_item_id.id_for_label }}"
+                           class="mb-1.5 block text-sm font-medium text-slate-700">
+                        Sale Item ID for Return
+                    </label>
+                    {{ form.sale_item_id }}
+                    {% for error in form.sale_item_id.errors %}
+                        <p class="mt-1 text-sm text-red-600">{{ error }}</p>
+                    {% endfor %}
+                    <p class="mt-1 text-xs text-red-600">
+                        This field is hidden by the current form, so a return cannot be selected here yet.
+                        Do not submit a Return until we add a proper product selector.
+                    </p>
+                </div>
+
+                <div>
+                    <label for="{{ form.return_quantity.id_for_label }}"
+                           class="mb-1.5 block text-sm font-medium text-slate-700">
+                        Return Quantity
+                    </label>
+                    {{ form.return_quantity }}
+                    {% for error in form.return_quantity.errors %}
+                        <p class="mt-1 text-sm text-red-600">{{ error }}</p>
+                    {% endfor %}
+                </div>
+
+                <label class="flex items-center gap-3 rounded-2xl bg-canvas/70 px-4 py-3 text-sm text-slate-700">
+                    {{ form.restock }}
+                    <span>Add returned items back to stock</span>
+                </label>
+
+                <div class="flex flex-wrap gap-3 border-t border-slate-100 pt-5">
+                    <button type="submit"
+                            class="rounded-full bg-brand px-6 py-3 text-sm font-semibold text-white shadow-md shadow-brand/30 transition hover:bg-brand-dark focus:outline-none focus:ring-2 focus:ring-brand focus:ring-offset-2">
+                        Process Adjustment
+                    </button>
+
+                    <a href="{% url 'sales_history' %}"
+                       class="rounded-full border border-slate-200 px-6 py-3 text-sm font-medium text-slate-700 transition hover:bg-brand-soft hover:text-brand">
+                        Cancel
+                    </a>
+                </div>
+            </form>
+        </section>
+
+        <section class="rounded-3xl bg-white p-6 shadow-sm">
+            <h2 class="mb-4 text-xl font-semibold text-ink">Previous Adjustments</h2>
+
+            {% for adjustment in adjustments %}
+                <div class="mb-3 rounded-2xl bg-canvas/70 p-4 last:mb-0">
+                    <div class="flex flex-wrap items-center justify-between gap-2">
+                        <p class="font-semibold text-ink">{{ adjustment.adjustment_number }}</p>
+                        <span class="text-sm text-slate-500">
+                            {{ adjustment.created_at|date:"M d, Y h:i A" }}
+                        </span>
+                    </div>
+
+                    <p class="mt-1 text-sm text-slate-600">
+                        <span class="rounded-full bg-brand-soft px-2.5 py-0.5 text-xs font-medium text-brand">{{ adjustment.get_adjustment_type_display }}</span>
+                        · {{ adjustment.get_status_display }}
+                    </p>
+
+                    <p class="mt-2 text-sm text-slate-600">
+                        Reason: {{ adjustment.reason }}
+                    </p>
+
+                    <p class="tabular mt-1 font-semibold text-ink">
+                        Amount: ₱{{ adjustment.amount|floatformat:2 }}
+                    </p>
+                </div>
+            {% empty %}
+                <div class="py-6 text-center">
+                    <span class="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-2xl bg-brand-soft text-brand">
+                        <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6M7 3h7l5 5v11a2 2 0 01-2 2H7a2 2 0 01-2-2V5a2 2 0 012-2z"/></svg>
+                    </span>
+                    <p class="text-sm text-slate-500">No adjustments recorded for this sale.</p>
+                </div>
+            {% endfor %}
+        </section>
+
+    </main>
+</body>
+</html>

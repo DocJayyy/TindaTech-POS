@@ -1,0 +1,777 @@
+{% load static %}<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Manage Accounts | TindaTech POS</title>
+    <link rel="icon" type="image/png" href="{% static 'images/weblogo.png' %}">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: { sans: ['Poppins', 'ui-sans-serif', 'system-ui', 'sans-serif'] },
+                    colors: {
+                        brand: { DEFAULT: '#4349E8', dark: '#3338D0', soft: '#EEEFFD' },
+                        canvas: '#EEF0FA',
+                        ink: '#16161D'
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        .tabular { font-variant-numeric: tabular-nums; }
+        .hero-card { background: linear-gradient(135deg, #4F55F0 0%, #3A40DC 55%, #3035C9 100%); }
+        .field {
+            width: 100%;
+            border-radius: 0.75rem;
+            border: 1px solid #e2e8f0;
+            background: #fff;
+            padding: 0.7rem 1rem;
+            font-size: 0.875rem;
+            color: #16161D;
+            outline: none;
+            transition: border-color .15s, box-shadow .15s;
+        }
+        .field:focus { border-color: #4349E8; box-shadow: 0 0 0 3px rgba(67, 73, 232, .15); }
+        @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+    </style>
+</head>
+
+<body class="bg-canvas font-sans text-slate-800 antialiased">
+
+    <!-- Mobile top bar -->
+    <header class="sticky top-0 z-30 flex items-center justify-between bg-canvas/90 px-4 py-3 backdrop-blur lg:hidden">
+        <div class="flex items-center gap-2">
+            <img src="{% static 'images/weblogo.png' %}" alt="" class="h-9 w-9 rounded-xl object-cover">
+            <span class="font-semibold text-ink">TindaTech POS</span>
+        </div>
+        <button id="menu-open" type="button" aria-label="Open menu"
+                class="rounded-full bg-white p-2.5 text-slate-600 shadow-sm hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-brand">
+            <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75"><path stroke-linecap="round" d="M4 6h16M4 12h16M4 18h16"/></svg>
+        </button>
+    </header>
+
+    <!-- Mobile backdrop -->
+    <div id="backdrop" class="fixed inset-0 z-40 hidden bg-slate-900/40 lg:hidden"></div>
+
+    <!-- Sidebar -->
+    <aside id="sidebar"
+           class="fixed inset-y-0 left-0 z-50 flex w-72 -translate-x-full flex-col bg-white transition-transform duration-200 lg:inset-y-4 lg:left-4 lg:w-64 lg:translate-x-0 lg:rounded-3xl lg:shadow-sm">
+
+        <div class="flex items-center justify-between px-6 pb-2 pt-6">
+            <div class="flex items-center gap-3">
+                <img src="{% static 'images/weblogo.png' %}" alt="TindaTech POS logo" class="h-10 w-10 rounded-xl object-cover">
+                <p class="font-semibold leading-tight text-ink">TindaTech POS</p>
+            </div>
+            <button id="menu-close" type="button" aria-label="Close menu"
+                    class="rounded-full p-1.5 text-slate-500 hover:bg-slate-100 lg:hidden">
+                <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75"><path stroke-linecap="round" d="M6 6l12 12M18 6L6 18"/></svg>
+            </button>
+        </div>
+
+        <nav class="flex-1 space-y-5 overflow-y-auto px-4 py-4 text-sm">
+
+            <div>
+                <p class="mb-2 px-3 text-[11px] font-medium uppercase tracking-wider text-slate-400">Menu</p>
+                <a href="/dashboard/"
+                   class="flex items-center gap-3 rounded-xl px-3 py-2.5 text-slate-600 transition hover:bg-brand-soft hover:text-brand">
+                    <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75"><path stroke-linecap="round" stroke-linejoin="round" d="M4 13h6V4H4v9zm10 7h6V4h-6v16zM4 20h6v-3H4v3z"/></svg>
+                    Dashboard
+                </a>
+            </div>
+
+            <div>
+                <p class="mb-2 px-3 text-[11px] font-medium uppercase tracking-wider text-slate-400">Sales</p>
+                <div class="space-y-1">
+                    <a href="{% url 'sales_history' %}"
+                       class="flex items-center gap-3 rounded-xl px-3 py-2.5 text-slate-600 transition hover:bg-brand-soft hover:text-brand">
+                        <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75"><path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l3 2M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                        Sales History
+                    </a>
+                    <a href="{% url 'sales_report' %}"
+                       class="flex items-center gap-3 rounded-xl px-3 py-2.5 text-slate-600 transition hover:bg-brand-soft hover:text-brand">
+                        <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75"><path stroke-linecap="round" stroke-linejoin="round" d="M9 17v-6m4 6V7m4 10v-3M5 21h14a1 1 0 001-1V4a1 1 0 00-1-1H5a1 1 0 00-1 1v16a1 1 0 001 1z"/></svg>
+                        Sales Reports
+                    </a>
+                    <a href="{% url 'sales_analytics' %}"
+                        class="flex items-center gap-3 rounded-xl px-3 py-2.5 text-slate-600 transition hover:bg-brand-soft hover:text-brand">
+                        <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M3 3v18h18M7 14l4-4 3 3 5-6"/>
+                        </svg>
+                        Sales Analytics
+                    </a>
+                    <a href="{% url 'electronic_journal' %}"
+                        class="flex items-center gap-3 rounded-xl px-3 py-2.5 text-slate-600 transition hover:bg-brand-soft hover:text-brand">
+                            <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M12 6.25v11.5M5 5.5a2 2 0 012-2h4.5a2.5 2.5 0 01.5.05 2.5 2.5 0 01.5-.05H17a2 2 0 012 2v13a2 2 0 01-2 2h-4.5a.5.5 0 00-.5.5.5.5 0 00-.5-.5H7a2 2 0 01-2-2v-13z"/>
+                            </svg>
+                            Electronic Journal
+                    </a>
+                </div>
+            </div>
+
+            <div>
+                <p class="mb-2 px-3 text-[11px] font-medium uppercase tracking-wider text-slate-400">Catalog</p>
+                <div class="space-y-1">
+                    <a href="/products/"
+                       class="flex items-center gap-3 rounded-xl px-3 py-2.5 text-slate-600 transition hover:bg-brand-soft hover:text-brand">
+                        <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75"><path stroke-linecap="round" stroke-linejoin="round" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/></svg>
+                        Products
+                    </a>
+                    <a href="/products/categories/"
+                       class="flex items-center gap-3 rounded-xl px-3 py-2.5 text-slate-600 transition hover:bg-brand-soft hover:text-brand">
+                        <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75"><path stroke-linecap="round" stroke-linejoin="round" d="M7 7h.01M7 3h5a2 2 0 011.4.6l7 7a2 2 0 010 2.8l-5 5a2 2 0 01-2.8 0l-7-7A2 2 0 015 10V5a2 2 0 012-2z"/></svg>
+                        Categories
+                    </a>
+                </div>
+            </div>
+
+            <div>
+                <p class="mb-2 px-3 text-[11px] font-medium uppercase tracking-wider text-slate-400">Inventory</p>
+                <div class="space-y-1">
+                    <a href="/inventory/stock/"
+                       class="flex items-center gap-3 rounded-xl px-3 py-2.5 text-slate-600 transition hover:bg-brand-soft hover:text-brand">
+                        <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75"><path stroke-linecap="round" stroke-linejoin="round" d="M4 7h16M4 12h16M4 17h16"/></svg>
+                        Stock Levels
+                    </a>
+                    <a href="/inventory/receive/"
+                       class="flex items-center gap-3 rounded-xl px-3 py-2.5 text-slate-600 transition hover:bg-brand-soft hover:text-brand">
+                        <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4v12m0 0l-4-4m4 4l4-4M4 20h16"/></svg>
+                        Receive Stock
+                    </a>
+                </div>
+            </div>
+
+            <div>
+                <p class="mb-2 px-3 text-[11px] font-medium uppercase tracking-wider text-slate-400">Reading</p>
+                <div class="space-y-1">
+                    <a href="{% url 'x_reading' %}"
+                       class="flex items-center gap-3 rounded-xl px-3 py-2.5 text-slate-600 transition hover:bg-brand-soft hover:text-brand">
+                        <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75"><path stroke-linecap="round" stroke-linejoin="round" d="M9 17v-2m3 2v-4m3 4V9m2 12H7a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h7l5 5v11a2 2 0 0 1-2 2Z"/></svg>
+                        X Reading
+                    </a>
+                    <a href="{% url 'z_reading' %}"
+                       class="flex items-center gap-3 rounded-xl px-3 py-2.5 text-slate-600 transition hover:bg-brand-soft hover:text-brand">
+                        <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75"><path stroke-linecap="round" stroke-linejoin="round" d="M9 14h6m-6-4h6m2 11H7a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h7l5 5v16Z"/></svg>
+                        Z Reading
+                    </a>
+                </div>
+            </div>
+
+            <div>
+                <p class="mb-2 px-3 text-[11px] font-medium uppercase tracking-wider text-slate-400">User Management</p>
+                <div class="space-y-1">
+                    <a href="{% url 'account_settings' %}"
+                       class="flex items-center gap-3 rounded-xl px-3 py-2.5 text-slate-600 transition hover:bg-brand-soft hover:text-brand">
+                        <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/>
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+                        </svg>
+                        Account Settings
+                    </a>
+                    <a href="{% url 'manage_accounts' %}" aria-current="page"
+                       class="flex items-center gap-3 rounded-xl bg-brand px-3 py-2.5 font-medium text-white shadow-lg shadow-brand/30">
+                        <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M16 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2m16 0v-2a4 4 0 00-3-3.87M14 3.13a4 4 0 010 7.75M14 7a4 4 0 11-8 0 4 4 0 018 0z"/>
+                        </svg>
+                        Manage Accounts
+                    </a>
+                    <a href="{% url 'receipt_settings' %}"
+                    class="flex items-center gap-3 rounded-xl px-3 py-2.5 font-medium text-slate-600 transition hover:bg-brand-soft hover:text-brand">
+                        <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24"stroke="currentColor" stroke-width="1.75">
+                            <path stroke-linecap="round" stroke-linejoin="round"d="M9 7h6m-6 4h6m-6 4h3M6 3h12a1 1 0 011 1v17l-3-2-2 2-2-2-2 2-2-2-3 2V4a1 1 0 011-1z"/>
+                        </svg>
+                        Receipt Settings
+                </a>
+                </div>
+            </div>
+        </nav>
+
+        <!-- Bottom: POS call-to-action + user -->
+        <div class="space-y-3 p-4">
+            <form id="logout-form" method="post" action="{% url 'logout' %}">
+                {% csrf_token %}
+                <button type="button" id="signout-btn"
+                    class="flex w-full items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-600 transition hover:border-red-600 hover:bg-red-600 hover:text-white focus:outline-none focus:ring-2 focus:ring-red-500">
+                    <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75"><path stroke-linecap="round" stroke-linejoin="round" d="M15 16l4-4m0 0l-4-4m4 4H9m4 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/></svg>
+                    Sign out
+                </button>
+            </form>
+        </div>>
+    </aside>
+
+                <!-- Sign out confirmation modal -->
+            <div id="signout-modal"
+                class="fixed inset-0 z-50 hidden items-center justify-center bg-slate-900/50 p-4"
+                role="dialog" aria-modal="true" aria-labelledby="signout-title">
+                <div class="w-full max-w-sm rounded-3xl bg-white p-6 shadow-xl">
+                    <div class="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-red-100">
+                        <svg class="h-6 w-6 text-red-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75"><path stroke-linecap="round" stroke-linejoin="round" d="M15 16l4-4m0 0l-4-4m4 4H9m4 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/></svg>
+                    </div>
+                    <h3 id="signout-title" class="text-center text-lg font-semibold text-ink">
+                        Are you sure you want to sign out?
+                    </h3>
+                    <div class="mt-6 flex gap-3">
+                        <button type="button" id="signout-cancel"
+                            class="flex-1 rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-medium text-slate-700 transition hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-slate-300">
+                            Cancel
+                        </button>
+                        <button type="button" id="signout-confirm"
+                            class="flex-1 rounded-xl bg-red-600 px-4 py-2.5 text-sm font-medium text-white transition hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2">
+                            Yes
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+    <!-- Main content -->
+    <main class="min-h-screen px-4 pb-8 pt-4 sm:px-8 lg:ml-72 lg:py-8 lg:pr-8">
+        <div class="mx-auto max-w-6xl">
+
+            <!-- Page header -->
+            <div class="mb-7 flex flex-wrap items-center justify-between gap-4">
+                <div>
+                    <h1 class="text-3xl font-semibold tracking-tight text-ink">Manage accounts</h1>
+                    <p class="mt-1 text-sm text-slate-500">Create cashier logins and control who can sign in.</p>
+                </div>
+
+                <div class="flex items-center gap-3">
+                    <button type="button" data-open="addAccountModal"
+                            class="inline-flex items-center gap-2 rounded-full bg-brand px-5 py-3 text-sm font-semibold text-white shadow-lg shadow-brand/30 transition hover:bg-brand-dark focus:outline-none focus:ring-2 focus:ring-brand focus:ring-offset-2">
+                        <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" d="M12 5v14M5 12h14"/></svg>
+                        Add account
+                    </button>
+                    <div class="hidden items-center gap-3 rounded-full bg-white py-1.5 pl-1.5 pr-5 shadow-sm sm:flex">
+                        <span class="flex h-10 w-10 items-center justify-center rounded-full bg-brand text-sm font-semibold uppercase text-white" aria-hidden="true">
+                            {{ request.user.username|slice:":1" }}
+                        </span>
+                        <div class="leading-tight">
+                            <p class="text-sm font-medium text-ink">{{ request.user.username }}</p>
+                            <p class="text-xs text-slate-500">Owner</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Messages -->
+            {% if messages %}
+            <div class="mb-6 space-y-2" role="status">
+                {% for message in messages %}
+                <div class="flex items-start gap-3 rounded-2xl px-4 py-3 text-sm shadow-sm
+                    {% if message.tags == 'error' %}bg-red-50 text-red-700{% else %}bg-emerald-50 text-emerald-800{% endif %}">
+                    {% if message.tags == 'error' %}
+                    <svg class="mt-0.5 h-4 w-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v4m0 4h.01M10.3 3.9L2.4 17.5A2 2 0 004.1 20.5h15.8a2 2 0 001.7-3L13.7 3.9a2 2 0 00-3.4 0z"/></svg>
+                    {% else %}
+                    <svg class="mt-0.5 h-4 w-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
+                    {% endif %}
+                    <span>{{ message }}</span>
+                </div>
+                {% endfor %}
+            </div>
+            {% endif %}
+
+            <!-- Summary -->
+            <section aria-label="Account summary" class="mb-6">
+                <dl class="grid grid-cols-1 gap-5 sm:grid-cols-3">
+
+                    <div class="hero-card rounded-3xl p-5 text-white shadow-xl shadow-brand/25">
+                        <span class="flex h-12 w-12 items-center justify-center rounded-2xl bg-white text-brand">
+                            <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75"><path stroke-linecap="round" stroke-linejoin="round" d="M16 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2m16 0v-2a4 4 0 00-3-3.87M14 3.13a4 4 0 010 7.75M14 7a4 4 0 11-8 0 4 4 0 018 0z"/></svg>
+                        </span>
+                        <dt class="mt-6 text-sm text-indigo-100">Total cashiers</dt>
+                        <dd class="tabular mt-1 text-3xl font-semibold tracking-tight" id="count-total">{{ cashiers|length }}</dd>
+                    </div>
+
+                    <div class="rounded-3xl bg-white p-5 shadow-sm">
+                        <div class="flex items-start justify-between">
+                            <span class="flex h-12 w-12 items-center justify-center rounded-2xl bg-emerald-50 text-emerald-600">
+                                <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                            </span>
+                        </div>
+                        <dt class="mt-6 text-sm text-slate-500">Active accounts</dt>
+                        <dd class="tabular mt-1 text-3xl font-semibold tracking-tight text-emerald-600" id="count-active">{{ active_cashiers_count|default_if_none:"" }}</dd>
+                    </div>
+
+                    <div class="rounded-3xl bg-white p-5 shadow-sm">
+                        <div class="flex items-start justify-between">
+                            <span class="flex h-12 w-12 items-center justify-center rounded-2xl bg-red-50 text-red-600">
+                                <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75"><path stroke-linecap="round" stroke-linejoin="round" d="M18.4 5.6a9 9 0 11-12.8 12.8 9 9 0 0112.8-12.8zM5.6 5.6l12.8 12.8"/></svg>
+                            </span>
+                        </div>
+                        <dt class="mt-6 text-sm text-slate-500">Inactive accounts</dt>
+                        <dd class="tabular mt-1 text-3xl font-semibold tracking-tight text-red-600" id="count-inactive">{{ inactive_cashiers_count|default_if_none:"" }}</dd>
+                    </div>
+                </dl>
+            </section>
+
+            <!-- Accounts table -->
+            <section class="overflow-hidden rounded-3xl bg-white shadow-sm">
+
+                <div class="flex flex-wrap items-center justify-between gap-3 px-6 pb-3 pt-6">
+                    <div>
+                        <h2 class="text-xl font-semibold text-ink">Cashier accounts</h2>
+                        <p class="mt-1 text-sm text-slate-500">Edit details, reset passwords, or turn access on and off.</p>
+                    </div>
+
+                    <div class="relative w-full sm:w-72">
+                        <svg class="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75"><path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-4.3-4.3M17 10.5a6.5 6.5 0 11-13 0 6.5 6.5 0 0113 0z"/></svg>
+                        <input id="searchInput" type="search" placeholder="Search by name, username, or email" aria-label="Search accounts"
+                               class="w-full rounded-full border-0 bg-canvas py-2.5 pl-10 pr-4 text-sm text-ink outline-none placeholder:text-slate-400 focus:ring-2 focus:ring-brand">
+                    </div>
+                </div>
+
+                <div class="overflow-x-auto px-3 pb-4">
+                    <table class="min-w-full text-sm">
+                        <thead class="text-left text-xs font-medium text-slate-400">
+                            <tr>
+                                <th scope="col" class="px-4 py-3">Cashier</th>
+                                <th scope="col" class="px-4 py-3">Email</th>
+                                <th scope="col" class="px-4 py-3">Status</th>
+                                <th scope="col" class="px-4 py-3 text-right"><span class="sr-only">Actions</span></th>
+                            </tr>
+                        </thead>
+
+                        <tbody id="accountTable">
+                            {% for cashier in cashiers %}
+                            <tr class="account-row group transition hover:bg-canvas/60"
+                                data-active="{% if cashier.is_active %}1{% else %}0{% endif %}">
+                                <td class="whitespace-nowrap rounded-l-2xl px-4 py-3.5">
+                                    <div class="flex items-center gap-3">
+                                        <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-brand-soft text-sm font-semibold uppercase text-brand" aria-hidden="true">
+                                            {{ cashier.username|slice:":1" }}
+                                        </span>
+                                        <div class="leading-tight">
+                                            <p class="font-medium text-ink">{{ cashier.get_full_name|default:cashier.username }}</p>
+                                            <p class="mt-0.5 text-xs text-slate-400">@{{ cashier.username }}</p>
+                                        </div>
+                                    </div>
+                                </td>
+
+                                <td class="whitespace-nowrap px-4 py-3.5 text-slate-600">
+                                    {{ cashier.email|default:"No email" }}
+                                </td>
+
+                                <td class="whitespace-nowrap px-4 py-3.5">
+                                    {% if cashier.is_active %}
+                                    <span class="inline-flex items-center gap-1.5 rounded-full bg-emerald-50 px-3 py-1 text-xs font-medium text-emerald-700">
+                                        <span class="h-1.5 w-1.5 rounded-full bg-emerald-500"></span>Active
+                                    </span>
+                                    {% else %}
+                                    <span class="inline-flex items-center gap-1.5 rounded-full bg-red-50 px-3 py-1 text-xs font-medium text-red-600">
+                                        <span class="h-1.5 w-1.5 rounded-full bg-red-500"></span>Inactive
+                                    </span>
+                                    {% endif %}
+                                </td>
+
+                                <td class="whitespace-nowrap rounded-r-2xl px-4 py-3.5">
+                                    <div class="flex justify-end gap-2">
+                                        <button type="button" data-action="edit"
+                                                data-id="{{ cashier.id }}"
+                                                data-username="{{ cashier.username }}"
+                                                data-first="{{ cashier.first_name }}"
+                                                data-last="{{ cashier.last_name }}"
+                                                data-email="{{ cashier.email }}"
+                                                class="rounded-full bg-slate-100 px-4 py-1.5 text-xs font-medium text-slate-700 transition hover:bg-slate-200 focus:outline-none focus:ring-2 focus:ring-brand">
+                                            Edit
+                                        </button>
+                                        <button type="button" data-action="password"
+                                                data-id="{{ cashier.id }}"
+                                                data-username="{{ cashier.username }}"
+                                                class="rounded-full bg-brand-soft px-4 py-1.5 text-xs font-medium text-brand transition hover:bg-brand hover:text-white focus:outline-none focus:ring-2 focus:ring-brand">
+                                            Reset password
+                                        </button>
+                                        <button type="button" data-action="status"
+                                                data-id="{{ cashier.id }}"
+                                                data-username="{{ cashier.username }}"
+                                                data-active="{% if cashier.is_active %}1{% else %}0{% endif %}"
+                                                class="rounded-full px-4 py-1.5 text-xs font-medium transition focus:outline-none focus:ring-2
+                                                {% if cashier.is_active %}bg-red-50 text-red-600 hover:bg-red-600 hover:text-white focus:ring-red-500{% else %}bg-emerald-50 text-emerald-700 hover:bg-emerald-600 hover:text-white focus:ring-emerald-500{% endif %}">
+                                            {% if cashier.is_active %}Deactivate{% else %}Activate{% endif %}
+                                        </button>
+                                    </div>
+                                </td>
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="4" class="px-5 py-14 text-center">
+                                    <span class="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-2xl bg-brand-soft text-brand">
+                                        <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75"><path stroke-linecap="round" stroke-linejoin="round" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z"/></svg>
+                                    </span>
+                                    <p class="font-medium text-slate-700">No cashier accounts yet</p>
+                                    <p class="mt-1 text-sm text-slate-500">Add an account so your cashiers can sign in to the POS.</p>
+                                </td>
+                            </tr>
+                            {% endfor %}
+
+                            <!-- Shown by search when nothing matches -->
+                            <tr id="noResults" class="hidden">
+                                <td colspan="4" class="px-5 py-12 text-center">
+                                    <p class="font-medium text-slate-700">No matching accounts</p>
+                                    <p class="mt-1 text-sm text-slate-500">Try a different name, username, or email.</p>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+
+        </div>
+    </main>
+
+    <!-- Add account modal -->
+    <div id="addAccountModal" class="modal fixed inset-0 z-50 hidden items-center justify-center overflow-y-auto bg-slate-900/50 p-4"
+         role="dialog" aria-modal="true" aria-labelledby="add-title">
+        <div class="my-auto w-full max-w-lg rounded-3xl bg-white p-6 shadow-xl">
+            <div class="mb-5 flex items-start justify-between gap-4">
+                <div>
+                    <h2 id="add-title" class="text-lg font-semibold text-ink">Add cashier account</h2>
+                    <p class="mt-1 text-sm text-slate-500">They can change this password after signing in.</p>
+                </div>
+                <button type="button" data-close aria-label="Close"
+                        class="rounded-full p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-600">
+                    <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75"><path stroke-linecap="round" d="M6 6l12 12M18 6L6 18"/></svg>
+                </button>
+            </div>
+
+            <form method="post" class="space-y-4">
+                {% csrf_token %}
+                <input type="hidden" name="action" value="create">
+
+                <div>
+                    <label for="add_username" class="mb-1.5 block text-sm font-medium text-slate-700">Username</label>
+                    <input id="add_username" name="username" required maxlength="150" autocomplete="off" class="field">
+                </div>
+
+                <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                    <div>
+                        <label for="add_first_name" class="mb-1.5 block text-sm font-medium text-slate-700">First name</label>
+                        <input id="add_first_name" name="first_name" class="field">
+                    </div>
+                    <div>
+                        <label for="add_last_name" class="mb-1.5 block text-sm font-medium text-slate-700">Last name</label>
+                        <input id="add_last_name" name="last_name" class="field">
+                    </div>
+                </div>
+
+                <div>
+                    <label for="add_email" class="mb-1.5 block text-sm font-medium text-slate-700">Email</label>
+                    <input id="add_email" type="email" name="email" class="field">
+                </div>
+
+                <div>
+                    <label for="add_password" class="mb-1.5 block text-sm font-medium text-slate-700">Temporary password</label>
+                    <input id="add_password" type="password" name="password" required autocomplete="new-password" class="field">
+                </div>
+
+                <div class="flex gap-3 pt-2">
+                    <button type="button" data-close
+                            class="flex-1 rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-medium text-slate-700 transition hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-slate-300">
+                        Cancel
+                    </button>
+                    <button type="submit"
+                            class="flex-1 rounded-xl bg-brand px-4 py-2.5 text-sm font-medium text-white shadow-lg shadow-brand/30 transition hover:bg-brand-dark focus:outline-none focus:ring-2 focus:ring-brand focus:ring-offset-2">
+                        Create account
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Edit account modal -->
+    <div id="editAccountModal" class="modal fixed inset-0 z-50 hidden items-center justify-center overflow-y-auto bg-slate-900/50 p-4"
+         role="dialog" aria-modal="true" aria-labelledby="edit-title">
+        <div class="my-auto w-full max-w-lg rounded-3xl bg-white p-6 shadow-xl">
+            <div class="mb-5 flex items-start justify-between gap-4">
+                <h2 id="edit-title" class="text-lg font-semibold text-ink">Edit cashier</h2>
+                <button type="button" data-close aria-label="Close"
+                        class="rounded-full p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-600">
+                    <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75"><path stroke-linecap="round" d="M6 6l12 12M18 6L6 18"/></svg>
+                </button>
+            </div>
+
+            <form method="post" class="space-y-4">
+                {% csrf_token %}
+                <input type="hidden" name="action" value="edit">
+                <input type="hidden" id="edit_user_id" name="user_id">
+
+                <div>
+                    <label for="edit_username" class="mb-1.5 block text-sm font-medium text-slate-700">Username</label>
+                    <input id="edit_username" name="username" required maxlength="150" class="field">
+                </div>
+
+                <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                    <div>
+                        <label for="edit_first_name" class="mb-1.5 block text-sm font-medium text-slate-700">First name</label>
+                        <input id="edit_first_name" name="first_name" class="field">
+                    </div>
+                    <div>
+                        <label for="edit_last_name" class="mb-1.5 block text-sm font-medium text-slate-700">Last name</label>
+                        <input id="edit_last_name" name="last_name" class="field">
+                    </div>
+                </div>
+
+                <div>
+                    <label for="edit_email" class="mb-1.5 block text-sm font-medium text-slate-700">Email</label>
+                    <input id="edit_email" type="email" name="email" class="field">
+                </div>
+
+                <div class="flex gap-3 pt-2">
+                    <button type="button" data-close
+                            class="flex-1 rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-medium text-slate-700 transition hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-slate-300">
+                        Cancel
+                    </button>
+                    <button type="submit"
+                            class="flex-1 rounded-xl bg-brand px-4 py-2.5 text-sm font-medium text-white shadow-lg shadow-brand/30 transition hover:bg-brand-dark focus:outline-none focus:ring-2 focus:ring-brand focus:ring-offset-2">
+                        Save changes
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Reset password modal -->
+    <div id="passwordModal" class="modal fixed inset-0 z-50 hidden items-center justify-center overflow-y-auto bg-slate-900/50 p-4"
+         role="dialog" aria-modal="true" aria-labelledby="password-title">
+        <div class="my-auto w-full max-w-md rounded-3xl bg-white p-6 shadow-xl">
+            <div class="mb-5 flex items-start justify-between gap-4">
+                <div>
+                    <h2 id="password-title" class="text-lg font-semibold text-ink">Reset password</h2>
+                    <p class="mt-1 text-sm text-slate-500">Set a new password for <strong id="password_username" class="font-medium text-ink"></strong>.</p>
+                </div>
+                <button type="button" data-close aria-label="Close"
+                        class="rounded-full p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-600">
+                    <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75"><path stroke-linecap="round" d="M6 6l12 12M18 6L6 18"/></svg>
+                </button>
+            </div>
+
+            <form method="post" class="space-y-4">
+                {% csrf_token %}
+                <input type="hidden" name="action" value="reset_password">
+                <input type="hidden" id="password_user_id" name="user_id">
+
+                <div>
+                    <label for="new_password" class="mb-1.5 block text-sm font-medium text-slate-700">New password</label>
+                    <input id="new_password" type="password" name="new_password" required autocomplete="new-password" class="field">
+                </div>
+
+                <div class="flex gap-3 pt-2">
+                    <button type="button" data-close
+                            class="flex-1 rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-medium text-slate-700 transition hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-slate-300">
+                        Cancel
+                    </button>
+                    <button type="submit"
+                            class="flex-1 rounded-xl bg-brand px-4 py-2.5 text-sm font-medium text-white shadow-lg shadow-brand/30 transition hover:bg-brand-dark focus:outline-none focus:ring-2 focus:ring-brand focus:ring-offset-2">
+                        Update password
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Activate / deactivate confirmation modal -->
+    <div id="statusModal" class="modal fixed inset-0 z-50 hidden items-center justify-center bg-slate-900/50 p-4"
+         role="dialog" aria-modal="true" aria-labelledby="status-title">
+        <form method="post" class="w-full max-w-sm rounded-3xl bg-white p-6 shadow-xl">
+            {% csrf_token %}
+            <input type="hidden" name="action" value="toggle_status">
+            <input type="hidden" id="status_user_id" name="user_id">
+
+            <div id="status-icon" class="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full"></div>
+            <h3 id="status-title" class="text-center text-lg font-semibold text-ink"></h3>
+            <p id="status-text" class="mt-2 text-center text-sm text-slate-500"></p>
+
+            <div class="mt-6 flex gap-3">
+                <button type="button" data-close
+                        class="flex-1 rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-medium text-slate-700 transition hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-slate-300">
+                    Cancel
+                </button>
+                <button type="submit" id="status-confirm"
+                        class="flex-1 rounded-xl px-4 py-2.5 text-sm font-medium text-white transition focus:outline-none focus:ring-2 focus:ring-offset-2">
+                </button>
+            </div>
+        </form>
+    </div>
+
+    <!-- Sign out modal -->
+    <div id="signout-modal"
+         class="modal fixed inset-0 z-50 hidden items-center justify-center bg-slate-900/50 p-4"
+         role="dialog" aria-modal="true" aria-labelledby="signout-title">
+        <div class="w-full max-w-sm rounded-3xl bg-white p-6 shadow-xl">
+            <div class="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-red-100">
+                <svg class="h-6 w-6 text-red-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75"><path stroke-linecap="round" stroke-linejoin="round" d="M15 16l4-4m0 0l-4-4m4 4H9m4 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/></svg>
+            </div>
+            <h3 id="signout-title" class="text-center text-lg font-semibold text-ink">Are you sure you want to sign out?</h3>
+            <div class="mt-6 flex gap-3">
+                <button type="button" data-close
+                        class="flex-1 rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-medium text-slate-700 transition hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-slate-300">
+                    Cancel
+                </button>
+                <button type="button" id="signout-confirm"
+                        class="flex-1 rounded-xl bg-red-600 px-4 py-2.5 text-sm font-medium text-white transition hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2">
+                    Yes
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        (function () {
+            // ----- Mobile sidebar -----
+            var sidebar = document.getElementById('sidebar');
+            var backdrop = document.getElementById('backdrop');
+            function openNav() { sidebar.classList.remove('-translate-x-full'); backdrop.classList.remove('hidden'); }
+            function closeNav() { sidebar.classList.add('-translate-x-full'); backdrop.classList.add('hidden'); }
+            document.getElementById('menu-open').addEventListener('click', openNav);
+            document.getElementById('menu-close').addEventListener('click', closeNav);
+            backdrop.addEventListener('click', closeNav);
+
+            // ----- Modals -----
+            var lastTrigger = null;
+            function openModal(id, trigger) {
+                var m = document.getElementById(id);
+                lastTrigger = trigger || null;
+                m.classList.remove('hidden');
+                m.classList.add('flex');
+                var first = m.querySelector('input:not([type=hidden]), button[data-close]');
+                if (first) first.focus();
+            }
+            function closeModals() {
+                document.querySelectorAll('.modal').forEach(function (m) {
+                    m.classList.add('hidden');
+                    m.classList.remove('flex');
+                });
+                if (lastTrigger) { lastTrigger.focus(); lastTrigger = null; }
+            }
+
+            document.querySelectorAll('[data-open]').forEach(function (btn) {
+                btn.addEventListener('click', function () { openModal(btn.dataset.open, btn); });
+            });
+            document.querySelectorAll('[data-close]').forEach(function (btn) {
+                btn.addEventListener('click', closeModals);
+            });
+            document.querySelectorAll('.modal').forEach(function (m) {
+                m.addEventListener('mousedown', function (e) { if (e.target === m) closeModals(); });
+            });
+            document.addEventListener('keydown', function (e) {
+                if (e.key === 'Escape') { closeNav(); closeModals(); }
+            });
+
+            // ----- Sign out -----
+            document.getElementById('signout-btn').addEventListener('click', function () {
+                openModal('signout-modal', this);
+            });
+            document.getElementById('signout-confirm').addEventListener('click', function () {
+                document.getElementById('logout-form').submit();
+            });
+
+            // ----- Row actions (values come from data-* attributes, so no inline JS escaping) -----
+            var statusIcons = {
+                deactivate: {
+                    wrap: 'bg-red-100 text-red-600',
+                    svg: '<svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75"><path stroke-linecap="round" stroke-linejoin="round" d="M18.4 5.6a9 9 0 11-12.8 12.8 9 9 0 0112.8-12.8zM5.6 5.6l12.8 12.8"/></svg>',
+                    btn: 'bg-red-600 hover:bg-red-700 focus:ring-red-500'
+                },
+                activate: {
+                    wrap: 'bg-emerald-100 text-emerald-600',
+                    svg: '<svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>',
+                    btn: 'bg-emerald-600 hover:bg-emerald-700 focus:ring-emerald-500'
+                }
+            };
+
+            document.getElementById('accountTable').addEventListener('click', function (e) {
+                var btn = e.target.closest('button[data-action]');
+                if (!btn) return;
+                var d = btn.dataset;
+
+                if (d.action === 'edit') {
+                    document.getElementById('edit_user_id').value = d.id;
+                    document.getElementById('edit_username').value = d.username;
+                    document.getElementById('edit_first_name').value = d.first;
+                    document.getElementById('edit_last_name').value = d.last;
+                    document.getElementById('edit_email').value = d.email;
+                    openModal('editAccountModal', btn);
+                } else if (d.action === 'password') {
+                    document.getElementById('password_user_id').value = d.id;
+                    document.getElementById('password_username').textContent = d.username;
+                    document.getElementById('new_password').value = '';
+                    openModal('passwordModal', btn);
+                } else if (d.action === 'status') {
+                    var turningOff = d.active === '1';
+                    var s = statusIcons[turningOff ? 'deactivate' : 'activate'];
+                    document.getElementById('status_user_id').value = d.id;
+                    document.getElementById('status-icon').className = 'mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full ' + s.wrap;
+                    document.getElementById('status-icon').innerHTML = s.svg;
+                    document.getElementById('status-title').textContent = turningOff ? 'Deactivate this account?' : 'Activate this account?';
+                    document.getElementById('status-text').textContent = turningOff
+                        ? d.username + ' will no longer be able to sign in.'
+                        : d.username + ' will be able to sign in again.';
+                    var confirmBtn = document.getElementById('status-confirm');
+                    confirmBtn.className = 'flex-1 rounded-xl px-4 py-2.5 text-sm font-medium text-white transition focus:outline-none focus:ring-2 focus:ring-offset-2 ' + s.btn;
+                    confirmBtn.textContent = turningOff ? 'Deactivate' : 'Activate';
+                    openModal('statusModal', btn);
+                }
+            });
+
+            // ----- Search -----
+            var rows = document.querySelectorAll('.account-row');
+            var noResults = document.getElementById('noResults');
+            document.getElementById('searchInput').addEventListener('input', function () {
+                var q = this.value.trim().toLowerCase();
+                var shown = 0;
+                rows.forEach(function (row) {
+                    var match = row.innerText.toLowerCase().indexOf(q) !== -1;
+                    row.style.display = match ? '' : 'none';
+                    if (match) shown++;
+                });
+                noResults.classList.toggle('hidden', shown > 0 || rows.length === 0);
+            });
+
+            // ----- Counts: use the view's values if provided, otherwise count the rows -----
+            var active = 0;
+            rows.forEach(function (r) { if (r.dataset.active === '1') active++; });
+            var a = document.getElementById('count-active');
+            var i = document.getElementById('count-inactive');
+            if (!a.textContent.trim()) a.textContent = active;
+            if (!i.textContent.trim()) i.textContent = rows.length - active;
+        })();
+
+
+                // Sign out MODAL
+        (function () {
+            const modal = document.getElementById('signout-modal');
+            const openBtn = document.getElementById('signout-btn');
+            const cancelBtn = document.getElementById('signout-cancel');
+            const confirmBtn = document.getElementById('signout-confirm');
+            const form = document.getElementById('logout-form');
+
+            function openModal() {
+                modal.classList.remove('hidden');
+                modal.classList.add('flex');
+                cancelBtn.focus();
+            }
+            function closeModal() {
+                modal.classList.add('hidden');
+                modal.classList.remove('flex');
+                openBtn.focus();
+            }
+
+            openBtn.addEventListener('click', openModal);
+            cancelBtn.addEventListener('click', closeModal);
+            confirmBtn.addEventListener('click', () => form.submit());
+
+            // Click the dark backdrop to close
+            modal.addEventListener('click', (e) => { if (e.target === modal) closeModal(); });
+
+            // Press Esc to close
+            document.addEventListener('keydown', (e) => {
+                if (e.key === 'Escape' && !modal.classList.contains('hidden')) closeModal();
+            });
+        })();
+    </script>
+</body>
+</html>
