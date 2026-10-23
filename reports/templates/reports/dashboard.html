@@ -8,11 +8,7 @@
     {% load static %}
     <link rel="icon" type="image/png" href="{% static 'images/weblogo.png' %}">
 
-    <script src="https://cdn.tailwindcss.com"></script>
-
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{% static 'css/tailwind.css' %}">
 
     <script>
         tailwind.config = {
@@ -35,20 +31,55 @@
         }
     </script>
 
-    <style>
-        .tabular {
-            font-variant-numeric: tabular-nums;
-        }
+<style>
+    @font-face {
+        font-family: 'Poppins';
+        src: url("{% static 'fonts/Poppins-Regular.ttf' %}") format('truetype');
+        font-weight: 400;
+        font-style: normal;
+        font-display: swap;
+    }
 
-        .hero-card {
+    @font-face {
+        font-family: 'Poppins';
+        src: url("{% static 'fonts/Poppins-Medium.ttf' %}") format('truetype');
+        font-weight: 500;
+        font-style: normal;
+        font-display: swap;
+    }
+
+    @font-face {
+        font-family: 'Poppins';
+        src: url("{% static 'fonts/Poppins-SemiBold.ttf' %}") format('truetype');
+        font-weight: 600;
+        font-style: normal;
+        font-display: swap;
+    }
+
+    @font-face {
+        font-family: 'Poppins';
+        src: url("{% static 'fonts/Poppins-Bold.ttf' %}") format('truetype');
+        font-weight: 700;
+        font-style: normal;
+        font-display: swap;
+    }
+
+    body {
+        font-family: 'Poppins', sans-serif;
+    }
+    .tabular {
+            font-variant-numeric: tabular-nums;
+    }
+
+    .hero-card {
             background: linear-gradient(
                 135deg,
                 #4F55F0 0%,
                 #3A40DC 55%,
                 #3035C9 100%
             );
-        }
-    </style>
+    }
+</style>
 </head>
 
 <body class="bg-canvas font-sans text-slate-800 antialiased">

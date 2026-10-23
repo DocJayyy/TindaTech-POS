@@ -1,0 +1,27 @@
+{
+  "name": "tindatech-pos",
+  "version": "1.0.0",
+  "description": "TindaTech POS is a Django-based grocery POS and inventory management system featuring sales transactions, stock monitoring, cashier and owner accounts, discount management, receipt settings, and sales analytics to help streamline grocery store operations.",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/DocJayyy/TindaTech-POS.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/DocJayyy/TindaTech-POS/issues"
+  },
+  "homepage": "https://github.com/DocJayyy/TindaTech-POS#readme",
+  "devDependencies": {
+    "tailwindcss": "^3.4.19"
+  },
+  "dependencies": {
+    "chart.js": "^4.6.1"
+  }
+}
