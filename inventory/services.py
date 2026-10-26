@@ -53,3 +53,55 @@ def receive_stock(
     )
 
     return batch
+
+
+@transaction.atomic
+def record_damaged_stock(
+    *,
+    batch_id,
+    quantity,
+    reason,
+    user=None,
+):
+    quantity = Decimal(str(quantity))
+    reason = (reason or "").strip()
+
+    if quantity <= 0:
+        raise ValidationError(
+            "Damaged quantity must be greater than zero."
+        )
+
+    if not reason:
+        raise ValidationError(
+            "Please provide a reason for the damaged stock."
+        )
+
+    try:
+        batch = (
+            StockBatch.objects
+            .select_for_update()
+            .select_related("product")
+            .get(pk=batch_id)
+        )
+    except StockBatch.DoesNotExist:
+        raise ValidationError("Stock batch was not found.")
+
+    if quantity > batch.quantity_remaining:
+        raise ValidationError(
+            "Damaged quantity cannot exceed the remaining batch stock."
+        )
+
+    batch.quantity_remaining -= quantity
+    batch.save(update_fields=["quantity_remaining"])
+
+    movement = StockMovement.objects.create(
+        product=batch.product,
+        batch=batch,
+        movement_type=StockMovement.MovementType.DAMAGED,
+        quantity=quantity,
+        reference=f"DAMAGE-{batch.pk}",
+        notes=reason,
+        created_by=user,
+    )
+
+    return movement

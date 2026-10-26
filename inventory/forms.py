@@ -1,6 +1,7 @@
 
 from django import forms
 from .models import StockBatch, StockMovement
+from decimal import Decimal
 
 
 class ReceiveStockForm(forms.Form):
@@ -64,3 +65,40 @@ class ReceiveStockForm(forms.Form):
             )
 
         return cleaned_data
+
+
+from django import forms
+from inventory.models import StockBatch
+
+
+class DamagedStockForm(forms.Form):
+    batch = forms.ModelChoiceField(
+        queryset=StockBatch.objects.none(),
+        label="Product Batch",
+    )
+
+    quantity = forms.DecimalField(
+        max_digits=12,
+        decimal_places=3,
+        min_value=Decimal("0.001"),
+        label="Damaged Quantity",
+    )
+
+    reason = forms.CharField(
+        max_length=500,
+        label="Reason",
+        widget=forms.Textarea(attrs={
+            "rows": 3,
+            "placeholder": "Describe why the stock is damaged...",
+        }),
+    )
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+        self.fields["batch"].queryset = (
+            StockBatch.objects
+            .filter(quantity_remaining__gt=0)
+            .select_related("product")
+            .order_by("product__name", "expiration_date")
+        )

@@ -6,14 +6,11 @@ from django.contrib.auth.decorators import login_required, user_passes_test
 from django.core.exceptions import ValidationError
 from django.db.models import Sum
 from django.shortcuts import render, redirect
-
 from products.models import Product
-from .forms import ReceiveStockForm
-from .services import receive_stock
-
+from .forms import ReceiveStockForm, DamagedStockForm
+from .services import receive_stock, record_damaged_stock
 from django.views.decorators.http import require_http_methods
 from accounts.permissions import owner_required
-
 from datetime import timedelta
 from django.db.models import Q
 from django.utils import timezone
@@ -162,4 +159,38 @@ def expiration_monitoring_view(request):
         request,
         "inventory/expiration_monitoring.html",
         context,
+    )
+
+
+@login_required
+@owner_required
+@require_http_methods(["GET", "POST"])
+def damaged_stock_view(request):
+    if request.method == "POST":
+        form = DamagedStockForm(request.POST)
+
+        if form.is_valid():
+            try:
+                movement = record_damaged_stock(
+                    batch_id=form.cleaned_data["batch"].pk,
+                    quantity=form.cleaned_data["quantity"],
+                    reason=form.cleaned_data["reason"],
+                    user=request.user,
+                )
+            except ValidationError as error:
+                form.add_error(None, error)
+            else:
+                messages.success(
+                    request,
+                    f"Damaged stock recorded for "
+                    f"{movement.product.name}.",
+                )
+                return redirect("damaged_stock")
+    else:
+        form = DamagedStockForm()
+
+    return render(
+        request,
+        "inventory/damaged_stock.html",
+        {"form": form},
     )
