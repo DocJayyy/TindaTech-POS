@@ -331,9 +331,11 @@
                     <h1 class="text-3xl font-semibold tracking-tight text-ink">
                         Dashboard
                     </h1>
-                    <p class="mt-1 text-sm text-slate-500">
-                        {% now "l, F jS Y" %}
-                    </p>
+                    <div class="mt-1 flex flex-wrap items-center gap-2 text-sm text-slate-500">
+                        <p id="live-date">{% now "l, F jS Y" %}</p>
+                        <span id="live-time"
+                              class="tabular rounded-full bg-brand-soft px-3 py-0.5 text-xs font-semibold text-brand"></span>
+                    </div>
                 </div>
 
                 <div class="flex items-center gap-3">
@@ -664,6 +666,36 @@
                     closeModal();
                 }
             });
+        })();
+
+        // Live date and time
+        (function () {
+            const dateEl = document.getElementById('live-date');
+            const timeEl = document.getElementById('live-time');
+
+            if (!dateEl || !timeEl) {
+                return;
+            }
+
+            function tick() {
+                const now = new Date();
+
+                dateEl.textContent = now.toLocaleDateString('en-US', {
+                    weekday: 'long',
+                    year: 'numeric',
+                    month: 'long',
+                    day: 'numeric'
+                });
+
+                timeEl.textContent = now.toLocaleTimeString('en-US', {
+                    hour: 'numeric',
+                    minute: '2-digit',
+                    second: '2-digit'
+                });
+            }
+
+            tick();
+            setInterval(tick, 1000);
         })();
     </script>
 

@@ -64,6 +64,10 @@
             background: linear-gradient(135deg, #4F55F0 0%, #3A40DC 55%, #3035C9 100%);
         }
 
+        /* Live clock: plain CSS so it does not depend on the prebuilt tailwind.css */
+        .live-clock { display: block; }
+        @media (max-width: 480px) { .live-clock { display: none; } }
+
         /* Message modal (plain CSS so it works with the prebuilt tailwind.css) */
         .msg-modal { position: fixed; inset: 0; z-index: 60; display: flex; align-items: center; justify-content: center; padding: 1rem; background: rgba(15, 23, 42, .5); }
         .msg-card { width: 100%; max-width: 26rem; background: #fff; border-radius: 1.5rem; padding: 1.5rem; text-align: center; box-shadow: 0 20px 25px -5px rgba(0,0,0,.1), 0 8px 10px -6px rgba(0,0,0,.1); }
@@ -103,6 +107,12 @@
             </div>
 
             <nav class="flex items-center gap-2 text-sm">
+                <!-- Live date and time -->
+                <div class="live-clock mr-2 border-r border-slate-200 pr-4 text-right leading-tight" aria-live="off">
+                    <p id="live-time" class="tabular text-base font-semibold text-ink"></p>
+                    <p id="live-date" class="text-xs text-slate-500">{% now "D, M j, Y" %}</p>
+                </div>
+
                 <a href="/dashboard/"
                    class="rounded-full bg-brand-soft px-4 py-2 font-medium text-brand transition hover:bg-brand hover:text-white focus:outline-none focus:ring-2 focus:ring-brand">Dashboard</a>
                 <a href="{% url 'sales_history' %}"
@@ -395,6 +405,34 @@ const chargeInputs = [
 const productButtons = Array.from(
     document.querySelectorAll(".product")
 );
+
+// ---------- Live date and time ----------
+(function () {
+    const dateEl = document.getElementById("live-date");
+    const timeEl = document.getElementById("live-time");
+
+    if (!dateEl || !timeEl) return;
+
+    function tick() {
+        const now = new Date();
+
+        dateEl.textContent = now.toLocaleDateString("en-US", {
+            weekday: "short",
+            year: "numeric",
+            month: "short",
+            day: "numeric"
+        });
+
+        timeEl.textContent = now.toLocaleTimeString("en-US", {
+            hour: "numeric",
+            minute: "2-digit",
+            second: "2-digit"
+        });
+    }
+
+    tick();
+    setInterval(tick, 1000);
+})();
 
 // ---------- Message modal ----------
 const messageModal = document.getElementById("message-modal");
