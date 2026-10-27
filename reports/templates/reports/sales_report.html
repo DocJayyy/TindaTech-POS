@@ -400,6 +400,35 @@
                 </dl>
             </section>
 
+            <!-- Payments by method -->
+            <section aria-label="Payments by method" class="mb-6">
+                <div class="mb-3 flex items-baseline justify-between gap-3">
+                    <h2 class="text-lg font-semibold text-ink">Payments by method</h2>
+                    <p class="text-xs text-slate-400">Completed sales, before returns and refunds</p>
+                </div>
+
+                {% if payment_breakdown %}
+                <dl class="grid grid-cols-1 gap-5 sm:grid-cols-2 xl:grid-cols-3">
+                    {% for item in payment_breakdown %}
+                    <div class="rounded-3xl bg-white p-5 shadow-sm">
+                        <div class="flex items-start justify-between">
+                            <span class="flex h-12 w-12 items-center justify-center rounded-2xl bg-brand-soft text-brand">
+                                <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75"><path stroke-linecap="round" stroke-linejoin="round" d="M3 10h18M5 6h14a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2zm3 9h3"/></svg>
+                            </span>
+                            <span class="tabular rounded-full bg-brand-soft px-2.5 py-0.5 text-xs font-medium text-brand">{{ item.count }} sale{{ item.count|pluralize }}</span>
+                        </div>
+                        <dt class="mt-6 text-sm text-slate-500">{{ item.label }}</dt>
+                        <dd class="tabular mt-1 text-3xl font-semibold tracking-tight text-ink">₱{{ item.total|floatformat:2 }}</dd>
+                    </div>
+                    {% endfor %}
+                </dl>
+                {% else %}
+                <div class="rounded-3xl bg-white p-6 text-center text-sm text-slate-500 shadow-sm">
+                    No payments recorded in this period.
+                </div>
+                {% endif %}
+            </section>
+
             <!-- Profit note -->
             <aside class="flex gap-4 rounded-3xl bg-white p-6 text-sm shadow-sm">
                 <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-brand-soft text-brand">

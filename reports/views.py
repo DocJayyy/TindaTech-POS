@@ -1,6 +1,6 @@
 from decimal import Decimal
 from django.contrib.auth.decorators import login_required
-from django.db.models import Sum,F,Count,DecimalField,ExpressionWrapper
+from django.db.models import Sum, F, Count, DecimalField, ExpressionWrapper
 from django.db.models.functions import Coalesce
 from django.shortcuts import render, redirect
 from django.utils import timezone
@@ -21,6 +21,7 @@ from django.contrib.auth import get_user_model
 from django.contrib.auth.models import Group
 from django.views.decorators.http import require_POST
 from sales.models import ReceiptSettings
+
 
 
 
@@ -148,6 +149,7 @@ def dashboard_view(request):
         context,
     )
 
+
 @login_required
 @owner_required
 def sales_report_view(request):
@@ -219,6 +221,36 @@ def sales_report_view(request):
         ),
         transaction_count=Count("id"),
     )
+
+    # Payment method summary.
+    payment_summary = (
+        completed_sales
+        .values("payment_method")
+        .annotate(
+            total=Coalesce(
+                Sum("total_amount"),
+                Decimal("0.00"),
+            ),
+            count=Count("id"),
+        )
+        .order_by("payment_method")
+    )
+
+    # Get readable payment method labels from the Sale model.
+    payment_labels = dict(Sale.PaymentMethod.choices)
+
+    payment_breakdown = [
+        {
+            "value": item["payment_method"],
+            "label": payment_labels.get(
+                item["payment_method"],
+                item["payment_method"].replace("_", " ").title(),
+            ),
+            "total": item["total"],
+            "count": item["count"],
+        }
+        for item in payment_summary
+    ]
 
     # Completed return/refund adjustments linked to these sales.
     completed_adjustments = SaleAdjustment.objects.filter(
@@ -308,6 +340,7 @@ def sales_report_view(request):
         "total_cost": total_cost,
         "gross_profit": gross_profit,
         "transaction_count": sales_summary["transaction_count"],
+        "payment_breakdown": payment_breakdown,
     }
 
     return render(
