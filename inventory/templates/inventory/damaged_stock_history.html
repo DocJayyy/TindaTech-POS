@@ -1,0 +1,287 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Damaged Stock History | TindaTech POS</title>
+
+    {% load static %}
+    <link rel="icon" type="image/png" href="{% static 'images/weblogo.png' %}">
+    <link rel="stylesheet" href="{% static 'css/tailwind.css' %}">
+
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: { sans: ['Poppins', 'ui-sans-serif', 'system-ui', 'sans-serif'] },
+                    colors: {
+                        brand: { DEFAULT: '#4349E8', dark: '#3338D0', soft: '#EEEFFD' },
+                        canvas: '#EEF0FA',
+                        ink: '#16161D'
+                    }
+                }
+            }
+        }
+    </script>
+
+    <style>
+        @font-face {
+            font-family: 'Poppins';
+            src: url("{% static 'fonts/Poppins-Regular.ttf' %}") format('truetype');
+            font-weight: 400; font-style: normal; font-display: swap;
+        }
+        @font-face {
+            font-family: 'Poppins';
+            src: url("{% static 'fonts/Poppins-Medium.ttf' %}") format('truetype');
+            font-weight: 500; font-style: normal; font-display: swap;
+        }
+        @font-face {
+            font-family: 'Poppins';
+            src: url("{% static 'fonts/Poppins-SemiBold.ttf' %}") format('truetype');
+            font-weight: 600; font-style: normal; font-display: swap;
+        }
+        @font-face {
+            font-family: 'Poppins';
+            src: url("{% static 'fonts/Poppins-Bold.ttf' %}") format('truetype');
+            font-weight: 700; font-style: normal; font-display: swap;
+        }
+
+        body { font-family: 'Poppins', sans-serif; }
+        .tabular { font-variant-numeric: tabular-nums; }
+
+        .hero-card {
+            background: linear-gradient(135deg, #4F55F0 0%, #3A40DC 55%, #3035C9 100%);
+        }
+
+        .table-scroll::-webkit-scrollbar { height: 6px; }
+        .table-scroll::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
+    </style>
+</head>
+
+<body class="min-h-screen bg-canvas font-sans text-slate-800 antialiased">
+
+
+    <main class="mx-auto max-w-7xl px-3 pb-8 pt-5 sm:px-4">
+
+        <!-- Page header -->
+        <div class="mb-6 flex flex-col gap-4 px-1 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+                <nav aria-label="Breadcrumb" class="mb-2 flex items-center gap-2 text-sm text-slate-500">
+                    <a href="{% url 'stock_list' %}" class="transition hover:text-brand">Inventory</a>
+                    <svg class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="m9 5 7 7-7 7"/>
+                    </svg>
+                    <span class="font-medium text-slate-700">Damaged Stock History</span>
+                </nav>
+
+                <h1 class="text-3xl font-semibold tracking-tight text-ink">Damaged Stock History</h1>
+                <p class="mt-1 text-sm text-slate-500">Review all recorded damaged inventory and its details.</p>
+            </div>
+
+            <a href="{% url 'damaged_stock' %}"
+               class="inline-flex items-center justify-center gap-2 rounded-full bg-brand px-5 py-3 text-sm font-semibold text-white shadow-lg shadow-brand/30 transition hover:bg-brand-dark focus:outline-none focus:ring-2 focus:ring-brand focus:ring-offset-2">
+                <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                    <path stroke-linecap="round" d="M12 4v16m8-8H4"/>
+                </svg>
+                Record Damaged Stock
+            </a>
+        </div>
+
+        <!-- Summary -->
+        <section aria-label="Summary" class="mb-6">
+            <dl class="grid grid-cols-1 gap-5 sm:grid-cols-2">
+
+                <div class="hero-card rounded-3xl p-5 text-white shadow-xl shadow-brand/25">
+                    <div class="flex items-start justify-between">
+                        <span class="flex h-12 w-12 items-center justify-center rounded-2xl bg-white text-brand">
+                            <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v4m0 4h.01M10.3 3.9L1.8 18a2 2 0 001.7 3h17a2 2 0 001.7-3L13.7 3.9a2 2 0 00-3.4 0z"/>
+                            </svg>
+                        </span>
+                        <span class="rounded-full bg-white/20 px-2.5 py-0.5 text-xs font-medium text-white">All time</span>
+                    </div>
+                    <dt class="mt-6 text-sm text-indigo-100">Total records</dt>
+                    <dd class="tabular mt-1 text-3xl font-semibold tracking-tight">{{ damaged_records|length }}</dd>
+                </div>
+
+                <div class="rounded-3xl bg-white p-5 shadow-sm">
+                    <div class="flex items-start justify-between">
+                        <span class="flex h-12 w-12 items-center justify-center rounded-2xl bg-slate-100 text-slate-700">
+                            <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l3 2M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                            </svg>
+                        </span>
+                        <span class="rounded-full bg-brand-soft px-2.5 py-0.5 text-xs font-medium text-brand">Latest</span>
+                    </div>
+                    <dt class="mt-6 text-sm text-slate-500">Latest recorded</dt>
+                    <dd class="tabular mt-1 text-3xl font-semibold tracking-tight text-ink">
+                        {% if damaged_records %}
+                            {{ damaged_records.0.created_at|date:"M d, Y" }}
+                        {% else %}
+                            <span class="text-slate-400">No records yet</span>
+                        {% endif %}
+                    </dd>
+                </div>
+
+            </dl>
+        </section>
+
+        <!-- History card -->
+        <section class="overflow-hidden rounded-3xl bg-white shadow-sm" aria-label="Damage records">
+
+            <!-- Title + search -->
+            <div class="px-6 pb-4 pt-6">
+                <div class="mb-4 flex flex-wrap items-center justify-between gap-3">
+                    <div>
+                        <div class="flex items-center gap-3">
+                            <h2 class="text-xl font-semibold text-ink">Damage records</h2>
+                            <span class="tabular rounded-full bg-red-50 px-2.5 py-0.5 text-xs font-medium text-red-700">
+                                {{ damaged_records|length }}
+                            </span>
+                        </div>
+                        <p class="mt-1 text-sm text-slate-500">
+                            Search by product, batch number, reference, or reason.
+                        </p>
+                    </div>
+                </div>
+
+                <form method="GET" class="flex flex-col gap-3 sm:flex-row">
+                    <label for="search" class="sr-only">Search damaged stock</label>
+                    <div class="relative flex-1">
+                        <svg class="pointer-events-none absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-slate-400"
+                             fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-4.3-4.3M17 10a7 7 0 11-14 0 7 7 0 0114 0z"/>
+                        </svg>
+                        <input id="search" type="text" name="search" value="{{ search }}" autocomplete="off"
+                               placeholder="             Search damaged stock..."
+                               class="w-full rounded-full border border-slate-200 bg-canvas/60 py-3 pl-12 pr-4 text-sm placeholder:text-slate-400 focus:border-brand focus:bg-white focus:outline-none focus:ring-2 focus:ring-brand/30">
+                    </div>
+
+                    <button type="submit"
+                            class="rounded-full bg-brand px-6 py-3 text-sm font-semibold text-white shadow-sm shadow-brand/30 transition hover:bg-brand-dark focus:outline-none focus:ring-2 focus:ring-brand focus:ring-offset-2">
+                        Search
+                    </button>
+
+                    {% if search %}
+                        <a href="{% url 'damaged_stock_history' %}"
+                           class="rounded-full bg-brand-soft px-6 py-3 text-center text-sm font-semibold text-brand transition hover:bg-brand hover:text-white focus:outline-none focus:ring-2 focus:ring-brand">
+                            Clear
+                        </a>
+                    {% endif %}
+                </form>
+            </div>
+
+            <!-- Table -->
+            <div class="table-scroll overflow-x-auto px-3 pb-3">
+                <table class="w-full min-w-[1000px] text-left text-sm">
+                    <thead class="text-xs font-medium text-slate-400">
+                        <tr>
+                            <th scope="col" class="px-4 py-3">Date &amp; time</th>
+                            <th scope="col" class="px-4 py-3">Product</th>
+                            <th scope="col" class="px-4 py-3">Batch number</th>
+                            <th scope="col" class="px-4 py-3 text-right">Quantity</th>
+                            <th scope="col" class="px-4 py-3">Reason / notes</th>
+                            <th scope="col" class="px-4 py-3">Reference</th>
+                            <th scope="col" class="px-4 py-3">Recorded by</th>
+                        </tr>
+                    </thead>
+
+                    <tbody>
+                        {% for record in damaged_records %}
+                        <tr class="group transition hover:bg-canvas/60">
+                            <td class="whitespace-nowrap rounded-l-2xl px-4 py-3.5">
+                                <p class="font-medium text-ink">{{ record.created_at|date:"M d, Y" }}</p>
+                                <p class="mt-0.5 text-xs text-slate-400">{{ record.created_at|date:"h:i A" }}</p>
+                            </td>
+
+                            <td class="px-4 py-3.5">
+                                <p class="font-medium text-ink">{{ record.product.name }}</p>
+                            </td>
+
+                            <td class="whitespace-nowrap px-4 py-3.5">
+                                {% if record.batch and record.batch.batch_code %}
+                                    <span class="rounded-full bg-slate-100 px-3 py-1 text-xs font-medium text-slate-600">
+                                        {{ record.batch.batch_code }}
+                                    </span>
+                                {% else %}
+                                    <span class="text-slate-400">—</span>
+                                {% endif %}
+                            </td>
+
+                            <td class="tabular whitespace-nowrap px-4 py-3.5 text-right">
+                                <span class="inline-flex rounded-full bg-red-50 px-3 py-1 font-semibold text-red-600">
+                                    {{ record.quantity|floatformat:3 }}
+                                </span>
+                            </td>
+
+                            <td class="max-w-xs whitespace-normal px-4 py-3.5 text-slate-600">
+                                {{ record.notes|default:"No notes provided" }}
+                            </td>
+
+                            <td class="whitespace-nowrap px-4 py-3.5 text-slate-600">
+                                {{ record.reference|default:"—" }}
+                            </td>
+
+                            <td class="whitespace-nowrap rounded-r-2xl px-4 py-3.5">
+                                {% if record.created_by %}
+                                    <span class="inline-flex items-center gap-2">
+                                        <span class="flex h-7 w-7 items-center justify-center rounded-full bg-brand text-xs font-semibold uppercase text-white" aria-hidden="true">{{ record.created_by.get_username|slice:":1" }}</span>
+                                        <span class="text-slate-600">{{ record.created_by.get_username }}</span>
+                                    </span>
+                                {% else %}
+                                    <span class="text-slate-400">—</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="7" class="px-5 py-14 text-center">
+                                <span class="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-2xl bg-brand-soft text-brand">
+                                    <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75">
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v4m0 4h.01M10.3 3.9L1.8 18a2 2 0 001.7 3h17a2 2 0 001.7-3L13.7 3.9a2 2 0 00-3.4 0z"/>
+                                    </svg>
+                                </span>
+                                <p class="font-medium text-slate-700">No damaged stock records found</p>
+                                <p class="mt-1 text-sm text-slate-500">
+                                    {% if search %}
+                                        Try another search keyword.
+                                    {% else %}
+                                        Recorded damaged stock will appear here.
+                                    {% endif %}
+                                </p>
+
+                                {% if not search %}
+                                <a href="{% url 'damaged_stock' %}"
+                                   class="mt-4 inline-flex rounded-full bg-brand px-4 py-1.5 text-xs font-medium text-white shadow-sm shadow-brand/30 transition hover:bg-brand-dark">
+                                    Record damaged stock
+                                </a>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Card footer -->
+            <div class="flex flex-col gap-2 border-t border-slate-100 px-6 py-4 sm:flex-row sm:items-center sm:justify-between">
+                <p class="text-sm text-slate-500">
+                    Showing
+                    <span class="tabular font-semibold text-ink">{{ damaged_records|length }}</span>
+                    record{{ damaged_records|length|pluralize }}
+                </p>
+
+                <a href="{% url 'stock_list' %}"
+                   class="inline-flex w-fit rounded-full bg-brand-soft px-4 py-2 text-sm font-medium text-brand transition hover:bg-brand hover:text-white">
+                    Back to Stock Levels →
+                </a>
+            </div>
+        </section>
+
+        <footer class="py-6 text-center text-xs text-slate-400">
+            TindaTech POS &copy; {% now "Y" %}
+        </footer>
+    </main>
+
+</body>
+</html>

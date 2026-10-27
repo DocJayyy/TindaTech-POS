@@ -13,7 +13,7 @@ from accounts.permissions import owner_required
 from datetime import timedelta
 from django.db.models import Q
 from django.utils import timezone
-from .models import StockBatch
+from .models import StockBatch, StockMovement
 
  
 
@@ -228,4 +228,40 @@ def expired_stock_view(request):
         request,
         "inventory/expired_stock.html",
         {"form": form},
+    )
+
+
+@login_required
+@owner_required
+def damaged_stock_history_view(request):
+    damaged_records = (
+        StockMovement.objects
+        .filter(
+            movement_type=StockMovement.MovementType.DAMAGED
+        )
+        .select_related(
+            "product",
+            "batch",
+            "created_by",
+        )
+        .order_by("-created_at")
+    )
+
+    search = request.GET.get("search", "").strip()
+
+    if search:
+        damaged_records = damaged_records.filter(
+            Q(product__name__icontains=search)
+            | Q(batch__batch_code__icontains=search)
+            | Q(notes__icontains=search)
+            | Q(reference__icontains=search)
+        )
+
+    return render(
+        request,
+        "inventory/damaged_stock_history.html",
+        {
+            "damaged_records": damaged_records,
+            "search": search,
+        },
     )
