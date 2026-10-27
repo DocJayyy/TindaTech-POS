@@ -102,3 +102,47 @@ class DamagedStockForm(forms.Form):
             .select_related("product")
             .order_by("product__name", "expiration_date")
         )
+
+
+from decimal import Decimal
+
+from django import forms
+from django.utils import timezone
+
+from inventory.models import StockBatch
+
+
+class ExpiredStockForm(forms.Form):
+    batch = forms.ModelChoiceField(
+        queryset=StockBatch.objects.none(),
+        label="Expired Product Batch",
+    )
+
+    quantity = forms.DecimalField(
+        max_digits=12,
+        decimal_places=3,
+        min_value=Decimal("0.001"),
+        label="Quantity to Remove",
+    )
+
+    reason = forms.CharField(
+        max_length=500,
+        label="Reason",
+        widget=forms.Textarea(attrs={
+            "rows": 3,
+            "placeholder": "Enter the reason for removing expired stock...",
+        }),
+    )
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+        self.fields["batch"].queryset = (
+            StockBatch.objects
+            .filter(
+                quantity_remaining__gt=0,
+                expiration_date__lt=timezone.localdate(),
+            )
+            .select_related("product")
+            .order_by("expiration_date", "product__name")
+        )

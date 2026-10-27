@@ -1,20 +1,22 @@
 from django.contrib.auth.decorators import login_required
 from accounts.permissions import owner_required
-
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required, user_passes_test
 from django.core.exceptions import ValidationError
 from django.db.models import Sum
 from django.shortcuts import render, redirect
 from products.models import Product
-from .forms import ReceiveStockForm, DamagedStockForm
-from .services import receive_stock, record_damaged_stock
+from .forms import ReceiveStockForm, DamagedStockForm, ExpiredStockForm
+from .services import receive_stock, record_damaged_stock, record_expired_stock
 from django.views.decorators.http import require_http_methods
 from accounts.permissions import owner_required
 from datetime import timedelta
 from django.db.models import Q
 from django.utils import timezone
 from .models import StockBatch
+
+ 
+
 
 
 
@@ -192,5 +194,38 @@ def damaged_stock_view(request):
     return render(
         request,
         "inventory/damaged_stock.html",
+        {"form": form},
+    )
+
+
+@login_required
+@owner_required
+@require_http_methods(["GET", "POST"])
+def expired_stock_view(request):
+    if request.method == "POST":
+        form = ExpiredStockForm(request.POST)
+
+        if form.is_valid():
+            try:
+                movement = record_expired_stock(
+                    batch_id=form.cleaned_data["batch"].pk,
+                    quantity=form.cleaned_data["quantity"],
+                    reason=form.cleaned_data["reason"],
+                    user=request.user,
+                )
+            except ValidationError as error:
+                form.add_error(None, error)
+            else:
+                messages.success(
+                    request,
+                    f"Expired stock recorded for {movement.product.name}.",
+                )
+                return redirect("expired_stock")
+    else:
+        form = ExpiredStockForm()
+
+    return render(
+        request,
+        "inventory/expired_stock.html",
         {"form": form},
     )

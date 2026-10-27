@@ -1,10 +1,11 @@
+
 from decimal import Decimal, ROUND_HALF_UP
 from uuid import uuid4
-from datetime import date
 
 from django.core.exceptions import ValidationError
 from django.db import transaction
-from django.db.models import Case, When, Value, IntegerField
+from django.db.models import Case, When, Value, IntegerField, Q
+from django.utils import timezone
 
 from products.models import Product
 from inventory.models import StockBatch, StockMovement
@@ -17,7 +18,8 @@ ZERO = Decimal("0.00")
 
 def money(value):
     return Decimal(str(value)).quantize(
-        CENT, rounding=ROUND_HALF_UP
+        CENT,
+        rounding=ROUND_HALF_UP,
     )
 
 
@@ -38,7 +40,7 @@ def process_sale(
     if not cart_items:
         raise ValidationError("Your cart is empty.")
 
-    # Require an active session for this cashier
+    # Require an active cashier shift.
     cashier_session = (
         CashierSession.objects
         .select_for_update()
@@ -54,13 +56,27 @@ def process_sale(
             "You must open your cashier shift before making sales."
         )
 
-    amount_tendered = money(amount_tendered)
-    regular_discount_percent = Decimal(
-        str(regular_discount_percent or ZERO)
-    )
-    special_discount_amount = money(
-        special_discount_amount or ZERO
-    )
+    today = timezone.localdate()
+
+    try:
+        amount_tendered = money(amount_tendered)
+        regular_discount_percent = Decimal(
+            str(regular_discount_percent or ZERO)
+        )
+        special_discount_amount = money(
+            special_discount_amount or ZERO
+        )
+    except (TypeError, ValueError, ArithmeticError):
+        raise ValidationError("Invalid payment or discount amount.")
+
+    if not amount_tendered.is_finite():
+        raise ValidationError("Invalid payment amount.")
+
+    if not regular_discount_percent.is_finite():
+        raise ValidationError("Invalid discount percentage.")
+
+    if not special_discount_amount.is_finite():
+        raise ValidationError("Invalid special discount amount.")
 
     if amount_tendered < ZERO:
         raise ValidationError("Payment cannot be negative.")
@@ -68,8 +84,7 @@ def process_sale(
     if payment_method not in Sale.PaymentMethod.values:
         raise ValidationError("Invalid payment method.")
 
-    valid_discount_types = Sale.DiscountType.values
-    if discount_type not in valid_discount_types:
+    if discount_type not in Sale.DiscountType.values:
         raise ValidationError("Invalid discount type.")
 
     if not ZERO <= regular_discount_percent <= Decimal("100"):
@@ -117,6 +132,7 @@ def process_sale(
                 "Select a special discount to apply an amount."
             )
 
+    # Combine duplicate products and validate quantities.
     quantities = {}
 
     for item in cart_items:
@@ -126,8 +142,10 @@ def process_sale(
         except (KeyError, TypeError, ValueError, ArithmeticError):
             raise ValidationError("Invalid product or quantity.")
 
-        if quantity <= ZERO:
-            raise ValidationError("Quantity must be greater than zero.")
+        if not quantity.is_finite() or quantity <= ZERO:
+            raise ValidationError(
+                "Quantity must be a valid number greater than zero."
+            )
 
         if quantity != quantity.quantize(Decimal("0.001")):
             raise ValidationError(
@@ -151,15 +169,24 @@ def process_sale(
             "One or more products are unavailable. Refresh the cart."
         )
 
+    # Only use available stock that has not expired.
+    # Products with no expiration date remain eligible.
     batches = list(
         StockBatch.objects.filter(
             product_id__in=quantities.keys(),
-            quantity_remaining__gt=0,
+            quantity_remaining__gt=ZERO,
+        )
+        .filter(
+            Q(expiration_date__isnull=True)
+            | Q(expiration_date__gte=today)
         )
         .select_for_update()
         .annotate(
             expiration_priority=Case(
-                When(expiration_date__isnull=True, then=Value(1)),
+                When(
+                    expiration_date__isnull=True,
+                    then=Value(1),
+                ),
                 default=Value(0),
                 output_field=IntegerField(),
             )
@@ -180,6 +207,7 @@ def process_sale(
             batch.product_id, []
         ).append(batch)
 
+    # Allocate stock using earliest-expiring batches first.
     allocations = []
     subtotal = ZERO
 
@@ -188,14 +216,16 @@ def process_sale(
         remaining = requested_quantity
 
         for batch in batches_by_product.get(product_id, []):
+            # Extra safeguard against expired batches.
             if (
-                batch.expiration_date
-                and batch.expiration_date < date.today()
+                batch.expiration_date is not None
+                and batch.expiration_date < today
             ):
                 continue
 
             allocated = min(
-                remaining, batch.quantity_remaining
+                remaining,
+                batch.quantity_remaining,
             )
 
             if allocated <= ZERO:
@@ -204,6 +234,7 @@ def process_sale(
             line_total = money(
                 allocated * product.selling_price
             )
+
             subtotal += line_total
 
             allocations.append({
@@ -222,15 +253,19 @@ def process_sale(
 
         if remaining > ZERO:
             raise ValidationError(
-                f"Insufficient stock for {product.name}. "
-                f"Short by {remaining} {product.get_unit_display()}."
+                f"Insufficient valid stock for {product.name}. "
+                f"Short by {remaining} {product.get_unit_display()}. "
+                "Expired stock cannot be sold."
             )
 
     subtotal = money(subtotal)
 
+    # Calculate discount.
     if discount_type == Sale.DiscountType.REGULAR:
         discount = money(
-            subtotal * regular_discount_percent / Decimal("100")
+            subtotal
+            * regular_discount_percent
+            / Decimal("100")
         )
     elif discount_type in special_types:
         discount = special_discount_amount
@@ -238,13 +273,19 @@ def process_sale(
         discount = ZERO
 
     if discount > subtotal:
-        raise ValidationError("Discount cannot exceed the subtotal.")
+        raise ValidationError(
+            "Discount cannot exceed the subtotal."
+        )
 
+    # Validate additional charges.
     charge_rows = []
     charge_total = ZERO
 
     allowed_charge_types = {
-        "packaging", "delivery", "service", "other"
+        "packaging",
+        "delivery",
+        "service",
+        "other",
     }
 
     for charge in charges or []:
@@ -260,8 +301,10 @@ def process_sale(
         if charge_type not in allowed_charge_types:
             raise ValidationError("Invalid charge type.")
 
-        if amount < ZERO:
-            raise ValidationError("Charges cannot be negative.")
+        if not amount.is_finite() or amount < ZERO:
+            raise ValidationError(
+                "Charges must be valid non-negative amounts."
+            )
 
         if amount == ZERO:
             continue
@@ -280,19 +323,25 @@ def process_sale(
         charge_total += amount
 
     charge_total = money(charge_total)
-    total_amount = money(subtotal - discount + charge_total)
+    total_amount = money(
+        subtotal - discount + charge_total
+    )
 
     if amount_tendered < total_amount:
         raise ValidationError(
             f"Payment is insufficient. Amount due: ₱{total_amount}"
         )
 
-    change_amount = money(amount_tendered - total_amount)
-
-    receipt_number = (
-        f"POS-{date.today():%Y%m%d}-{uuid4().hex[:8].upper()}"
+    change_amount = money(
+        amount_tendered - total_amount
     )
 
+    # Generate receipt number using the local date.
+    receipt_number = (
+        f"POS-{today:%Y%m%d}-{uuid4().hex[:8].upper()}"
+    )
+
+    # Create the completed sale.
     sale = Sale.objects.create(
         receipt_number=receipt_number,
         cashier=cashier,
@@ -315,15 +364,22 @@ def process_sale(
         status=Sale.Status.COMPLETED,
     )
 
+    # Save additional charges.
     for row in charge_rows:
-        SaleCharge.objects.create(sale=sale, **row)
+        SaleCharge.objects.create(
+            sale=sale,
+            **row,
+        )
 
+    # Deduct allocated stock and record sale items/movements.
     for allocation in allocations:
         batch = allocation["batch"]
         quantity = allocation["quantity"]
 
         batch.quantity_remaining -= quantity
-        batch.save(update_fields=["quantity_remaining"])
+        batch.save(
+            update_fields=["quantity_remaining"]
+        )
 
         SaleItem.objects.create(
             sale=sale,

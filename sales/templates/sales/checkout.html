@@ -63,6 +63,28 @@
         .hero-card {
             background: linear-gradient(135deg, #4F55F0 0%, #3A40DC 55%, #3035C9 100%);
         }
+
+        /* Message modal (plain CSS so it works with the prebuilt tailwind.css) */
+        .msg-modal { position: fixed; inset: 0; z-index: 60; display: flex; align-items: center; justify-content: center; padding: 1rem; background: rgba(15, 23, 42, .5); }
+        .msg-card { width: 100%; max-width: 26rem; background: #fff; border-radius: 1.5rem; padding: 1.5rem; text-align: center; box-shadow: 0 20px 25px -5px rgba(0,0,0,.1), 0 8px 10px -6px rgba(0,0,0,.1); }
+        .msg-icon { display: flex; width: 3rem; height: 3rem; margin: 0 auto 1rem; align-items: center; justify-content: center; border-radius: 999px; background: #fee2e2; color: #dc2626; }
+        .msg-card h2 { margin: 0; font-size: 1.125rem; font-weight: 600; color: #16161D; }
+        .msg-body { margin-top: .75rem; max-height: 40vh; overflow-y: auto; font-size: .9375rem; line-height: 1.5; color: #475569; }
+        .msg-body p { margin: 0 0 .5rem; }
+        .msg-body p:last-child { margin-bottom: 0; }
+        .msg-ok { margin-top: 1.5rem; width: 100%; border: 0; border-radius: .75rem; background: #4349E8; color: #fff; padding: .7rem 1rem; font: inherit; font-weight: 600; cursor: pointer; transition: background .15s; }
+        .msg-ok:hover { background: #3338D0; }
+        .msg-ok:focus-visible { outline: 2px solid #4349E8; outline-offset: 2px; }
+
+        /* Confirm modal additions */
+        .msg-icon.info { background: #EEEFFD; color: #4349E8; }
+        .msg-actions { display: flex; gap: .75rem; margin-top: 1.5rem; }
+        .msg-actions .msg-ok, .msg-cancel { margin-top: 0; flex: 1; }
+        .msg-cancel { border: 0; border-radius: .75rem; background: #f1f5f9; color: #475569; padding: .7rem 1rem; font: inherit; font-weight: 600; cursor: pointer; transition: background .15s; }
+        .msg-cancel:hover { background: #e2e8f0; }
+        .msg-cancel:focus-visible { outline: 2px solid #94a3b8; outline-offset: 2px; }
+        .msg-ok.danger { background: #dc2626; }
+        .msg-ok.danger:hover { background: #b91c1c; }
     </style>
 </head>
 
@@ -106,17 +128,6 @@
                 </div>
                 <span id="item-count" class="tabular rounded-full bg-brand-soft px-3.5 py-1 text-sm font-semibold text-brand">0 items</span>
             </div>
-
-            {% if messages %}
-            <div class="space-y-2 px-5 pb-3" role="alert">
-                {% for message in messages %}
-                <div class="flex items-start gap-3 rounded-2xl border border-red-200 bg-red-50 px-4 py-2.5 text-sm text-red-700">
-                    <svg class="mt-0.5 h-4 w-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v4m0 4h.01M10.3 3.9L2.4 17.5A2 2 0 004.1 20.5h15.8a2 2 0 001.7-3L13.7 3.9a2 2 0 00-3.4 0z"/></svg>
-                    <span>{{ message }}</span>
-                </div>
-                {% endfor %}
-            </div>
-            {% endif %}
 
             <!-- Table header -->
             <div class="mx-3 grid grid-cols-[1fr_auto] rounded-xl bg-canvas px-4 py-2 text-xs font-semibold uppercase tracking-wide text-slate-500">
@@ -310,7 +321,7 @@
                         </button>
                         <button type="button" id="clear-cart"
                                 class="flex flex-1 items-center justify-center gap-2 rounded-full bg-red-50 px-4 py-3 text-base font-semibold uppercase tracking-wide text-red-600 ring-1 ring-inset ring-red-200 transition hover:bg-red-600 hover:text-white focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 active:scale-[0.98] md:order-2">
-                            <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M6 7h12M9 7V4h6v3m-8 0l1 13h8l1-13M10 11v6m4-6v6"/></svg>
+                            <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M6 7h12M9 7V4h6m-8 0l1 13h8l1-13M10 11v6m4-6v6"/></svg>
                             Clear
                         </button>
                     </div>
@@ -319,7 +330,37 @@
         </div>
     </main>
 
+    <!-- Message modal: server messages open it on load; JS errors reuse it via showMessage() -->
+    <div id="message-modal" class="msg-modal" role="alertdialog" aria-modal="true"
+         aria-labelledby="message-modal-title" aria-describedby="message-modal-body"
+         {% if not messages %}hidden{% endif %}>
+        <div class="msg-card">
+            <span class="msg-icon">
+                <svg width="24" height="24" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v4m0 4h.01M10.3 3.9L2.4 17.5A2 2 0 004.1 20.5h15.8a2 2 0 001.7-3L13.7 3.9a2 2 0 00-3.4 0z"/></svg>
+            </span>
+            <h2 id="message-modal-title">Sale could not be completed</h2>
+            <div id="message-modal-body" class="msg-body">
+                {% for message in messages %}<p>{{ message }}</p>{% endfor %}
+            </div>
+            <button type="button" id="message-modal-ok" class="msg-ok">OK</button>
+        </div>
+    </div>
 
+    <!-- Confirm modal: replaces confirm() for Clear cart and Complete sale -->
+    <div id="confirm-modal" class="msg-modal" role="alertdialog" aria-modal="true"
+         aria-labelledby="confirm-modal-title" aria-describedby="confirm-modal-body" hidden>
+        <div class="msg-card">
+            <span id="confirm-modal-icon" class="msg-icon info">
+                <svg width="24" height="24" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+            </span>
+            <h2 id="confirm-modal-title">Are you sure?</h2>
+            <div id="confirm-modal-body" class="msg-body"></div>
+            <div class="msg-actions">
+                <button type="button" id="confirm-modal-cancel" class="msg-cancel">Cancel</button>
+                <button type="button" id="confirm-modal-yes" class="msg-ok">Confirm</button>
+            </div>
+        </div>
+    </div>
 
 <script>
 const cart = new Map();
@@ -355,6 +396,95 @@ const productButtons = Array.from(
     document.querySelectorAll(".product")
 );
 
+// ---------- Message modal ----------
+const messageModal = document.getElementById("message-modal");
+const messageTitle = document.getElementById("message-modal-title");
+const messageBody = document.getElementById("message-modal-body");
+const messageOk = document.getElementById("message-modal-ok");
+let focusAfterClose = null;
+
+function closeMessage() {
+    messageModal.hidden = true;
+    (focusAfterClose || search).focus();
+    focusAfterClose = null;
+}
+
+// Replaces alert(): shows a modal. Optionally focus a field once it is closed.
+function showMessage(text, title, focusEl) {
+    messageTitle.textContent = title || "Unable to continue";
+    messageBody.replaceChildren();
+
+    const p = document.createElement("p");
+    p.textContent = text;
+    messageBody.appendChild(p);
+
+    focusAfterClose = focusEl || null;
+    messageModal.hidden = false;
+    messageOk.focus();
+}
+
+messageOk.addEventListener("click", closeMessage);
+
+messageModal.addEventListener("click", event => {
+    if (event.target === messageModal) closeMessage();
+});
+
+document.addEventListener("keydown", event => {
+    if (event.key === "Escape" && !messageModal.hidden) closeMessage();
+});
+
+if (!messageModal.hidden) messageOk.focus();
+
+// ---------- Confirm modal ----------
+const confirmModal = document.getElementById("confirm-modal");
+const confirmTitle = document.getElementById("confirm-modal-title");
+const confirmBody = document.getElementById("confirm-modal-body");
+const confirmIcon = document.getElementById("confirm-modal-icon");
+const confirmYes = document.getElementById("confirm-modal-yes");
+const confirmCancel = document.getElementById("confirm-modal-cancel");
+let confirmResolve = null;
+
+// Replaces confirm(): returns a Promise<boolean>
+function showConfirm({ title, text, confirmLabel = "Confirm", danger = false }) {
+    return new Promise(resolve => {
+        confirmTitle.textContent = title || "Are you sure?";
+        confirmBody.replaceChildren();
+
+        const p = document.createElement("p");
+        p.textContent = text || "";
+        confirmBody.appendChild(p);
+
+        confirmYes.textContent = confirmLabel;
+        confirmYes.classList.toggle("danger", danger);
+        confirmIcon.classList.toggle("info", !danger);
+
+        confirmResolve = resolve;
+        confirmModal.hidden = false;
+        confirmYes.focus();
+    });
+}
+
+function closeConfirm(result) {
+    if (!confirmResolve) return;
+
+    const resolve = confirmResolve;
+    confirmResolve = null;
+    confirmModal.hidden = true;
+    resolve(result);
+}
+
+confirmYes.addEventListener("click", () => closeConfirm(true));
+confirmCancel.addEventListener("click", () => closeConfirm(false));
+
+confirmModal.addEventListener("click", event => {
+    if (event.target === confirmModal) closeConfirm(false);
+});
+
+document.addEventListener("keydown", event => {
+    if (event.key === "Escape" && !confirmModal.hidden) closeConfirm(false);
+});
+
+// ---------- Totals ----------
 const money = value =>
     Math.round((value + Number.EPSILON) * 100) / 100;
 
@@ -520,11 +650,12 @@ search.addEventListener("keydown", event => {
         filterProducts();
         search.focus();
     } else if (matches.length > 1) {
-        alert(
-            "More than one product matches. Type more to narrow your search."
+        showMessage(
+            "More than one product matches. Type more to narrow your search.",
+            "Multiple matches"
         );
     } else {
-        alert("No matching product found.");
+        showMessage("No matching product found.", "No match");
     }
 });
 
@@ -613,7 +744,10 @@ function renderCart() {
             ) {
                 item.quantity = value;
             } else {
-                alert("Enter a quantity with up to 3 decimal places.");
+                showMessage(
+                    "Enter a quantity with up to 3 decimal places.",
+                    "Invalid quantity"
+                );
                 if (cart.has(item.id)) {
                     item.quantity = Math.max(
                         0.001,
@@ -711,22 +845,32 @@ document.querySelectorAll("[data-quick]").forEach(button => {
 });
 
 // Clear cart
-document.getElementById("clear-cart").addEventListener(
-    "click", () => {
-        if (cart.size === 0) return;
+document.getElementById("clear-cart").addEventListener("click", async () => {
+    if (cart.size === 0) return;
 
-        if (confirm("Remove all items from the cart?")) {
-            cart.clear();
-            renderCart();
-        }
+    const ok = await showConfirm({
+        title: "Clear cart?",
+        text: "This will remove all items from the current sale.",
+        confirmLabel: "Clear",
+        danger: true
+    });
+
+    if (ok) {
+        cart.clear();
+        renderCart();
+        search.focus();
     }
-);
+});
 
 // Checkout validation
 checkoutForm.addEventListener("submit", event => {
     if (cart.size === 0) {
         event.preventDefault();
-        alert("Please add at least one product.");
+        showMessage(
+            "Please add at least one product.",
+            "Cart is empty",
+            search
+        );
         return;
     }
 
@@ -736,7 +880,10 @@ checkoutForm.addEventListener("submit", event => {
 
     if (discount > subtotal) {
         event.preventDefault();
-        alert("Discount cannot exceed the subtotal.");
+        showMessage(
+            "Discount cannot exceed the subtotal.",
+            "Invalid discount"
+        );
         return;
     }
 
@@ -745,7 +892,11 @@ checkoutForm.addEventListener("submit", event => {
         numberValue(regularDiscountInput) > 100
     ) {
         event.preventDefault();
-        alert("Regular discount cannot exceed 100%.");
+        showMessage(
+            "Regular discount cannot exceed 100%.",
+            "Invalid discount",
+            regularDiscountInput
+        );
         return;
     }
 
@@ -756,32 +907,51 @@ checkoutForm.addEventListener("submit", event => {
     ) {
         if (!customerNameInput.value.trim()) {
             event.preventDefault();
-            alert("Enter the eligible customer's name.");
-            customerNameInput.focus();
+            showMessage(
+                "Enter the eligible customer's name.",
+                "Missing details",
+                customerNameInput
+            );
             return;
         }
 
         if (!discountReferenceInput.value.trim()) {
             event.preventDefault();
-            alert("Enter the applicable ID or reference number.");
-            discountReferenceInput.focus();
+            showMessage(
+                "Enter the applicable ID or reference number.",
+                "Missing details",
+                discountReferenceInput
+            );
             return;
         }
     }
 
     if (numberValue(amountInput) < total) {
         event.preventDefault();
-        alert(
+        showMessage(
             "Payment is insufficient. Amount due: ₱" +
-            total.toFixed(2)
+            total.toFixed(2),
+            "Insufficient payment",
+            amountInput
         );
-        amountInput.focus();
         return;
     }
 
-    if (!confirm("Complete this sale?")) {
-        event.preventDefault();
-    }
+    // Always stop the native submit, ask first, then submit manually
+    event.preventDefault();
+
+    showConfirm({
+        title: "Complete this sale?",
+        text: "Total: ₱" + total.toFixed(2) +
+              " · Change: ₱" +
+              money(Math.max(0, numberValue(amountInput) - total)).toFixed(2),
+        confirmLabel: "Complete sale"
+    }).then(ok => {
+        if (!ok) return;
+
+        document.getElementById("pay-button").disabled = true; // prevent double submit
+        checkoutForm.submit(); // doesn't re-trigger the submit event
+    });
 });
 
 updateDiscountFields();
