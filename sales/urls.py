@@ -22,4 +22,6 @@ urlpatterns = [
     path("z-reading/<int:session_id>/export/",views.z_reading_export_pdf_view,name="z_reading_export_pdf"),
     path("electronic-journal/export/",views.electronic_journal_export,name="electronic_journal_export"),
     path("electronic-journal/",views.electronic_journal_view,name="electronic_journal"),
+    path("price-check/",views.price_check_view,name="price_check"),
+    path("inventory-lookup/",views.inventory_lookup_view,name="inventory_lookup"),
 ]

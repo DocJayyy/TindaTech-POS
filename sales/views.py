@@ -37,6 +37,10 @@ from .models import (
 from .services import process_sale
 from .utils import log_activity
 
+from django.http import JsonResponse
+from django.db.models import Q
+
+
 
 
 @login_required
@@ -78,6 +82,70 @@ def checkout_view(request):
     return render(request, template_name, context)
 
 
+
+@login_required
+@pos_access_required
+def price_check_view(request):
+    query = request.GET.get("q", "").strip()
+
+    if not query:
+        return JsonResponse({"products": []})
+
+    products = Product.objects.filter(
+        Q(name__icontains=query)
+        | Q(barcode__icontains=query)
+        | Q(sku__icontains=query),
+        is_active=True,
+    ).select_related("category")[:20]
+
+    results = [
+        {
+            "id": product.id,
+            "name": product.name,
+            "barcode": product.barcode or "",
+            "sku": product.sku or "",
+            "price": str(product.selling_price),
+            "unit": product.get_unit_display(),
+        }
+        for product in products
+    ]
+
+    return JsonResponse({"products": results})
+
+
+@login_required
+@pos_access_required
+def inventory_lookup_view(request):
+    query = request.GET.get("q", "").strip()
+
+    if not query:
+        return JsonResponse({"products": []})
+
+    products = Product.objects.filter(
+        Q(name__icontains=query)
+        | Q(barcode__icontains=query)
+        | Q(sku__icontains=query),
+        is_active=True,
+    ).select_related("category")[:20]
+
+    results = [
+        {
+            "id": product.id,
+            "name": product.name,
+            "barcode": product.barcode or "",
+            "sku": product.sku or "",
+            "price": str(product.selling_price),
+            "unit": product.get_unit_display(),
+            "current_stock": str(product.current_stock),
+            "reorder_level": str(product.reorder_level),
+            "low_stock": (
+                product.current_stock <= product.reorder_level
+            ),
+        }
+        for product in products
+    ]
+
+    return JsonResponse({"products": results})
 
 
 @login_required

@@ -22,41 +22,38 @@
         }
     </script>
     <style>
-            @font-face {
-        font-family: 'Poppins';
-        src: url("{% static 'fonts/Poppins-Regular.ttf' %}") format('truetype');
-        font-weight: 400;
-        font-style: normal;
-        font-display: swap;
-    }
+        @font-face {
+            font-family: 'Poppins';
+            src: url("{% static 'fonts/Poppins-Regular.ttf' %}") format('truetype');
+            font-weight: 400;
+            font-style: normal;
+            font-display: swap;
+        }
+        @font-face {
+            font-family: 'Poppins';
+            src: url("{% static 'fonts/Poppins-Medium.ttf' %}") format('truetype');
+            font-weight: 500;
+            font-style: normal;
+            font-display: swap;
+        }
+        @font-face {
+            font-family: 'Poppins';
+            src: url("{% static 'fonts/Poppins-SemiBold.ttf' %}") format('truetype');
+            font-weight: 600;
+            font-style: normal;
+            font-display: swap;
+        }
+        @font-face {
+            font-family: 'Poppins';
+            src: url("{% static 'fonts/Poppins-Bold.ttf' %}") format('truetype');
+            font-weight: 700;
+            font-style: normal;
+            font-display: swap;
+        }
 
-    @font-face {
-        font-family: 'Poppins';
-        src: url("{% static 'fonts/Poppins-Medium.ttf' %}") format('truetype');
-        font-weight: 500;
-        font-style: normal;
-        font-display: swap;
-    }
-
-    @font-face {
-        font-family: 'Poppins';
-        src: url("{% static 'fonts/Poppins-SemiBold.ttf' %}") format('truetype');
-        font-weight: 600;
-        font-style: normal;
-        font-display: swap;
-    }
-
-    @font-face {
-        font-family: 'Poppins';
-        src: url("{% static 'fonts/Poppins-Bold.ttf' %}") format('truetype');
-        font-weight: 700;
-        font-style: normal;
-        font-display: swap;
-    }
-
-    body {
-        font-family: 'Poppins', sans-serif;
-    }
+        body {
+            font-family: 'Poppins', sans-serif;
+        }
         html { font-size: 112.5%; }
         .tabular { font-variant-numeric: tabular-nums; }
         [hidden] { display: none !important; }
@@ -64,11 +61,11 @@
             background: linear-gradient(135deg, #4F55F0 0%, #3A40DC 55%, #3035C9 100%);
         }
 
-        /* Live clock: plain CSS so it does not depend on the prebuilt tailwind.css */
+        /* Live clock */
         .live-clock { display: block; }
         @media (max-width: 480px) { .live-clock { display: none; } }
 
-        /* Message modal (plain CSS so it works with the prebuilt tailwind.css) */
+        /* Message modal */
         .msg-modal { position: fixed; inset: 0; z-index: 60; display: flex; align-items: center; justify-content: center; padding: 1rem; background: rgba(15, 23, 42, .5); }
         .msg-card { width: 100%; max-width: 26rem; background: #fff; border-radius: 1.5rem; padding: 1.5rem; text-align: center; box-shadow: 0 20px 25px -5px rgba(0,0,0,.1), 0 8px 10px -6px rgba(0,0,0,.1); }
         .msg-icon { display: flex; width: 3rem; height: 3rem; margin: 0 auto 1rem; align-items: center; justify-content: center; border-radius: 999px; background: #fee2e2; color: #dc2626; }
@@ -80,7 +77,7 @@
         .msg-ok:hover { background: #3338D0; }
         .msg-ok:focus-visible { outline: 2px solid #4349E8; outline-offset: 2px; }
 
-        /* Confirm modal additions */
+        /* Confirm modal */
         .msg-icon.info { background: #EEEFFD; color: #4349E8; }
         .msg-actions { display: flex; gap: .75rem; margin-top: 1.5rem; }
         .msg-actions .msg-ok, .msg-cancel { margin-top: 0; flex: 1; }
@@ -89,6 +86,118 @@
         .msg-cancel:focus-visible { outline: 2px solid #94a3b8; outline-offset: 2px; }
         .msg-ok.danger { background: #dc2626; }
         .msg-ok.danger:hover { background: #b91c1c; }
+
+        /* ---------- Actions Modal (POS Grid) ---------- */
+        .msg-card.actions-card {
+            max-width: 48rem;
+            padding: 0;
+            text-align: left;
+            overflow: hidden;
+            border-radius: 1.25rem;
+            background: #f8f9fc;
+        }
+        .actions-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 1rem 1.25rem;
+            background: #fff;
+            border-bottom: 1px solid #e5e7eb;
+        }
+        .actions-header h2 {
+            margin: 0;
+            font-size: 1rem;
+            font-weight: 500;
+            color: #374151;
+        }
+        .actions-close {
+            display: flex;
+            width: 2rem;
+            height: 2rem;
+            align-items: center;
+            justify-content: center;
+            border: 0;
+            border-radius: 0.375rem;
+            background: transparent;
+            color: #9ca3af;
+            cursor: pointer;
+            transition: background .15s, color .15s;
+        }
+        .actions-close:hover { background: #f3f4f6; color: #374151; }
+        .actions-close:focus-visible { outline: 2px solid #4349E8; outline-offset: 2px; }
+        
+        .actions-grid {
+            display: grid;
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+            gap: 0.6rem;
+            padding: 1rem 1.25rem 1.5rem;
+            max-height: 75vh;
+            overflow-y: auto;
+        }
+        .action-tile {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            min-height: 3.2rem;
+            padding: 0.65rem 0.5rem;
+            border: 0;
+            border-radius: 0.375rem;
+            background: #e5e7eb; /* Light grey base */
+            color: #4b5563;
+            font: inherit;
+            font-size: 0.8125rem;
+            font-weight: 500;
+            text-align: center;
+            cursor: pointer;
+            transition: background .15s, color .15s, transform .1s;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+        }
+        .action-tile:hover { background: #d1d5db; color: #1f2937; }
+        .action-tile:active { transform: scale(0.98); }
+        .action-tile:focus-visible { outline: 2px solid #4349E8; outline-offset: 2px; }
+
+        .action-tile .tile-icon {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.9rem;
+            line-height: 1;
+            opacity: 0.8;
+            flex-shrink: 0;
+        }
+
+        /* Red accent tile (Z-Reading) */
+        .action-tile--danger {
+            background: #ef4444;
+            color: #fff;
+        }
+        .action-tile--danger:hover { background: #dc2626; color: #fff; }
+        .action-tile--danger .tile-icon { opacity: 1; }
+
+        /* Purple accent tile (Gov't Discount) */
+        .action-tile--purple {
+            background: #6b5baf;
+            color: #fff;
+            font-weight: 700;
+            letter-spacing: 0.02em;
+        }
+        .action-tile--purple:hover { background: #5a4b9a; color: #fff; }
+        .action-tile--purple .tile-icon { opacity: 1; }
+
+        /* Placeholder tiles */
+        .action-tile--empty {
+            background: transparent;
+            cursor: default;
+            pointer-events: none;
+            border: 0;
+            box-shadow: none;
+        }
+
+        @media (max-width: 640px) {
+            .actions-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+            .action-tile--empty { display: none; }
+        }
     </style>
 </head>
 
@@ -113,6 +222,12 @@
                     <p id="live-date" class="text-xs text-slate-500">{% now "D, M j, Y" %}</p>
                 </div>
 
+                <!-- ACTIONS BUTTON -->
+                <button type="button" id="open-actions"
+                        class="rounded-full bg-brand px-4 py-2 font-medium text-white transition hover:bg-brand-dark focus:outline-none focus:ring-2 focus:ring-brand">
+                    Actions
+                </button>
+
                 <a href="/dashboard/"
                    class="rounded-full bg-brand-soft px-4 py-2 font-medium text-brand transition hover:bg-brand hover:text-white focus:outline-none focus:ring-2 focus:ring-brand">Dashboard</a>
                 <a href="{% url 'sales_history' %}"
@@ -129,8 +244,6 @@
 
         <!-- ============ LEFT: CART ============ -->
         <section class="flex min-h-0 flex-col overflow-hidden rounded-3xl bg-white shadow-sm lg:w-[36%] lg:shrink-0 xl:w-[34%]" aria-label="Shopping cart">
-
-            <!-- Cart summary strip -->
             <div class="flex items-center justify-between px-5 pt-5 pb-3">
                 <div>
                     <h1 class="text-xl font-semibold text-ink">Current sale</h1>
@@ -139,13 +252,11 @@
                 <span id="item-count" class="tabular rounded-full bg-brand-soft px-3.5 py-1 text-sm font-semibold text-brand">0 items</span>
             </div>
 
-            <!-- Table header -->
             <div class="mx-3 grid grid-cols-[1fr_auto] rounded-xl bg-canvas px-4 py-2 text-xs font-semibold uppercase tracking-wide text-slate-500">
                 <span>Item</span>
                 <span>Price</span>
             </div>
 
-            <!-- Cart list -->
             <div class="min-h-[12rem] flex-1 overflow-y-auto px-3 pb-3 pt-2 lg:min-h-0">
                 <div id="cart-empty" class="flex h-full flex-col items-center justify-center px-5 py-10 text-center">
                     <span class="flex h-14 w-14 items-center justify-center rounded-2xl bg-brand-soft text-brand">
@@ -156,15 +267,13 @@
                 </div>
                 <ul id="cart-items" class="space-y-1"></ul>
             </div>
-
         </section>
 
-        <!-- ============ RIGHT: PRODUCTS (top) + PAYMENT (bottom) ============ -->
+        <!-- ============ RIGHT: PRODUCTS + PAYMENT ============ -->
         <div class="flex min-h-0 flex-1 flex-col gap-3">
 
             <!-- Product tiles -->
             <section class="flex min-h-0 flex-1 flex-col rounded-3xl bg-white p-4 shadow-sm" aria-label="Products">
-
                 <label for="search" class="sr-only">Search product name or barcode</label>
                 <div class="relative shrink-0">
                     <svg class="pointer-events-none absolute right-4 top-1/2 h-5 w-5 -translate-y-1/2 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-4.3-4.3M17 10a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
@@ -210,7 +319,6 @@
                     {% csrf_token %}
                     <input type="hidden" name="cart" id="cart-data">
 
-                    <!-- Total + change -->
                     <div class="flex flex-col gap-3 md:col-start-1 md:row-start-1">
                         <div class="hero-card rounded-2xl p-4 text-white shadow-lg shadow-brand/25">
                             <p class="text-sm font-medium uppercase tracking-wide text-indigo-100">Total</p>
@@ -222,7 +330,6 @@
                         </div>
                     </div>
 
-                    <!-- Discount, charges, payment fields -->
                     <div class="space-y-4 md:col-start-2 md:row-span-2 md:row-start-1
                         [&_input]:w-full [&_input]:rounded-xl [&_input]:border [&_input]:border-slate-200 [&_input]:bg-white [&_input]:px-3 [&_input]:py-2 [&_input]:text-sm [&_input]:[font-variant-numeric:tabular-nums] [&_input]:focus:border-brand [&_input]:focus:outline-none [&_input]:focus:ring-2 [&_input]:focus:ring-brand/30
                         [&_select]:w-full [&_select]:rounded-xl [&_select]:border [&_select]:border-slate-200 [&_select]:bg-white [&_select]:px-3 [&_select]:py-2 [&_select]:text-sm [&_select]:font-medium [&_select]:focus:border-brand [&_select]:focus:outline-none [&_select]:focus:ring-2 [&_select]:focus:ring-brand/30">
@@ -231,42 +338,23 @@
                             <p class="mb-2 text-xs font-semibold uppercase tracking-wider text-slate-400">Discount</p>
                             <div class="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
                                 <div>
-                                    <label for="id_discount_type"
-                                           class="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-500">
-                                        Discount Type
-                                    </label>
+                                    <label for="id_discount_type" class="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-500">Discount Type</label>
                                     {{ form.discount_type }}
                                 </div>
-
                                 <div id="regular-discount-fields">
-                                    <label for="id_regular_discount_percent"
-                                           class="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-500">
-                                        Regular Discount (%)
-                                    </label>
+                                    <label for="id_regular_discount_percent" class="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-500">Regular Discount (%)</label>
                                     {{ form.regular_discount_percent }}
                                 </div>
-
                                 <div id="special-discount-fields" hidden>
-                                    <label for="id_special_discount_amount"
-                                           class="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-500">
-                                        Discount Amount (₱)
-                                    </label>
+                                    <label for="id_special_discount_amount" class="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-500">Discount Amount (₱)</label>
                                     {{ form.special_discount_amount }}
                                 </div>
-
                                 <div id="discount-customer-field" hidden>
-                                    <label for="id_discount_customer_name"
-                                           class="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-500">
-                                        Eligible Customer Name
-                                    </label>
+                                    <label for="id_discount_customer_name" class="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-500">Eligible Customer Name</label>
                                     {{ form.discount_customer_name }}
                                 </div>
-
                                 <div id="discount-reference-field" hidden>
-                                    <label for="id_discount_reference"
-                                           class="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-500">
-                                        ID / Reference Number
-                                    </label>
+                                    <label for="id_discount_reference" class="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-500">ID / Reference Number</label>
                                     {{ form.discount_reference }}
                                 </div>
                             </div>
@@ -295,7 +383,6 @@
                             </div>
                         </div>
 
-                        <!-- Payment method, amount, quick amounts -->
                         <div>
                             <p class="mb-2 text-xs font-semibold uppercase tracking-wider text-slate-400">Payment</p>
                             <div class="space-y-2.5">
@@ -304,16 +391,13 @@
                                         <label for="id_payment_method" class="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-500">Payment</label>
                                         {{ form.payment_method }}
                                     </div>
-
                                     <div>
                                         <label for="id_amount_tendered" class="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-500">Received (₱)</label>
                                         {{ form.amount_tendered }}
                                     </div>
                                 </div>
-
                                 <div class="grid grid-cols-5 gap-1.5" role="group" aria-label="Quick amounts">
-                                    <button type="button" data-quick="exact"
-                                            class="rounded-full bg-brand px-1 py-2.5 text-xs font-semibold text-white shadow-sm shadow-brand/30 transition hover:bg-brand-dark focus:outline-none focus:ring-2 focus:ring-brand focus:ring-offset-1 active:scale-95">Exact</button>
+                                    <button type="button" data-quick="exact" class="rounded-full bg-brand px-1 py-2.5 text-xs font-semibold text-white shadow-sm shadow-brand/30 transition hover:bg-brand-dark focus:outline-none focus:ring-2 focus:ring-brand focus:ring-offset-1 active:scale-95">Exact</button>
                                     <button type="button" data-quick="100" class="rounded-full bg-brand-soft px-1 py-2.5 text-xs font-semibold text-brand transition hover:bg-brand hover:text-white focus:outline-none focus:ring-2 focus:ring-brand active:scale-95">₱100</button>
                                     <button type="button" data-quick="200" class="rounded-full bg-brand-soft px-1 py-2.5 text-xs font-semibold text-brand transition hover:bg-brand hover:text-white focus:outline-none focus:ring-2 focus:ring-brand active:scale-95">₱200</button>
                                     <button type="button" data-quick="500" class="rounded-full bg-brand-soft px-1 py-2.5 text-xs font-semibold text-brand transition hover:bg-brand hover:text-white focus:outline-none focus:ring-2 focus:ring-brand active:scale-95">₱500</button>
@@ -323,7 +407,6 @@
                         </div>
                     </div>
 
-                    <!-- Big action buttons -->
                     <div class="flex gap-3 md:col-start-1 md:row-start-2 md:flex-col md:self-end">
                         <button type="submit" id="pay-button"
                                 class="flex-[2] rounded-full bg-brand px-4 py-4 text-lg font-bold uppercase tracking-wide text-white shadow-lg shadow-brand/30 transition hover:bg-brand-dark focus:outline-none focus:ring-2 focus:ring-brand focus:ring-offset-2 active:scale-[0.98] md:order-1">
@@ -340,7 +423,71 @@
         </div>
     </main>
 
-    <!-- Message modal: server messages open it on load; JS errors reuse it via showMessage() -->
+    <!-- ============================================================ -->
+    <!-- ACTIONS MODAL (matches the POS grid)                         -->
+    <!-- ============================================================ -->
+    <div id="actions-modal" class="msg-modal" role="dialog" aria-modal="true"
+         aria-labelledby="actions-modal-title" hidden>
+        <div class="msg-card actions-card">
+            <div class="actions-header">
+                <h2 id="actions-modal-title">Actions</h2>
+                <button type="button" id="actions-close" class="actions-close" aria-label="Close actions">
+                    <svg width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/>
+                    </svg>
+                </button>
+            </div>
+
+            <div class="actions-grid" role="group" aria-label="Quick actions">
+                <!-- Row 1 -->
+                <button type="button" class="action-tile" data-action="general-note"><span>General Note</span></button>
+                <button type="button" class="action-tile" data-action="reward"><span class="tile-icon">★</span><span>Reward</span></button>
+                <button type="button" class="action-tile" data-action="customer-note"><span class="tile-icon">■</span><span>Customer Note</span></button>
+
+                <!-- Row 2 -->
+                <button type="button" class="action-tile" data-action="pricelist"><span class="tile-icon">☰</span><span>Pricelist</span></button>
+                <button type="button" class="action-tile" data-action="refund"><span class="tile-icon">↺</span><span>Refund</span></button>
+                <button type="button" class="action-tile" data-action="cancel-order"><span class="tile-icon">🗑</span><span>Cancel Order</span></button>
+
+                <!-- Row 3 -->
+                <button type="button" class="action-tile" data-action="change-fund"><span class="tile-icon">⇄</span><span>Change Fund</span></button>
+                <button type="button" class="action-tile" data-action="cash-takeout"><span class="tile-icon">₱</span><span>Cash Takeout</span></button>
+                <button type="button" class="action-tile" data-action="declare-tender"><span class="tile-icon">✓</span><span>Declare Tender</span></button>
+
+                <!-- Row 4 -->
+                <button type="button" class="action-tile" data-action="x-reading"><span class="tile-icon">📄</span><span>X-Reading</span></button>
+                <button type="button" class="action-tile action-tile--danger" data-action="z-reading"><span class="tile-icon">📄</span><span>Z-Reading</span></button>
+                <button type="button" class="action-tile" data-action="price-check"><span class="tile-icon">🔍</span><span>Price Check</span></button>
+
+                <!-- Row 5 -->
+                <button type="button" class="action-tile" data-action="inventory-lookup"><span class="tile-icon">📦</span><span>Inventory Lookup</span></button>
+                <button type="button" class="action-tile" data-action="item-finder"><span class="tile-icon">☰</span><span>Item Finder</span></button>
+                <button type="button" class="action-tile" data-action="salesperson"><span class="tile-icon">👤</span><span>Salesperson</span></button>
+
+                <!-- Row 6 -->
+                <button type="button" class="action-tile" data-action="discount"><span class="tile-icon">%</span><span>Discount</span></button>
+                <button type="button" class="action-tile" data-action="change-qty"><span class="tile-icon">#</span><span>Change Qty</span></button>
+                <button type="button" class="action-tile" data-action="price-override"><span class="tile-icon">₱</span><span>Price Override</span></button>
+
+                <!-- Row 7 -->
+                <button type="button" class="action-tile action-tile--purple" data-action="govt-discount"><span class="tile-icon">▣</span><span>GOV'T DISCOUNT</span></button>
+                <button type="button" class="action-tile" data-action="void-line"><span class="tile-icon">⊘</span><span>Void Line</span></button>
+                <button type="button" class="action-tile" data-action="void-all"><span class="tile-icon">⊘</span><span>Void All</span></button>
+
+                <!-- Row 8 -->
+                <button type="button" class="action-tile" data-action="suspend"><span class="tile-icon">‖</span><span>Suspend</span></button>
+                <button type="button" class="action-tile" data-action="retrieve"><span class="tile-icon">▶</span><span>Retrieve</span></button>
+                <button type="button" class="action-tile" data-action="open-drawer"><span class="tile-icon">🔓</span><span>Open Drawer</span></button>
+
+                <!-- Row 9 -->
+                <button type="button" class="action-tile" data-action="sales-history"><span class="tile-icon">↺</span><span>Sales History</span></button>
+                <span class="action-tile action-tile--empty" aria-hidden="true"></span>
+                <span class="action-tile action-tile--empty" aria-hidden="true"></span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Message modal -->
     <div id="message-modal" class="msg-modal" role="alertdialog" aria-modal="true"
          aria-labelledby="message-modal-title" aria-describedby="message-modal-body"
          {% if not messages %}hidden{% endif %}>
@@ -356,7 +503,7 @@
         </div>
     </div>
 
-    <!-- Confirm modal: replaces confirm() for Clear cart and Complete sale -->
+    <!-- Confirm modal -->
     <div id="confirm-modal" class="msg-modal" role="alertdialog" aria-modal="true"
          aria-labelledby="confirm-modal-title" aria-describedby="confirm-modal-body" hidden>
         <div class="msg-card">
@@ -374,7 +521,7 @@
 
 <script>
 const cart = new Map();
-
+let selectedCartItemId = null;
 const search = document.getElementById("search");
 const cartBody = document.getElementById("cart-items");
 const cartEmpty = document.getElementById("cart-empty");
@@ -386,14 +533,10 @@ const changeDisplay = document.getElementById("change");
 const checkoutForm = document.getElementById("checkout-form");
 const discountType = document.getElementById("id_discount_type");
 
-const regularDiscountInput =
-    document.getElementById("id_regular_discount_percent");
-const specialDiscountInput =
-    document.getElementById("id_special_discount_amount");
-const customerNameInput =
-    document.getElementById("id_discount_customer_name");
-const discountReferenceInput =
-    document.getElementById("id_discount_reference");
+const regularDiscountInput = document.getElementById("id_regular_discount_percent");
+const specialDiscountInput = document.getElementById("id_special_discount_amount");
+const customerNameInput = document.getElementById("id_discount_customer_name");
+const discountReferenceInput = document.getElementById("id_discount_reference");
 
 const chargeInputs = [
     document.getElementById("id_packaging_charge"),
@@ -402,34 +545,18 @@ const chargeInputs = [
     document.getElementById("id_other_charge")
 ];
 
-const productButtons = Array.from(
-    document.querySelectorAll(".product")
-);
+const productButtons = Array.from(document.querySelectorAll(".product"));
 
 // ---------- Live date and time ----------
 (function () {
     const dateEl = document.getElementById("live-date");
     const timeEl = document.getElementById("live-time");
-
     if (!dateEl || !timeEl) return;
-
     function tick() {
         const now = new Date();
-
-        dateEl.textContent = now.toLocaleDateString("en-US", {
-            weekday: "short",
-            year: "numeric",
-            month: "short",
-            day: "numeric"
-        });
-
-        timeEl.textContent = now.toLocaleTimeString("en-US", {
-            hour: "numeric",
-            minute: "2-digit",
-            second: "2-digit"
-        });
+        dateEl.textContent = now.toLocaleDateString("en-US", { weekday: "short", year: "numeric", month: "short", day: "numeric" });
+        timeEl.textContent = now.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit", second: "2-digit" });
     }
-
     tick();
     setInterval(tick, 1000);
 })();
@@ -447,30 +574,20 @@ function closeMessage() {
     focusAfterClose = null;
 }
 
-// Replaces alert(): shows a modal. Optionally focus a field once it is closed.
 function showMessage(text, title, focusEl) {
     messageTitle.textContent = title || "Unable to continue";
     messageBody.replaceChildren();
-
     const p = document.createElement("p");
     p.textContent = text;
     messageBody.appendChild(p);
-
     focusAfterClose = focusEl || null;
     messageModal.hidden = false;
     messageOk.focus();
 }
 
 messageOk.addEventListener("click", closeMessage);
-
-messageModal.addEventListener("click", event => {
-    if (event.target === messageModal) closeMessage();
-});
-
-document.addEventListener("keydown", event => {
-    if (event.key === "Escape" && !messageModal.hidden) closeMessage();
-});
-
+messageModal.addEventListener("click", event => { if (event.target === messageModal) closeMessage(); });
+document.addEventListener("keydown", event => { if (event.key === "Escape" && !messageModal.hidden) closeMessage(); });
 if (!messageModal.hidden) messageOk.focus();
 
 // ---------- Confirm modal ----------
@@ -482,20 +599,16 @@ const confirmYes = document.getElementById("confirm-modal-yes");
 const confirmCancel = document.getElementById("confirm-modal-cancel");
 let confirmResolve = null;
 
-// Replaces confirm(): returns a Promise<boolean>
 function showConfirm({ title, text, confirmLabel = "Confirm", danger = false }) {
     return new Promise(resolve => {
         confirmTitle.textContent = title || "Are you sure?";
         confirmBody.replaceChildren();
-
         const p = document.createElement("p");
         p.textContent = text || "";
         confirmBody.appendChild(p);
-
         confirmYes.textContent = confirmLabel;
         confirmYes.classList.toggle("danger", danger);
         confirmIcon.classList.toggle("info", !danger);
-
         confirmResolve = resolve;
         confirmModal.hidden = false;
         confirmYes.focus();
@@ -504,7 +617,6 @@ function showConfirm({ title, text, confirmLabel = "Confirm", danger = false }) 
 
 function closeConfirm(result) {
     if (!confirmResolve) return;
-
     const resolve = confirmResolve;
     confirmResolve = null;
     confirmModal.hidden = true;
@@ -513,75 +625,416 @@ function closeConfirm(result) {
 
 confirmYes.addEventListener("click", () => closeConfirm(true));
 confirmCancel.addEventListener("click", () => closeConfirm(false));
+confirmModal.addEventListener("click", event => { if (event.target === confirmModal) closeConfirm(false); });
+document.addEventListener("keydown", event => { if (event.key === "Escape" && !confirmModal.hidden) closeConfirm(false); });
 
-confirmModal.addEventListener("click", event => {
-    if (event.target === confirmModal) closeConfirm(false);
+// ---------- Actions Modal ----------
+const actionsModal = document.getElementById("actions-modal");
+const openActionsBtn = document.getElementById("open-actions");
+const actionsClose = document.getElementById("actions-close");
+const actionTiles = document.querySelectorAll("[data-action]");
+let actionsFocusReturn = null;
+
+function openActionsModal() {
+    actionsFocusReturn = document.activeElement;
+    actionsModal.hidden = false;
+    actionsClose.focus();
+}
+
+function closeActionsModal() {
+    actionsModal.hidden = true;
+    if (actionsFocusReturn && typeof actionsFocusReturn.focus === "function") {
+        actionsFocusReturn.focus();
+    }
+    actionsFocusReturn = null;
+}
+
+openActionsBtn.addEventListener("click", openActionsModal);
+actionsClose.addEventListener("click", closeActionsModal);
+actionsModal.addEventListener("click", event => { if (event.target === actionsModal) closeActionsModal(); });
+document.addEventListener("keydown", event => { if (event.key === "Escape" && !actionsModal.hidden) closeActionsModal(); });
+
+// Action Handlers
+actionTiles.forEach(tile => {
+    tile.addEventListener("click", async () => {
+        const action = tile.dataset.action;
+        closeActionsModal();
+
+    
+const lookupModal = document.getElementById("product-lookup-modal");
+const lookupTitle = document.getElementById("lookup-title");
+const lookupSubtitle = document.getElementById("lookup-subtitle");
+const lookupSearch = document.getElementById("lookup-search");
+const lookupStatus = document.getElementById("lookup-status");
+const lookupResults = document.getElementById("lookup-results");
+
+let lookupMode = "price-check";
+let lookupTimer = null;
+let lookupRequest = 0;
+
+function closeLookupModal() {
+    lookupModal.classList.add("hidden");
+    lookupModal.classList.remove("flex");
+
+    clearTimeout(lookupTimer);
+    lookupRequest++;
+}
+
+function openLookupModal(mode) {
+    lookupMode = mode;
+
+    lookupTitle.textContent =
+        mode === "price-check" ? "Price Check" : "Inventory Lookup";
+
+    lookupSubtitle.textContent =
+        mode === "price-check"
+            ? "Check a product's current selling price."
+            : "Check available stock and reorder level.";
+
+    lookupSearch.value = "";
+    lookupResults.replaceChildren();
+    lookupStatus.textContent = "Type to search for a product.";
+
+    lookupModal.classList.remove("hidden");
+    lookupModal.classList.add("flex");
+
+    setTimeout(() => lookupSearch.focus(), 50);
+}
+
+function renderLookupResults(products) {
+    lookupResults.replaceChildren();
+
+    if (!products.length) {
+        lookupStatus.textContent = "No matching products found.";
+        return;
+    }
+
+    lookupStatus.textContent =
+        `${products.length} product(s) found.`;
+
+    products.forEach(product => {
+        const card = document.createElement("div");
+        card.className =
+            "rounded-xl border border-gray-200 p-4 hover:bg-gray-50";
+
+        const header = document.createElement("div");
+        header.className = "flex items-start justify-between gap-4";
+
+        const details = document.createElement("div");
+        details.className = "min-w-0";
+
+        const name = document.createElement("p");
+        name.className = "font-semibold text-gray-900";
+        name.textContent = product.name;
+
+        const identifiers = document.createElement("p");
+        identifiers.className = "mt-1 text-xs text-gray-500";
+        identifiers.textContent =
+            `Barcode: ${product.barcode || "N/A"} · SKU: ${product.sku || "N/A"}`;
+
+        details.append(name, identifiers);
+
+        const price = document.createElement("p");
+        price.className =
+            "shrink-0 font-semibold text-gray-900";
+        price.textContent =
+            `₱${Number(product.price).toLocaleString("en-PH", {
+                minimumFractionDigits: 2,
+                maximumFractionDigits: 2
+            })}`;
+
+        header.append(details, price);
+        card.append(header);
+
+        const unit = document.createElement("p");
+        unit.className = "mt-2 text-sm text-gray-600";
+        unit.textContent = `Unit: ${product.unit}`;
+        card.append(unit);
+
+        if (lookupMode === "inventory-lookup") {
+            const stock = document.createElement("p");
+            stock.className = "mt-2 text-sm font-medium";
+
+            stock.textContent =
+                `Current stock: ${product.current_stock} ${product.unit}`;
+
+            stock.classList.add(
+                product.low_stock ? "text-red-600" : "text-green-700"
+            );
+
+            card.append(stock);
+
+            const reorder = document.createElement("p");
+            reorder.className = "mt-1 text-xs text-gray-500";
+            reorder.textContent =
+                `Reorder level: ${product.reorder_level} ${product.unit}`;
+
+            card.append(reorder);
+
+            if (product.low_stock) {
+                const warning = document.createElement("p");
+                warning.className =
+                    "mt-2 text-xs font-medium text-red-600";
+                warning.textContent = "Low stock — consider restocking.";
+                card.append(warning);
+            }
+        }
+
+        lookupResults.append(card);
+    });
+}
+
+async function searchLookupProducts(query) {
+    const requestId = ++lookupRequest;
+
+    if (!query.trim()) {
+        lookupResults.replaceChildren();
+        lookupStatus.textContent = "Type to search for a product.";
+        return;
+    }
+
+    lookupStatus.textContent = "Searching...";
+    lookupResults.replaceChildren();
+
+    const endpoint =
+        lookupMode === "price-check"
+            ? "{% url 'price_check' %}"
+            : "{% url 'inventory_lookup' %}";
+
+    try {
+        const response = await fetch(
+            `${endpoint}?q=${encodeURIComponent(query)}`,
+            {
+                headers: { "X-Requested-With": "XMLHttpRequest" }
+            }
+        );
+
+        if (!response.ok) {
+            throw new Error("Search request failed.");
+        }
+
+        const data = await response.json();
+
+        if (requestId !== lookupRequest) return;
+
+        renderLookupResults(data.products || []);
+    } catch (error) {
+        if (requestId !== lookupRequest) return;
+
+        lookupStatus.textContent =
+            "Unable to search products. Check your connection and try again.";
+    }
+}
+
+lookupSearch.addEventListener("input", () => {
+    clearTimeout(lookupTimer);
+
+    const query = lookupSearch.value;
+
+    lookupTimer = setTimeout(() => {
+        searchLookupProducts(query);
+    }, 250);
+});
+
+document.getElementById("lookup-close")
+    .addEventListener("click", closeLookupModal);
+
+document.getElementById("lookup-done")
+    .addEventListener("click", closeLookupModal);
+
+lookupModal.addEventListener("click", event => {
+    if (event.target === lookupModal) {
+        closeLookupModal();
+    }
 });
 
 document.addEventListener("keydown", event => {
-    if (event.key === "Escape" && !confirmModal.hidden) closeConfirm(false);
+    if (
+        event.key === "Escape" &&
+        !lookupModal.classList.contains("hidden")
+    ) {
+        closeLookupModal();
+    }
+});
+
+
+        switch (action) {
+            case "z-reading":
+                const okZ = await showConfirm({
+                    title: "Perform Z-Reading?",
+                    text: "This will close the current business day and generate a Z-reading report. This cannot be undone.",
+                    confirmLabel: "Perform Z-Reading",
+                    danger: true
+                });
+                if (okZ) showMessage("Z-Reading is not yet wired to the backend.", "Z-Reading");
+                break;
+            case "x-reading":
+                showMessage("X-Reading shows current-day totals without closing the day.", "X-Reading");
+                break;
+            case "void-all":
+                if (cart.size === 0) { showMessage("The cart is already empty.", "Nothing to void"); break; }
+                const okVoid = await showConfirm({
+                    title: "Void all items?",
+                    text: "This will clear every item from the current sale.",
+                    confirmLabel: "Void All",
+                    danger: true
+                });
+                if (okVoid) { cart.clear(); renderCart(); search.focus(); }
+                break;
+            case "refund":
+                const okRefund = await showConfirm({
+                    title: "Open refund?",
+                    text: "Refunds need the original receipt. Proceed to the refund screen?",
+                    confirmLabel: "Open Refund"
+                });
+                if (okRefund) window.location.href = "/refunds/";
+                break;
+            case "sales-history":
+                window.location.href = "{% url 'sales_history' %}";
+                break;
+            case "open-drawer":
+                showMessage("Open-drawer requires a connected cash drawer.", "Cash Drawer");
+                break;
+            case "change-fund":
+                showMessage("Change fund lets you add or remove cash from the drawer.", "Change Fund");
+                break;
+            case "cash-takeout":
+                showMessage("Cash takeout records cash removed from the drawer.", "Cash Takeout");
+                break;
+            case "declare-tender":
+                showMessage("Declare the tender you received to reconcile the drawer.", "Declare Tender");
+                break;
+            case "cancel-order":
+                if (cart.size === 0) { showMessage("There is no order to cancel.", "Cancel Order"); break; }
+                const okCancel = await showConfirm({
+                    title: "Cancel this order?",
+                    text: "This will discard the current sale and all its items.",
+                    confirmLabel: "Cancel Order",
+                    danger: true
+                });
+                if (okCancel) { cart.clear(); renderCart(); search.focus(); }
+                break;
+            case "general-note":
+            case "customer-note":
+                showMessage("Notes will be attached to the current sale.", action === "general-note" ? "General Note" : "Customer Note");
+                break;
+            case "pricelist":
+                showMessage("Print or view the current price list.", "Pricelist");
+                break;
+            
+            case "price-check":
+                openLookupModal("price-check");
+                break;
+
+            case "inventory-lookup":
+            case "item-finder":
+                openLookupModal("inventory-lookup");
+                break;
+
+            case "salesperson":
+                showMessage("Assign a salesperson to this sale.", "Salesperson");
+                break;
+            case "discount":
+            case "govt-discount":
+                discountType.focus();
+                showMessage("Choose the discount type below.", action === "govt-discount" ? "Government Discount" : "Discount");
+                break;
+            case "change-qty":
+                if (cart.size === 0) { showMessage("Add items to the cart first.", "Change Quantity"); break; }
+                const firstQty = cartBody.querySelector('input[type="number"]');
+                if (firstQty) firstQty.focus();
+                break;
+            case "price-override":
+                showMessage("Price overrides require manager approval.", "Price Override");
+                break;
+            case "void-line": {
+            if (cart.size === 0) {
+                showMessage("There is no line to void.", "Void Line");
+                break;
+            }
+
+            if (
+                selectedCartItemId === null ||
+                !cart.has(selectedCartItemId)
+            ) {
+                showMessage(
+                    "Click the item you want to void in the cart first.",
+                    "Void Line"
+                );
+                break;
+            }
+
+            const item = cart.get(selectedCartItemId);
+
+            const confirmed = await showConfirm({
+                title: "Void Line",
+                text: `Remove "${item.name}" from the current transaction?`,
+                confirmLabel: "Void Line",
+                danger: true
+            });
+
+            if (confirmed) {
+                cart.delete(selectedCartItemId);
+                selectedCartItemId = null;
+                renderCart();
+                search.focus();
+            }
+
+            break;
+        }
+            case "reward":
+                showMessage("Scan the customer's loyalty card to apply rewards.", "Reward");
+                break;
+            case "suspend":
+                if (cart.size === 0) { showMessage("Add items before suspending a sale.", "Suspend"); break; }
+                showMessage("The current sale can be suspended.", "Suspend");
+                break;
+            case "retrieve":
+                showMessage("Retrieve a previously suspended sale.", "Retrieve");
+                break;
+            default:
+                showMessage("This action is not wired up yet.", "Action");
+        }
+    });
 });
 
 // ---------- Totals ----------
-const money = value =>
-    Math.round((value + Number.EPSILON) * 100) / 100;
-
-const numberValue = input => {
-    const value = Number(input?.value || 0);
-    return Number.isFinite(value) ? Math.max(0, value) : 0;
-};
+const money = value => Math.round((value + Number.EPSILON) * 100) / 100;
+const numberValue = input => { const value = Number(input?.value || 0); return Number.isFinite(value) ? Math.max(0, value) : 0; };
 
 function getSubtotal() {
     let subtotal = 0;
-
-    cart.forEach(item => {
-        subtotal += item.price * item.quantity;
-    });
-
+    cart.forEach(item => { subtotal += item.price * item.quantity; });
     return money(subtotal);
 }
 
 function getDiscount(subtotal) {
     const type = discountType.value;
     let discount = 0;
-
     if (type === "regular") {
         const percent = numberValue(regularDiscountInput);
-
         discount = subtotal * Math.min(percent, 100) / 100;
-    } else if (
-        ["senior", "pwd", "naac", "solo_parent"].includes(type)
-    ) {
+    } else if (["senior", "pwd", "naac", "solo_parent"].includes(type)) {
         discount = numberValue(specialDiscountInput);
     }
-
     return money(discount);
 }
 
 function getCharges() {
-    return money(
-        chargeInputs.reduce(
-            (sum, input) => sum + numberValue(input),
-            0
-        )
-    );
+    return money(chargeInputs.reduce((sum, input) => sum + numberValue(input), 0));
 }
 
 function getTotal() {
     const subtotal = getSubtotal();
     const discount = getDiscount(subtotal);
     const charges = getCharges();
-
     return money(Math.max(0, subtotal - discount + charges));
 }
 
 function updateChange() {
     const total = getTotal();
     const tendered = numberValue(amountInput);
-
-    changeDisplay.textContent = money(
-        Math.max(0, tendered - total)
-    ).toFixed(2);
+    changeDisplay.textContent = money(Math.max(0, tendered - total)).toFixed(2);
 }
 
 function updateTotals() {
@@ -591,46 +1044,31 @@ function updateTotals() {
 
 function updateDiscountFields() {
     const type = discountType.value;
-
     const regular = type === "regular";
-    const special = [
-        "senior", "pwd", "naac", "solo_parent"
-    ].includes(type);
+    const special = ["senior", "pwd", "naac", "solo_parent"].includes(type);
 
-    document.getElementById("regular-discount-fields").hidden =
-        !regular;
-
-    document.getElementById("special-discount-fields").hidden =
-        !special;
-
-    document.getElementById("discount-customer-field").hidden =
-        !special;
-
-    document.getElementById("discount-reference-field").hidden =
-        !special;
+    document.getElementById("regular-discount-fields").hidden = !regular;
+    document.getElementById("special-discount-fields").hidden = !special;
+    document.getElementById("discount-customer-field").hidden = !special;
+    document.getElementById("discount-reference-field").hidden = !special;
 
     regularDiscountInput.disabled = !regular;
     specialDiscountInput.disabled = !special;
     customerNameInput.disabled = !special;
     discountReferenceInput.disabled = !special;
 
-    if (!regular) {
-        regularDiscountInput.value = "0";
-    }
-
+    if (!regular) regularDiscountInput.value = "0";
     if (!special) {
         specialDiscountInput.value = "0";
         customerNameInput.value = "";
         discountReferenceInput.value = "";
     }
-
     updateTotals();
 }
 
 function addProduct(button) {
     const id = button.dataset.id;
     const existing = cart.get(id);
-
     if (existing) {
         existing.quantity += 1;
     } else {
@@ -642,56 +1080,38 @@ function addProduct(button) {
             quantity: 1
         });
     }
-
     renderCart();
 }
 
 productButtons.forEach(button => {
-    button.addEventListener("click", () => {
-        addProduct(button);
-    });
+    button.addEventListener("click", () => addProduct(button));
 });
 
 function filterProducts() {
     const term = search.value.toLowerCase().trim();
     let visible = 0;
-
     productButtons.forEach(button => {
         const name = button.dataset.name || "";
         const barcode = button.dataset.barcode || "";
         const text = (name + " " + barcode).toLowerCase();
-
         button.hidden = !text.includes(term);
-
         if (!button.hidden) visible++;
     });
-
-    noMatch.hidden = !(
-        productButtons.length > 0 && visible === 0
-    );
+    noMatch.hidden = !(productButtons.length > 0 && visible === 0);
 }
 
 search.addEventListener("input", filterProducts);
-
 search.addEventListener("keydown", event => {
     if (event.key !== "Enter") return;
-
     event.preventDefault();
-
-    const matches = productButtons.filter(
-        button => !button.hidden
-    );
-
+    const matches = productButtons.filter(button => !button.hidden);
     if (matches.length === 1) {
         addProduct(matches[0]);
         search.value = "";
         filterProducts();
         search.focus();
     } else if (matches.length > 1) {
-        showMessage(
-            "More than one product matches. Type more to narrow your search.",
-            "Multiple matches"
-        );
+        showMessage("More than one product matches. Type more to narrow your search.", "Multiple matches");
     } else {
         showMessage("No matching product found.", "No match");
     }
@@ -699,184 +1119,143 @@ search.addEventListener("keydown", event => {
 
 function makeStepButton(label, ariaLabel, onClick) {
     const button = document.createElement("button");
-
     button.type = "button";
     button.textContent = label;
-    button.className =
-        "flex h-9 w-9 items-center justify-center rounded-full " +
-        "bg-brand-soft text-lg font-bold text-brand transition " +
-        "hover:bg-brand hover:text-white focus:outline-none focus:ring-2 " +
-        "focus:ring-brand active:scale-95";
-
+    button.className = "flex h-9 w-9 items-center justify-center rounded-full bg-brand-soft text-lg font-bold text-brand transition hover:bg-brand hover:text-white focus:outline-none focus:ring-2 focus:ring-brand active:scale-95";
     button.setAttribute("aria-label", ariaLabel);
     button.addEventListener("click", onClick);
-
     return button;
 }
 
 function renderCart() {
     cartBody.replaceChildren();
-
     let count = 0;
-
     cart.forEach(item => {
         count += item.quantity;
-
         const row = document.createElement("li");
-        row.className = "rounded-2xl px-3 py-3 transition hover:bg-canvas/60";
 
+        row.dataset.productId = item.id;
+
+        row.className = [
+            "rounded-2xl px-3 py-3 transition cursor-pointer",
+            selectedCartItemId === String(item.id)
+                ? "bg-red-50 ring-2 ring-red-400"
+                : "hover:bg-canvas/60"
+        ].join(" ");
+
+        row.addEventListener("click", (event) => {
+            if (event.target.closest("button, input")) return;
+
+            selectedCartItemId = item.id;
+            renderCart();
+        });
+        
         const top = document.createElement("div");
         top.className = "flex items-start justify-between gap-3";
-
+        
         const info = document.createElement("div");
         info.className = "min-w-0";
-
+        
         const name = document.createElement("p");
-        name.className =
-            "truncate text-sm font-semibold text-ink";
+        name.className = "truncate text-sm font-semibold text-ink";
         name.textContent = item.name;
-
+        
         const meta = document.createElement("p");
         meta.className = "tabular text-xs text-slate-500";
-        meta.textContent =
-            "₱" + item.price.toFixed(2) +
-            (item.unit ? " / " + item.unit : "");
-
+        meta.textContent = "₱" + item.price.toFixed(2) + (item.unit ? " / " + item.unit : "");
+        
         info.append(name, meta);
-
+        
         const lineTotal = document.createElement("p");
-        lineTotal.className =
-            "tabular shrink-0 text-base font-bold text-ink";
-        lineTotal.textContent =
-            "₱" + money(item.price * item.quantity).toFixed(2);
-
+        lineTotal.className = "tabular shrink-0 text-base font-bold text-ink";
+        lineTotal.textContent = "₱" + money(item.price * item.quantity).toFixed(2);
+        
         top.append(info, lineTotal);
-
+        
         const controls = document.createElement("div");
-        controls.className =
-            "mt-2 flex items-center justify-between";
-
+        controls.className = "mt-2 flex items-center justify-between";
+        
         const stepper = document.createElement("div");
         stepper.className = "flex items-center gap-1.5";
-
+        
         const quantityInput = document.createElement("input");
         quantityInput.type = "number";
         quantityInput.min = "0.001";
         quantityInput.step = "0.001";
         quantityInput.value = item.quantity;
-        quantityInput.className =
-            "tabular h-9 w-20 rounded-xl border border-slate-200 " +
-            "px-2 text-center text-sm font-semibold " +
-            "focus:border-brand focus:outline-none focus:ring-2 focus:ring-brand/30";
-        quantityInput.setAttribute(
-            "aria-label", "Quantity for " + item.name
-        );
-
+        quantityInput.className = "tabular h-9 w-20 rounded-xl border border-slate-200 px-2 text-center text-sm font-semibold focus:border-brand focus:outline-none focus:ring-2 focus:ring-brand/30";
+        quantityInput.setAttribute("aria-label", "Quantity for " + item.name);
+        
         quantityInput.addEventListener("change", () => {
             const value = Number(quantityInput.value);
-
-            if (
-                Number.isFinite(value) &&
-                value > 0 &&
-                value === Math.round(value * 1000) / 1000
-            ) {
+            if (Number.isFinite(value) && value > 0 && value === Math.round(value * 1000) / 1000) {
                 item.quantity = value;
             } else {
-                showMessage(
-                    "Enter a quantity with up to 3 decimal places.",
-                    "Invalid quantity"
-                );
+                showMessage("Enter a quantity with up to 3 decimal places.", "Invalid quantity");
                 if (cart.has(item.id)) {
-                    item.quantity = Math.max(
-                        0.001,
-                        Math.floor(item.quantity * 1000) / 1000
-                    );
+                    item.quantity = Math.max(0.001, Math.floor(item.quantity * 1000) / 1000);
                 }
             }
-
             renderCart();
         });
-
-        const minus = makeStepButton(
-            "−",
-            "Decrease quantity of " + item.name,
-            () => {
-                if (item.quantity > 1) {
-                    item.quantity -= 1;
-                } else {
-                    cart.delete(item.id);
-                }
-
-                renderCart();
+        
+        const minus = makeStepButton("−", "Decrease quantity of " + item.name, () => {
+            if (item.quantity > 1) {
+                item.quantity -= 1;
+            } else {
+                cart.delete(item.id);
             }
-        );
-
-        const plus = makeStepButton(
-            "+",
-            "Increase quantity of " + item.name,
-            () => {
-                item.quantity += 1;
-                renderCart();
-            }
-        );
-
+            renderCart();
+        });
+        
+        const plus = makeStepButton("+", "Increase quantity of " + item.name, () => {
+            item.quantity += 1;
+            renderCart();
+        });
+        
         stepper.append(minus, quantityInput, plus);
-
+        
         const removeButton = document.createElement("button");
         removeButton.type = "button";
         removeButton.textContent = "Remove";
-        removeButton.className =
-            "rounded-full px-3 py-1.5 text-xs font-semibold " +
-            "text-red-600 transition hover:bg-red-50";
-
+        removeButton.className = "rounded-full px-3 py-1.5 text-xs font-semibold text-red-600 transition hover:bg-red-50";
         removeButton.addEventListener("click", () => {
             cart.delete(item.id);
             renderCart();
         });
-
+        
         controls.append(stepper, removeButton);
         row.append(top, controls);
         cartBody.appendChild(row);
     });
 
-    itemCount.textContent =
-        count + (count === 1 ? " item" : " items");
-
+    itemCount.textContent = count + (count === 1 ? " item" : " items");
     cartEmpty.hidden = cart.size > 0;
     cartBody.hidden = cart.size === 0;
-
+    
     document.getElementById("cart-data").value = JSON.stringify(
         Array.from(cart.values()).map(item => ({
             product_id: item.id,
             quantity: item.quantity
         }))
     );
-
     updateTotals();
 }
 
 // Payment input and charges
 amountInput.addEventListener("input", updateChange);
-
 chargeInputs.forEach(input => {
     input.addEventListener("input", updateTotals);
     input.addEventListener("change", updateTotals);
 });
-
 regularDiscountInput.addEventListener("input", updateTotals);
 specialDiscountInput.addEventListener("input", updateTotals);
-
-// Discount selection
 discountType.addEventListener("change", updateDiscountFields);
 
 // Quick payment buttons
 document.querySelectorAll("[data-quick]").forEach(button => {
     button.addEventListener("click", () => {
-        const value =
-            button.dataset.quick === "exact"
-                ? getTotal().toFixed(2)
-                : button.dataset.quick;
-
+        const value = button.dataset.quick === "exact" ? getTotal().toFixed(2) : button.dataset.quick;
         amountInput.value = value;
         updateChange();
     });
@@ -885,14 +1264,12 @@ document.querySelectorAll("[data-quick]").forEach(button => {
 // Clear cart
 document.getElementById("clear-cart").addEventListener("click", async () => {
     if (cart.size === 0) return;
-
     const ok = await showConfirm({
         title: "Clear cart?",
         text: "This will remove all items from the current sale.",
         confirmLabel: "Clear",
         danger: true
     });
-
     if (ok) {
         cart.clear();
         renderCart();
@@ -904,97 +1281,144 @@ document.getElementById("clear-cart").addEventListener("click", async () => {
 checkoutForm.addEventListener("submit", event => {
     if (cart.size === 0) {
         event.preventDefault();
-        showMessage(
-            "Please add at least one product.",
-            "Cart is empty",
-            search
-        );
+        showMessage("Please add at least one product.", "Cart is empty", search);
         return;
     }
-
     const subtotal = getSubtotal();
     const discount = getDiscount(subtotal);
     const total = getTotal();
 
     if (discount > subtotal) {
         event.preventDefault();
-        showMessage(
-            "Discount cannot exceed the subtotal.",
-            "Invalid discount"
-        );
+        showMessage("Discount cannot exceed the subtotal.", "Invalid discount");
         return;
     }
-
-    if (
-        discountType.value === "regular" &&
-        numberValue(regularDiscountInput) > 100
-    ) {
+    if (discountType.value === "regular" && numberValue(regularDiscountInput) > 100) {
         event.preventDefault();
-        showMessage(
-            "Regular discount cannot exceed 100%.",
-            "Invalid discount",
-            regularDiscountInput
-        );
+        showMessage("Regular discount cannot exceed 100%.", "Invalid discount", regularDiscountInput);
         return;
     }
-
-    if (
-        ["senior", "pwd", "naac", "solo_parent"].includes(
-            discountType.value
-        )
-    ) {
+    if (["senior", "pwd", "naac", "solo_parent"].includes(discountType.value)) {
         if (!customerNameInput.value.trim()) {
             event.preventDefault();
-            showMessage(
-                "Enter the eligible customer's name.",
-                "Missing details",
-                customerNameInput
-            );
+            showMessage("Enter the eligible customer's name.", "Missing details", customerNameInput);
             return;
         }
-
         if (!discountReferenceInput.value.trim()) {
             event.preventDefault();
-            showMessage(
-                "Enter the applicable ID or reference number.",
-                "Missing details",
-                discountReferenceInput
-            );
+            showMessage("Enter the applicable ID or reference number.", "Missing details", discountReferenceInput);
             return;
         }
     }
-
     if (numberValue(amountInput) < total) {
         event.preventDefault();
-        showMessage(
-            "Payment is insufficient. Amount due: ₱" +
-            total.toFixed(2),
-            "Insufficient payment",
-            amountInput
-        );
+        showMessage("Payment is insufficient. Amount due: ₱" + total.toFixed(2), "Insufficient payment", amountInput);
         return;
     }
 
-    // Always stop the native submit, ask first, then submit manually
     event.preventDefault();
-
     showConfirm({
         title: "Complete this sale?",
-        text: "Total: ₱" + total.toFixed(2) +
-              " · Change: ₱" +
-              money(Math.max(0, numberValue(amountInput) - total)).toFixed(2),
+        text: "Total: ₱" + total.toFixed(2) + " · Change: ₱" + money(Math.max(0, numberValue(amountInput) - total)).toFixed(2),
         confirmLabel: "Complete sale"
     }).then(ok => {
         if (!ok) return;
-
-        document.getElementById("pay-button").disabled = true; // prevent double submit
-        checkoutForm.submit(); // doesn't re-trigger the submit event
+        document.getElementById("pay-button").disabled = true;
+        checkoutForm.submit();
     });
 });
 
 updateDiscountFields();
 renderCart();
 </script>
+
+
+
+<!-- Product Lookup Modal -->
+<div id="product-lookup-modal"
+     class="fixed inset-0 z-[100] hidden items-center justify-center bg-slate-900/50 p-4 backdrop-blur-sm">
+
+    <!-- Modal Card: Fixed Height -->
+    <div class="flex w-full max-w-2xl flex-col overflow-hidden rounded-2xl bg-white shadow-2xl ring-1 ring-slate-900/5"
+         style="height:  min(680px, 85vh); max-height: 85vh;">
+
+        <!-- Header: Fixed -->
+        <div class="flex shrink-0 items-start justify-between border-b border-slate-100 px-5 py-4 sm:px-6">
+            <div class="min-w-0">
+                <h2 id="lookup-title"
+                    class="text-lg font-semibold tracking-tight text-slate-900">
+                    Price Check
+                </h2>
+
+                <p id="lookup-subtitle"
+                   class="mt-0.5 text-sm text-slate-500">
+                    Search by product name, barcode, or SKU.
+                </p>
+            </div>
+
+            <button type="button"
+                    id="lookup-close"
+                    aria-label="Close product lookup"
+                    class="ml-3 flex h-9 w-9 shrink-0 items-center justify-center rounded-lg text-slate-400 transition hover:bg-slate-100 hover:text-slate-700 focus:outline-none focus:ring-2 focus:ring-slate-400">
+                ✕
+            </button>
+        </div>
+
+        <!-- Body -->
+        <div class="flex flex-1 flex-col overflow-hidden p-5 sm:p-6"
+             style="min-height: 0;">
+
+            <!-- Search: Fixed -->
+            <div class="relative shrink-0">
+                <span class="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-slate-400">
+                    <svg width="18"
+                         height="18"
+                         fill="none"
+                         viewBox="0 0 24 24"
+                         stroke="currentColor"
+                         stroke-width="2">
+                        <path stroke-linecap="round"
+                              stroke-linejoin="round"
+                              d="M21 21l-4.3-4.3M17 10a7 7 0 11-14 0 7 7 0 0114 0z"/>
+                    </svg>
+                </span>
+
+                <input id="lookup-search"
+                       type="text"
+                       autocomplete="off"
+                       placeholder="Enter product name, barcode, or SKU..."
+                       class="w-full rounded-xl border border-slate-200 bg-slate-50 py-3 pl-11 pr-4 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-blue-500 focus:bg-white focus:ring-2 focus:ring-blue-100">
+            </div>
+
+            <!-- Status: Fixed -->
+            <p id="lookup-status"
+               aria-live="polite"
+               class="mt-3 shrink-0 text-sm text-slate-500">
+                Type to search for a product.
+            </p>
+
+            <!-- Results: Only Scrollable Area -->
+            <div id="lookup-results"
+                 class="mt-3 space-y-2 overflow-x-hidden overflow-y-auto overscroll-contain pr-2"
+                 style="flex: 1 1 0%; min-height: 0; height: 0; scrollbar-gutter: stable;">
+
+                <!-- JavaScript inserts product results here. -->
+
+            </div>
+        </div>
+
+        <!-- Footer: Fixed -->
+        <div class="flex shrink-0 justify-end border-t border-slate-100 px-5 py-4 sm:px-6">
+            <button type="button"
+                    id="lookup-done"
+                    class="rounded-xl bg-slate-100 px-5 py-2.5 text-sm font-semibold text-slate-700 transition hover:bg-slate-200 focus:outline-none focus:ring-2 focus:ring-slate-400 focus:ring-offset-2">
+                Close
+            </button>
+        </div>
+
+    </div>
+</div>
+
 
 </body>
 </html>
