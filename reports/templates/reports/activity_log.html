@@ -1,0 +1,747 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Activity Log | TindaTech POS</title>
+
+    {% load static %}
+    <link rel="icon" type="image/png" href="{% static 'images/weblogo.png' %}">
+    <link rel="stylesheet" href="{% static 'css/tailwind.css' %}">
+
+    <style>
+        @font-face {
+            font-family: 'Poppins';
+            src: url("{% static 'fonts/Poppins-Regular.ttf' %}") format('truetype');
+            font-weight: 400; font-style: normal; font-display: swap;
+        }
+        @font-face {
+            font-family: 'Poppins';
+            src: url("{% static 'fonts/Poppins-Medium.ttf' %}") format('truetype');
+            font-weight: 500; font-style: normal; font-display: swap;
+        }
+        @font-face {
+            font-family: 'Poppins';
+            src: url("{% static 'fonts/Poppins-SemiBold.ttf' %}") format('truetype');
+            font-weight: 600; font-style: normal; font-display: swap;
+        }
+        @font-face {
+            font-family: 'Poppins';
+            src: url("{% static 'fonts/Poppins-Bold.ttf' %}") format('truetype');
+            font-weight: 700; font-style: normal; font-display: swap;
+        }
+
+        body { font-family: 'Poppins', ui-sans-serif, system-ui, sans-serif; }
+        .tabular { font-variant-numeric: tabular-nums; }
+
+        /* Keep every cell aligned to the top of the row */
+        tbody td { vertical-align: top; }
+
+        .hero-card {
+            background: linear-gradient(135deg, #4F55F0 0%, #3A40DC 55%, #3035C9 100%);
+        }
+    </style>
+</head>
+
+<body class="bg-canvas font-sans text-slate-800 antialiased">
+
+    {% include "reports/loading_overlay.html" %}
+
+    <!-- Mobile top bar -->
+    <header class="sticky top-0 z-30 flex items-center justify-between bg-canvas/90 px-4 py-3 backdrop-blur lg:hidden">
+        <div class="flex items-center gap-2">
+            <img src="{% static 'images/weblogo.png' %}" alt="TindaTech POS logo" class="h-9 w-9 rounded-xl object-cover">
+            <div class="leading-tight">
+                <span class="block font-semibold text-ink">TindaTech POS</span>
+                <span class="block text-xs text-slate-500">Version 1.0.0</span>
+            </div>
+        </div>
+
+        <button id="menu-open" type="button" aria-label="Open menu"
+                class="rounded-full bg-white p-2.5 text-slate-600 shadow-sm hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-brand">
+            <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75">
+                <path stroke-linecap="round" d="M4 6h16M4 12h16M4 18h16"/>
+            </svg>
+        </button>
+    </header>
+
+    <!-- Mobile backdrop -->
+    <div id="backdrop" class="fixed inset-0 z-40 hidden bg-slate-900/40 lg:hidden"></div>
+
+    <!-- Sidebar -->
+    <aside id="sidebar"
+           class="fixed inset-y-0 left-0 z-50 flex w-72 -translate-x-full flex-col bg-white transition-transform duration-200 lg:inset-y-4 lg:left-4 lg:w-64 lg:translate-x-0 lg:rounded-3xl lg:shadow-sm">
+
+        <div class="flex items-center justify-between px-6 pb-2 pt-6">
+            <div class="flex items-center gap-3">
+                <img src="{% static 'images/weblogo.png' %}" alt="TindaTech POS logo" class="h-10 w-10 rounded-xl object-cover">
+                <div class="leading-tight">
+                    <p class="font-semibold text-ink">TindaTech POS</p>
+                    <p class="mt-1 text-xs text-slate-500">Version 1.0.0</p>
+                </div>
+            </div>
+
+            <button id="menu-close" type="button" aria-label="Close menu"
+                    class="rounded-full p-1.5 text-slate-500 hover:bg-slate-100 lg:hidden">
+                <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75">
+                    <path stroke-linecap="round" d="M6 6l12 12M18 6L6 18"/>
+                </svg>
+            </button>
+        </div>
+
+        <nav class="flex-1 space-y-5 overflow-y-auto px-4 py-4 text-sm">
+
+            <div>
+                <p class="mb-2 px-3 text-[11px] font-medium uppercase tracking-wider text-slate-400">Menu</p>
+                <a href="{% url 'dashboard' %}"
+                   class="flex items-center gap-3 rounded-xl px-3 py-2.5 text-slate-600 transition hover:bg-brand-soft hover:text-brand">
+                    <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M4 13h6V4H4v9zm10 7h6V4h-6v16zM4 20h6v-3H4v3z"/>
+                    </svg>
+                    Dashboard
+                </a>
+            </div>
+
+            <div>
+                <p class="mb-2 px-3 text-[11px] font-medium uppercase tracking-wider text-slate-400">Sales</p>
+                <div class="space-y-1">
+                    <a href="{% url 'sales_history' %}"
+                       class="flex items-center gap-3 rounded-xl px-3 py-2.5 text-slate-600 transition hover:bg-brand-soft hover:text-brand">
+                        <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l3 2M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                        </svg>
+                        Sales History
+                    </a>
+                    <a href="{% url 'sales_report' %}"
+                       class="flex items-center gap-3 rounded-xl px-3 py-2.5 text-slate-600 transition hover:bg-brand-soft hover:text-brand">
+                        <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M9 17v-6m4 6V7m4 10v-3M5 21h14a1 1 0 001-1V4a1 1 0 00-1-1H5a1 1 0 00-1 1v16a1 1 0 001 1z"/>
+                        </svg>
+                        Sales Reports
+                    </a>
+                    <a href="{% url 'sales_analytics' %}"
+                       class="flex items-center gap-3 rounded-xl px-3 py-2.5 text-slate-600 transition hover:bg-brand-soft hover:text-brand">
+                        <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M3 3v18h18M7 14l4-4 3 3 5-6"/>
+                        </svg>
+                        Sales Analytics
+                    </a>
+                    <a href="{% url 'electronic_journal' %}"
+                       class="flex items-center gap-3 rounded-xl px-3 py-2.5 text-slate-600 transition hover:bg-brand-soft hover:text-brand">
+                        <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M12 6.25v11.5M5 5.5a2 2 0 012-2h4.5a2.5 2.5 0 01.5.05 2.5 2.5 0 01.5-.05H17a2 2 0 012 2v13a2 2 0 01-2 2h-4.5a.5.5 0 00-.5.5.5.5 0 00-.5-.5H7a2 2 0 01-2-2v-13z"/>
+                        </svg>
+                        Electronic Journal
+                    </a>
+                </div>
+            </div>
+
+            <div>
+                <p class="mb-2 px-3 text-[11px] font-medium uppercase tracking-wider text-slate-400">Catalog</p>
+                <div class="space-y-1">
+                    <a href="/products/"
+                       class="flex items-center gap-3 rounded-xl px-3 py-2.5 text-slate-600 transition hover:bg-brand-soft hover:text-brand">
+                        <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/>
+                        </svg>
+                        Products
+                    </a>
+                    <a href="/products/categories/"
+                       class="flex items-center gap-3 rounded-xl px-3 py-2.5 text-slate-600 transition hover:bg-brand-soft hover:text-brand">
+                        <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M7 7h.01M7 3h5a2 2 0 011.4.6l7 7a2 2 0 010 2.8l-5 5a2 2 0 01-2.8 0l-7-7A2 2 0 015 10V5a2 2 0 012-2z"/>
+                        </svg>
+                        Categories
+                    </a>
+                </div>
+            </div>
+
+            <div>
+                <p class="mb-2 px-3 text-[11px] font-medium uppercase tracking-wider text-slate-400">Inventory</p>
+                <div class="space-y-1">
+                    <a href="/inventory/stock/"
+                       class="flex items-center gap-3 rounded-xl px-3 py-2.5 text-slate-600 transition hover:bg-brand-soft hover:text-brand">
+                        <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M4 7h16M4 12h16M4 17h16"/>
+                        </svg>
+                        Stock Levels
+                    </a>
+                    <a href="/inventory/receive/"
+                       class="flex items-center gap-3 rounded-xl px-3 py-2.5 text-slate-600 transition hover:bg-brand-soft hover:text-brand">
+                        <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M12 4v12m0 0l-4-4m4 4l4-4M4 20h16"/>
+                        </svg>
+                        Receive Stock
+                    </a>
+                    <a href="{% url 'damaged_stock' %}"
+                       class="flex items-center gap-3 rounded-xl px-3 py-2.5 text-slate-600 transition hover:bg-brand-soft hover:text-brand">
+                        <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v4m0 4h.01M10.3 3.9L1.8 18a2 2 0 001.7 3h17a2 2 0 001.7-3L13.7 3.9a2 2 0 00-3.4 0z"/>
+                        </svg>
+                        Damaged Stock
+                    </a>
+                    <a href="{% url 'expiration_monitoring' %}"
+                       class="flex items-center gap-3 rounded-xl px-3 py-2.5 text-slate-600 transition hover:bg-brand-soft hover:text-brand">
+                        <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M8 7V3m8 4V3M5 11h14M6 21h12a1 1 0 001-1V7a1 1 0 00-1-1H6a1 1 0 00-1 1v13a1 1 0 001 1z"/>
+                        </svg>
+                        Expiration Monitoring
+                    </a>
+                </div>
+            </div>
+
+            <div>
+                <p class="mb-2 px-3 text-[11px] font-medium uppercase tracking-wider text-slate-400">Reading</p>
+                <div class="space-y-1">
+                    <a href="{% url 'x_reading' %}"
+                       class="flex items-center gap-3 rounded-xl px-3 py-2.5 text-slate-600 transition hover:bg-brand-soft hover:text-brand">
+                        <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M9 17v-2m3 2v-4m3 4V9m2 12H7a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h7l5 5v11a2 2 0 0 1-2 2Z"/>
+                        </svg>
+                        X Reading
+                    </a>
+                    <a href="{% url 'z_reading' %}"
+                       class="flex items-center gap-3 rounded-xl px-3 py-2.5 text-slate-600 transition hover:bg-brand-soft hover:text-brand">
+                        <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M9 14h6m-6-4h6m2 11H7a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h7l5 5v16Z"/>
+                        </svg>
+                        Z Reading
+                    </a>
+                </div>
+            </div>
+
+            <!-- Audit -->
+            <div>
+                <p class="mb-2 px-3 text-[11px] font-medium uppercase tracking-wider text-slate-400">
+                    Logs
+                </p>
+
+                <div class="space-y-1">
+                    <a href="{% url 'activity_log' %}"
+                       aria-current="page"
+                       class="flex items-center gap-3 rounded-xl bg-brand px-3 py-2.5 font-medium text-white shadow-lg shadow-brand/30">
+                        <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l3 2m6-2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                        </svg>
+                        Activity Log
+                    </a>
+                </div>
+            </div>
+
+            <div>
+                <p class="mb-2 px-3 text-[11px] font-medium uppercase tracking-wider text-slate-400">User Management</p>
+                <div class="space-y-1">
+                    <a href="{% url 'account_settings' %}"
+                       class="flex items-center gap-3 rounded-xl px-3 py-2.5 text-slate-600 transition hover:bg-brand-soft hover:text-brand">
+                        <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 001.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/>
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+                        </svg>
+                        Account Settings
+                    </a>
+                    <a href="{% url 'manage_accounts' %}"
+                       class="flex items-center gap-3 rounded-xl px-3 py-2.5 text-slate-600 transition hover:bg-brand-soft hover:text-brand">
+                        <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M16 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2m16 0v-2a4 4 0 00-3-3.87M14 3.13a4 4 0 010 7.75M14 7a4 4 0 11-8 0 4 4 0 018 0z"/>
+                        </svg>
+                        Manage Accounts
+                    </a>
+                    <a href="{% url 'receipt_settings' %}"
+                       class="flex items-center gap-3 rounded-xl px-3 py-2.5 text-slate-600 transition hover:bg-brand-soft hover:text-brand">
+                        <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M9 7h6m-6 4h6m-6 4h3M6 3h12a1 1 0 011 1v17l-3-2-2 2-2-2-2 2-2-2-3 2V4a1 1 0 011-1z"/>
+                        </svg>
+                        Receipt Settings
+                    </a>
+                </div>
+            </div>
+        </nav>
+
+        <div class="space-y-3 p-4">
+            <form id="logout-form" method="post" action="{% url 'logout' %}">
+                {% csrf_token %}
+                <button type="button" id="signout-btn"
+                        class="flex w-full items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-600 transition hover:border-red-600 hover:bg-red-600 hover:text-white focus:outline-none focus:ring-2 focus:ring-red-500">
+                    <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M15 16l4-4m0 0l-4-4m4 4H9m4 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/>
+                    </svg>
+                    Sign out
+                </button>
+            </form>
+        </div>
+    </aside>
+
+    <!-- Sign out confirmation modal -->
+    <div id="signout-modal"
+         class="fixed inset-0 z-[60] hidden items-center justify-center bg-slate-900/50 p-4"
+         role="dialog" aria-modal="true" aria-labelledby="signout-title">
+        <div class="w-full max-w-sm rounded-3xl bg-white p-6 shadow-xl">
+            <div class="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-red-100">
+                <svg class="h-6 w-6 text-red-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M15 16l4-4m0 0l-4-4m4 4H9m4 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/>
+                </svg>
+            </div>
+            <h3 id="signout-title" class="text-center text-lg font-semibold text-ink">
+                Are you sure you want to sign out?
+            </h3>
+            <div class="mt-6 flex gap-3">
+                <button type="button" id="signout-cancel"
+                        class="flex-1 rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-medium text-slate-700 transition hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-slate-300">
+                    Cancel
+                </button>
+                <button type="button" id="signout-confirm"
+                        class="flex-1 rounded-xl bg-red-600 px-4 py-2.5 text-sm font-medium text-white transition hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2">
+                    Yes, sign out
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main content -->
+    <main class="min-h-screen px-4 pb-8 pt-4 sm:px-8 lg:ml-72 lg:py-8 lg:pr-8">
+        <div class="mx-auto max-w-6xl">
+
+            <!-- Page header -->
+            <div class="mb-7 flex flex-wrap items-center justify-between gap-4">
+                <div>
+                    <nav aria-label="Breadcrumb" class="mb-1 flex items-center gap-2 whitespace-nowrap text-xs text-slate-400">
+                        <a href="{% url 'dashboard' %}" class="transition hover:text-brand">Dashboard</a>
+                        <svg width="12" height="12" style="flex:none" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="m9 18 6-6-6-6"/>
+                        </svg>
+                        <span class="font-medium text-slate-500">Activity Log</span>
+                    </nav>
+                    <h1 class="text-3xl font-semibold tracking-tight text-ink">Activity Log</h1>
+                    <p class="mt-1 text-sm text-slate-500">
+                        Monitor recorded activities performed in the system.
+                    </p>
+                </div>
+
+                <a href="{% url 'dashboard' %}"
+                   class="inline-flex items-center gap-2 rounded-full bg-white px-5 py-3 text-sm font-medium text-slate-700 shadow-sm transition hover:bg-slate-50 hover:shadow-md focus:outline-none focus:ring-2 focus:ring-brand focus:ring-offset-2">
+                    <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="m15 18-6-6 6-6"/>
+                    </svg>
+                    Back to Dashboard
+                </a>
+            </div>
+
+            <!-- Summary + filters -->
+            <section class="mb-6 grid grid-cols-1 gap-5 lg:grid-cols-3">
+
+                <!-- Total records -->
+                <div class="hero-card rounded-3xl p-5 text-white shadow-xl shadow-brand/25">
+                    <div class="flex items-start justify-between">
+                        <span class="flex h-12 w-12 items-center justify-center rounded-2xl bg-white text-brand">
+                            <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l3 2m6-2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                            </svg>
+                        </span>
+                        {% if search or selected_date %}
+                            <span class="rounded-full bg-amber-200 px-2.5 py-0.5 text-xs font-medium text-amber-900">Filtered</span>
+                        {% else %}
+                            <span class="rounded-full bg-emerald-300 px-2.5 py-0.5 text-xs font-medium text-emerald-900">All time</span>
+                        {% endif %}
+                    </div>
+                    <p class="mt-6 text-sm text-indigo-100">
+                        {% if search or selected_date %}Matching records{% else %}Total activity records{% endif %}
+                    </p>
+                    <p class="tabular mt-1 text-3xl font-semibold tracking-tight">{{ total_logs }}</p>
+                </div>
+
+                <!-- Filters -->
+                <div class="rounded-3xl bg-white p-5 shadow-sm lg:col-span-2">
+                    <form method="GET" class="flex h-full flex-col justify-between gap-4">
+                        <div class="grid grid-cols-1 gap-4 sm:grid-cols-5">
+                            <div class="sm:col-span-3">
+                                <label for="q" class="mb-1.5 block text-xs font-medium text-slate-500">
+                                    Search activity
+                                </label>
+                                <div class="relative">
+                                    <svg class="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400"
+                                         width="16" height="16"
+                                         fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75" aria-hidden="true">
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="m21 21-4.3-4.3M17 10a7 7 0 11-14 0 7 7 0 0114 0z"/>
+                                    </svg>
+                                    <input type="text" id="q" name="q" value="{{ search }}"
+                                           placeholder="Search username or activity..."
+                                           class="w-full rounded-xl border border-slate-200 bg-canvas/50 py-2.5 pl-10 pr-4 text-sm text-ink outline-none transition placeholder:text-slate-400 focus:border-brand focus:bg-white focus:ring-2 focus:ring-brand/20">
+                                </div>
+                            </div>
+
+                            <div class="sm:col-span-2">
+                                <label for="date" class="mb-1.5 block text-xs font-medium text-slate-500">
+                                    Filter by date
+                                </label>
+                                <input type="date" id="date" name="date" value="{{ selected_date|date:"Y-m-d" }}"
+                                       class="w-full rounded-xl border border-slate-200 bg-canvas/50 px-4 py-2.5 text-sm text-ink outline-none transition focus:border-brand focus:bg-white focus:ring-2 focus:ring-brand/20">
+                            </div>
+                        </div>
+
+                        <div class="flex flex-wrap items-center justify-between gap-3">
+                            <div class="flex flex-wrap items-center gap-2">
+                                {% if search %}
+                                    <span class="inline-flex items-center gap-1 rounded-full bg-brand-soft px-3 py-1 text-xs font-medium text-brand">
+                                        Search: {{ search }}
+                                    </span>
+                                {% endif %}
+                                {% if selected_date %}
+                                    <span class="inline-flex items-center gap-1 rounded-full bg-brand-soft px-3 py-1 text-xs font-medium text-brand">
+                                        Date: {{ selected_date|date:"M d, Y" }}
+                                    </span>
+                                {% endif %}
+                            </div>
+
+                            <div class="flex items-center gap-2">
+                                <a href="{% url 'activity_log' %}"
+                                   class="rounded-full px-4 py-2 text-sm font-medium text-slate-500 transition hover:bg-slate-100 hover:text-slate-700">
+                                    Reset
+                                </a>
+                                <button type="submit"
+                                        class="rounded-full bg-brand px-5 py-2 text-sm font-semibold text-white shadow-lg shadow-brand/30 transition hover:bg-brand-dark focus:outline-none focus:ring-2 focus:ring-brand focus:ring-offset-2">
+                                    Apply filters
+                                </button>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </section>
+
+            <!-- Activity table -->
+            <section class="overflow-hidden rounded-3xl bg-white shadow-sm">
+                <div class="flex flex-wrap items-center justify-between gap-3 px-6 pb-3 pt-6">
+                    <div>
+                        <div class="flex items-center gap-3">
+                            <h2 class="text-xl font-semibold text-ink">Recorded activities</h2>
+                            <span class="tabular rounded-full bg-brand-soft px-2.5 py-0.5 text-xs font-medium text-brand">
+                                {{ total_logs }} record{{ total_logs|pluralize }}
+                            </span>
+                        </div>
+                        <p class="mt-1 text-sm text-slate-500">
+                            Newest activity appears first.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="overflow-x-auto px-3 pb-4">
+                    <table class="min-w-full text-sm">
+                        <thead class="text-left text-xs font-medium text-slate-400">
+                            <tr>
+                                <th scope="col" class="px-4 py-3">Date &amp; time</th>
+                                <th scope="col" class="px-4 py-3">User</th>
+                                <th scope="col" class="px-4 py-3">Activity</th>
+                                <th scope="col" class="px-4 py-3">Details</th>
+                            </tr>
+                        </thead>
+
+                        <tbody>
+                            {% for log in logs %}
+                                <tr class="group align-top transition hover:bg-canvas/60">
+
+                                    <td class="whitespace-nowrap rounded-l-2xl px-4 py-3.5">
+                                        <p class="font-medium text-ink">{{ log.timestamp|date:"M d, Y" }}</p>
+                                        <p class="tabular mt-0.5 text-xs text-slate-400">{{ log.timestamp|date:"h:i:s A" }}</p>
+                                    </td>
+
+                                    <td class="whitespace-nowrap px-4 py-3.5">
+                                        <div class="flex items-center gap-3">
+                                            {% if log.user %}
+                                                <span class="flex h-9 w-9 items-center justify-center rounded-full bg-brand text-sm font-semibold uppercase text-white"
+                                                      aria-hidden="true">
+                                                    {{ log.user.username|first }}
+                                                </span>
+                                                <div class="leading-tight">
+                                                    <p class="font-medium text-ink">{{ log.user.username }}</p>
+                                                    <p class="mt-0.5 text-xs text-slate-400">ID {{ log.user_id }}</p>
+                                                </div>
+                                            {% else %}
+                                                <span class="flex h-9 w-9 items-center justify-center rounded-full bg-slate-100 text-slate-500"
+                                                      aria-hidden="true">
+                                                    <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75">
+                                                        <path stroke-linecap="round" stroke-linejoin="round" d="M9 3v2m6-2v2M9 19v2m6-2v2M3 9h2m-2 6h2m14-6h2m-2 6h2M7 7h10v10H7V7z"/>
+                                                    </svg>
+                                                </span>
+                                                <p class="font-medium text-slate-500">System</p>
+                                            {% endif %}
+                                        </div>
+                                    </td>
+
+                                    <td class="whitespace-nowrap px-4 py-3.5">
+                                        {% with act=log.activity|lower %}
+                                            {% if "delete" in act or "remove" in act or "void" in act or "fail" in act %}
+                                                <span class="inline-flex rounded-full bg-red-50 px-3 py-1 text-xs font-medium text-red-600">{{ log.activity }}</span>
+                                            {% elif "login" in act or "logout" in act or "sign" in act %}
+                                                <span class="inline-flex rounded-full bg-slate-100 px-3 py-1 text-xs font-medium text-slate-600">{{ log.activity }}</span>
+                                            {% elif "add" in act or "create" in act or "receive" in act or "sale" in act %}
+                                                <span class="inline-flex rounded-full bg-emerald-50 px-3 py-1 text-xs font-medium text-emerald-700">{{ log.activity }}</span>
+                                            {% elif "update" in act or "edit" in act or "change" in act %}
+                                                <span class="inline-flex rounded-full bg-amber-100 px-3 py-1 text-xs font-medium text-amber-800">{{ log.activity }}</span>
+                                            {% else %}
+                                                <span class="inline-flex rounded-full bg-brand-soft px-3 py-1 text-xs font-medium text-brand">{{ log.activity }}</span>
+                                            {% endif %}
+                                        {% endwith %}
+                                    </td>
+
+                                    <td class="max-w-md rounded-r-2xl px-4 py-3.5">
+                                        {% if log.details %}
+                                            <div class="rounded-2xl bg-canvas/70 px-4 py-3" style="min-width:22rem">
+                                                <div data-log-details style="white-space:pre-wrap;word-break:break-word;font-size:.75rem;line-height:1.25rem;color:#475569">{{ log.details }}</div>
+                                            </div>
+                                        {% else %}
+                                            <span class="text-xs text-slate-400">No additional details</span>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                            {% empty %}
+                                <tr>
+                                    <td colspan="4" class="px-5 py-14 text-center">
+                                        <span class="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-2xl bg-brand-soft text-brand">
+                                            <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75">
+                                                <path stroke-linecap="round" stroke-linejoin="round" d="M9 5h6m-7 4h8m-9 4h10m-9 4h8M5 3h14a2 2 0 012 2v14a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2z"/>
+                                            </svg>
+                                        </span>
+                                        <p class="font-medium text-slate-700">No activity records found</p>
+                                        <p class="mt-1 text-sm text-slate-500">Try changing your search or date filter.</p>
+                                    </td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+
+            <footer class="mt-8 text-center text-xs text-slate-400">
+                TindaTech POS &copy; {% now "Y" %}
+            </footer>
+
+        </div>
+    </main>
+
+    <script>
+        // Mobile sidebar
+        (function () {
+            const sidebar = document.getElementById('sidebar');
+            const backdrop = document.getElementById('backdrop');
+            const openBtn = document.getElementById('menu-open');
+            const closeBtn = document.getElementById('menu-close');
+
+            function openMenu() {
+                sidebar.classList.remove('-translate-x-full');
+                backdrop.classList.remove('hidden');
+            }
+            function closeMenu() {
+                sidebar.classList.add('-translate-x-full');
+                backdrop.classList.add('hidden');
+            }
+
+            if (openBtn) openBtn.addEventListener('click', openMenu);
+            if (closeBtn) closeBtn.addEventListener('click', closeMenu);
+            if (backdrop) backdrop.addEventListener('click', closeMenu);
+            document.addEventListener('keydown', function (e) {
+                if (e.key === 'Escape') closeMenu();
+            });
+        })();
+
+        // Sign out confirmation modal
+        (function () {
+            const modal = document.getElementById('signout-modal');
+            const openBtn = document.getElementById('signout-btn');
+            const cancelBtn = document.getElementById('signout-cancel');
+            const confirmBtn = document.getElementById('signout-confirm');
+            const form = document.getElementById('logout-form');
+
+            if (!modal || !openBtn || !cancelBtn || !confirmBtn || !form) return;
+
+            function openModal() {
+                modal.classList.remove('hidden');
+                modal.classList.add('flex');
+                cancelBtn.focus();
+            }
+            function closeModal() {
+                modal.classList.add('hidden');
+                modal.classList.remove('flex');
+                openBtn.focus();
+            }
+
+            openBtn.addEventListener('click', openModal);
+            cancelBtn.addEventListener('click', closeModal);
+            confirmBtn.addEventListener('click', function () { form.submit(); });
+            modal.addEventListener('click', function (e) {
+                if (e.target === modal) closeModal();
+            });
+            document.addEventListener('keydown', function (e) {
+                if (e.key === 'Escape' && !modal.classList.contains('hidden')) closeModal();
+            });
+        })();
+    </script>
+
+    <script>
+        // Format "View details": reads Python-style dicts / JSON, shows old vs new values as a change list.
+        (function () {
+            var UPPER = { id: 1, sku: 1, upc: 1, ean: 1, pos: 1, vat: 1 };
+            var ROW = 'display:flex;justify-content:space-between;align-items:flex-start;gap:1rem;padding:.375rem 0;';
+            var LINE = 'border-top:1px solid #E2E8F0;';
+
+            function label(k) {
+                return String(k).trim().replace(/[_-]+/g, ' ').split(' ').map(function (w, i) {
+                    var lw = w.toLowerCase();
+                    if (UPPER[lw]) return lw.toUpperCase();
+                    return i === 0 ? w.charAt(0).toUpperCase() + w.slice(1) : w;
+                }).join(' ');
+            }
+            function val(v) {
+                if (v === null || v === undefined || v === '') return '—';
+                if (typeof v === 'boolean') return v ? 'Yes' : 'No';
+                if (typeof v === 'object') return JSON.stringify(v);
+                return String(v);
+            }
+            function isObj(v) { return v && typeof v === 'object' && !Array.isArray(v); }
+
+            // Python repr -> JSON ('x' -> "x", True/False/None -> true/false/null)
+            function pyToJson(t) {
+                t = t.replace(/Decimal\((['"])([^'"]*)\1\)/g, "'$2'");
+                var out = '', i = 0, n = t.length;
+                while (i < n) {
+                    var c = t.charAt(i);
+                    if (c === "'" || c === '"') {
+                        var j = i + 1, s = '';
+                        while (j < n && t.charAt(j) !== c) {
+                            var ch = t.charAt(j);
+                            if (ch === '\\' && j + 1 < n) {
+                                var nx = t.charAt(j + 1);
+                                s += nx === 'n' ? '\n' : nx === 't' ? '\t' : nx;
+                                j += 2;
+                            } else { s += ch; j++; }
+                        }
+                        out += JSON.stringify(s);
+                        i = j + 1;
+                    } else if (/[A-Za-z_]/.test(c)) {
+                        var k = i;
+                        while (k < n && /[A-Za-z_0-9]/.test(t.charAt(k))) k++;
+                        var w = t.slice(i, k);
+                        out += w === 'True' ? 'true' : w === 'False' ? 'false' : w === 'None' ? 'null' : w;
+                        i = k;
+                    } else { out += c; i++; }
+                }
+                return out;
+            }
+
+            function parseStructured(text) {
+                text = text.trim();
+                var c = text.charAt(0);
+                if (c !== '{' && c !== '[') return null;
+                try { return JSON.parse(text); } catch (e) { /* try python style */ }
+                try { return JSON.parse(pyToJson(text)); } catch (e) { /* give up */ }
+                return null;
+            }
+
+            // "Key: value" lines or "key=value, key2=value2"
+            function parseLines(text) {
+                var lines = text.trim().split(/[\n;|]+/).map(function (l) { return l.trim(); }).filter(Boolean);
+                if (lines.length === 1 && (lines[0].match(/=/g) || []).length > 1) {
+                    lines = lines[0].split(',').map(function (l) { return l.trim(); }).filter(Boolean);
+                }
+                var pairs = [];
+                for (var i = 0; i < lines.length; i++) {
+                    var m = lines[i].match(/^([A-Za-z][\w \-\/.()]{0,40}?)\s*[:=]\s*(.+)$/);
+                    if (!m) return [];
+                    pairs.push([label(m[1]), m[2].trim()]);
+                }
+                return pairs;
+            }
+
+            function el(tag, css, text) {
+                var e = document.createElement(tag);
+                if (css) e.style.cssText = css;
+                if (text !== undefined) e.textContent = text;
+                return e;
+            }
+            function row(k, v, first, muted) {
+                var r = el('div', ROW + (first ? '' : LINE));
+                r.appendChild(el('span', 'color:#94A3B8;white-space:nowrap;', k));
+                r.appendChild(el('span', 'color:' + (muted ? '#64748B' : '#16161D') + ';font-weight:500;text-align:right;word-break:break-word;', v));
+                return r;
+            }
+            function heading(host, text) {
+                var top = host.childNodes.length ? '.75rem' : '0';
+                return el('p', 'margin:' + top + ' 0 .25rem;font-size:.6875rem;font-weight:500;letter-spacing:.05em;text-transform:uppercase;color:#94A3B8;', text);
+            }
+            function badge(text, bg, fg) {
+                return el('span', 'display:inline-block;margin-left:.5rem;padding:.125rem .5rem;border-radius:999px;font-size:.6875rem;font-weight:500;letter-spacing:0;text-transform:none;background:' + bg + ';color:' + fg + ';', text);
+            }
+
+            function renderDiff(host, oldV, newV) {
+                var keys = Object.keys(newV);
+                Object.keys(oldV).forEach(function (k) { if (keys.indexOf(k) < 0) keys.push(k); });
+
+                var changed = [], same = [];
+                keys.forEach(function (k) { (val(oldV[k]) === val(newV[k]) ? same : changed).push(k); });
+
+                var h = heading(host, 'Changes');
+                h.appendChild(changed.length
+                    ? badge(changed.length + ' changed', '#FEF3C7', '#92400E')
+                    : badge('No changes', '#E2E8F0', '#475569'));
+                host.appendChild(h);
+
+                changed.forEach(function (k, i) {
+                    var r = el('div', ROW + (i ? LINE : ''));
+                    r.appendChild(el('span', 'color:#94A3B8;white-space:nowrap;', label(k)));
+                    var right = el('span', 'text-align:right;word-break:break-word;');
+                    right.appendChild(el('span', 'color:#B42318;text-decoration:line-through;', val(oldV[k])));
+                    right.appendChild(el('span', 'color:#94A3B8;padding:0 .375rem;', '→'));
+                    right.appendChild(el('span', 'color:#047857;font-weight:600;', val(newV[k])));
+                    r.appendChild(right);
+                    host.appendChild(r);
+                });
+
+                if (same.length) {
+                    host.appendChild(heading(host, changed.length ? 'Unchanged' : 'Current values'));
+                    same.forEach(function (k, i) {
+                        host.appendChild(row(label(k), val(newV[k] !== undefined ? newV[k] : oldV[k]), i === 0, true));
+                    });
+                }
+            }
+
+            function renderObject(host, obj) {
+                var scalars = [], nested = [];
+                Object.keys(obj).forEach(function (k) { (isObj(obj[k]) ? nested : scalars).push(k); });
+
+                scalars.forEach(function (k, i) { host.appendChild(row(label(k), val(obj[k]), i === 0)); });
+
+                var hasDiff = isObj(obj.old_values) && isObj(obj.new_values);
+                if (hasDiff) renderDiff(host, obj.old_values, obj.new_values);
+
+                nested.forEach(function (k) {
+                    if (hasDiff && (k === 'old_values' || k === 'new_values')) return;
+                    host.appendChild(heading(host, label(k)));
+                    Object.keys(obj[k]).forEach(function (kk, i) {
+                        host.appendChild(row(label(kk), val(obj[k][kk]), i === 0));
+                    });
+                });
+            }
+
+            document.querySelectorAll('[data-log-details]').forEach(function (host) {
+                var text = host.textContent;
+                var data = parseStructured(text);
+
+                if (isObj(data)) {
+                    host.textContent = '';
+                    host.style.whiteSpace = 'normal';
+                    renderObject(host, data);
+                    return;
+                }
+
+                var pairs = Array.isArray(data)
+                    ? data.map(function (v, i) { return ['Item ' + (i + 1), val(v)]; })
+                    : parseLines(text);
+                if (!pairs.length) return; // plain text stays as is
+
+                host.textContent = '';
+                host.style.whiteSpace = 'normal';
+                pairs.forEach(function (p, i) { host.appendChild(row(p[0], p[1], i === 0)); });
+            });
+        })();
+    </script>
+
+</body>
+</html>

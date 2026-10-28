@@ -511,3 +511,24 @@ class ReceiptSettings(models.Model):
     def get_settings(cls):
         settings, _ = cls.objects.get_or_create(pk=1)
         return settings
+
+
+class AuditLog(models.Model):
+    timestamp = models.DateTimeField(auto_now_add=True)
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True
+    )
+    activity = models.CharField(max_length=255)
+    details = models.JSONField(default=dict, blank=True)
+
+    class Meta:
+        ordering = ["-timestamp"]
+        verbose_name = "Audit Log"
+        verbose_name_plural = "Audit Logs"
+
+    def __str__(self):
+        username = self.user.username if self.user else "System"
+        return f"{self.timestamp} - {username} - {self.activity}"

@@ -1,54 +1,68 @@
+
+import csv
+from collections import defaultdict
+from datetime import date, datetime, time, timedelta
 from decimal import Decimal
+
+from django.contrib import messages
+from django.contrib.auth import get_user_model, update_session_auth_hash
 from django.contrib.auth.decorators import login_required
-from django.db.models import Sum, F, Count, DecimalField, ExpressionWrapper
+from django.contrib.auth.models import Group
+from django.contrib.auth.password_validation import validate_password
+from django.core.exceptions import ValidationError
+from django.db.models import (
+    Sum,
+    F,
+    Count,
+    DecimalField,
+    ExpressionWrapper,
+    Q,
+)
 from django.db.models.functions import Coalesce
+from django.http import HttpResponse
 from django.shortcuts import render, redirect
 from django.utils import timezone
+from django.views.decorators.http import require_POST
+
 from accounts.permissions import owner_required
 from products.models import Product
 from inventory.models import StockBatch
-from sales.models import Sale, SaleItem, SaleAdjustment, SaleAdjustmentItem
-from datetime import date, datetime, time, timedelta
-from django.db.models.functions import TruncDate
-import csv
-from django.http import HttpResponse
-from collections import defaultdict
-from django.contrib import messages
-from django.contrib.auth import update_session_auth_hash
-from django.contrib.auth.password_validation import validate_password
-from django.core.exceptions import ValidationError
-from django.contrib.auth import get_user_model
-from django.contrib.auth.models import Group
-from django.views.decorators.http import require_POST
-from sales.models import ReceiptSettings
+from sales.models import (
+    Sale,
+    SaleItem,
+    SaleAdjustment,
+    SaleAdjustmentItem,
+    ReceiptSettings,
+    AuditLog,
+)
+from sales.utils import log_activity
 
 
-
+# ============================================================
+# DASHBOARD
+# ============================================================
 
 @login_required
 @owner_required
 def dashboard_view(request):
     today = timezone.localdate()
-    tz = timezone.get_current_timezone()
+    current_tz = timezone.get_current_timezone()
 
-    # Today's date range
     start = timezone.make_aware(
         datetime.combine(today, time.min),
-        tz,
+        current_tz,
     )
     end = timezone.make_aware(
         datetime.combine(today + timedelta(days=1), time.min),
-        tz,
+        current_tz,
     )
 
-    # Today's completed sales
     today_sales = Sale.objects.filter(
         status=Sale.Status.COMPLETED,
         created_at__gte=start,
         created_at__lt=end,
     )
 
-    # Sales and transaction summary
     sales_summary = today_sales.aggregate(
         total_sales=Coalesce(
             Sum("total_amount"),
@@ -64,7 +78,6 @@ def dashboard_view(request):
     today_total_sales = sales_summary["total_sales"]
     transaction_count = sales_summary["transaction_count"]
 
-    # Calculate cost of goods sold
     cost_expression = ExpressionWrapper(
         F("quantity") * F("unit_cost"),
         output_field=DecimalField(
@@ -86,10 +99,8 @@ def dashboard_view(request):
         ),
     )["total_cost"]
 
-    # Estimated gross profit
     estimated_profit = today_total_sales - today_cost
 
-    # Total remaining inventory value at recorded cost
     inventory_value_expression = ExpressionWrapper(
         F("quantity_remaining") * F("unit_cost"),
         output_field=DecimalField(
@@ -109,7 +120,6 @@ def dashboard_view(request):
         ),
     )["total"]
 
-    # Current stock quantity per active product
     products = Product.objects.filter(
         is_active=True,
     ).select_related(
@@ -125,7 +135,6 @@ def dashboard_view(request):
         ),
     )
 
-    # Products at or below their reorder level
     low_stock_products = products.filter(
         stock_quantity__lte=F("reorder_level"),
     ).order_by(
@@ -133,7 +142,6 @@ def dashboard_view(request):
         "name",
     )
 
-    # Dashboard context
     context = {
         "today_sales": today_total_sales,
         "transaction_count": transaction_count,
@@ -143,31 +151,29 @@ def dashboard_view(request):
         "low_stock_products": low_stock_products[:10],
     }
 
-    return render(
-        request,
-        "reports/dashboard.html",
-        context,
-    )
+    return render(request, "reports/dashboard.html", context)
 
+
+# ============================================================
+# SALES REPORT
+# ============================================================
 
 @login_required
 @owner_required
 def sales_report_view(request):
     today = timezone.localdate()
 
-    # Select report period.
     period = request.GET.get("period", "daily").lower()
     if period not in ("daily", "weekly", "monthly"):
         period = "daily"
 
-    # Select reference date.
     date_value = request.GET.get("date", str(today))
+
     try:
         selected_date = date.fromisoformat(date_value)
     except (ValueError, TypeError):
         selected_date = today
 
-    # Calculate date range.
     if period == "weekly":
         start_date = selected_date - timedelta(
             days=selected_date.weekday()
@@ -194,7 +200,6 @@ def sales_report_view(request):
         end_date = start_date + timedelta(days=1)
         period_label = "Daily Sales"
 
-    # Convert local date boundaries to timezone-aware datetimes.
     current_tz = timezone.get_current_timezone()
 
     start_datetime = timezone.make_aware(
@@ -206,14 +211,12 @@ def sales_report_view(request):
         current_tz,
     )
 
-    # Only completed sales in the selected period.
     completed_sales = Sale.objects.filter(
         status=Sale.Status.COMPLETED,
         created_at__gte=start_datetime,
         created_at__lt=end_datetime,
     )
 
-    # Original sales revenue.
     sales_summary = completed_sales.aggregate(
         gross_sales=Coalesce(
             Sum("total_amount"),
@@ -222,7 +225,6 @@ def sales_report_view(request):
         transaction_count=Count("id"),
     )
 
-    # Payment method summary.
     payment_summary = (
         completed_sales
         .values("payment_method")
@@ -236,7 +238,6 @@ def sales_report_view(request):
         .order_by("payment_method")
     )
 
-    # Get readable payment method labels from the Sale model.
     payment_labels = dict(Sale.PaymentMethod.choices)
 
     payment_breakdown = [
@@ -252,7 +253,6 @@ def sales_report_view(request):
         for item in payment_summary
     ]
 
-    # Completed return/refund adjustments linked to these sales.
     completed_adjustments = SaleAdjustment.objects.filter(
         sale__in=completed_sales,
         status="completed",
@@ -269,13 +269,11 @@ def sales_report_view(request):
     gross_sales = sales_summary["gross_sales"]
     total_adjustments = adjustment_summary["total_adjustments"]
 
-    # Net sales after returns and refunds.
     total_sales = max(
         Decimal("0.00"),
         gross_sales - total_adjustments,
     )
 
-    # Original cost of the items sold.
     cost_expression = ExpressionWrapper(
         F("quantity") * F("unit_cost"),
         output_field=DecimalField(
@@ -295,8 +293,6 @@ def sales_report_view(request):
 
     original_cost = original_cost_summary["original_cost"]
 
-    # Cost of returned items that were actually restocked.
-    # Use the original SaleItem unit_cost, not today's product cost.
     returned_cost_expression = ExpressionWrapper(
         F("quantity") * F("sale_item__unit_cost"),
         output_field=DecimalField(
@@ -319,13 +315,11 @@ def sales_report_view(request):
 
     returned_cost = restocked_returns["returned_cost"]
 
-    # Net COGS after restocked returns.
     total_cost = max(
         Decimal("0.00"),
         original_cost - returned_cost,
     )
 
-    # Gross profit = net sales - net COGS.
     gross_profit = total_sales - total_cost
 
     context = {
@@ -343,35 +337,29 @@ def sales_report_view(request):
         "payment_breakdown": payment_breakdown,
     }
 
-    return render(
-        request,
-        "reports/sales_report.html",
-        context,
-    )
+    return render(request, "reports/sales_report.html", context)
 
+
+# ============================================================
+# EXPORT SALES REPORT CSV
+# ============================================================
 
 @login_required
 @owner_required
 def export_sales_report_csv(request):
-    import csv
-    from datetime import date, datetime, time, timedelta
-    from django.http import HttpResponse
-
     today = timezone.localdate()
 
-    # Validate report period
     period = request.GET.get("period", "daily").lower()
     if period not in ("daily", "weekly", "monthly"):
         period = "daily"
 
-    # Validate selected date
     date_value = request.GET.get("date", str(today))
+
     try:
         selected_date = date.fromisoformat(date_value)
     except (ValueError, TypeError):
         selected_date = today
 
-    # Calculate date range
     if period == "weekly":
         start_date = selected_date - timedelta(
             days=selected_date.weekday()
@@ -394,7 +382,6 @@ def export_sales_report_csv(request):
         start_date = selected_date
         end_date = start_date + timedelta(days=1)
 
-    # Convert local dates to timezone-aware boundaries
     current_tz = timezone.get_current_timezone()
 
     start_datetime = timezone.make_aware(
@@ -406,24 +393,26 @@ def export_sales_report_csv(request):
         current_tz,
     )
 
-    # Only completed sales are included
     sales = Sale.objects.filter(
         status=Sale.Status.COMPLETED,
         created_at__gte=start_datetime,
         created_at__lt=end_datetime,
     ).select_related(
-        "cashier"
+        "cashier",
     ).prefetch_related(
-        "items"
+        "items",
     ).order_by("created_at")
 
-    # Create downloadable CSV
+    transaction_count = sales.count()
+
     response = HttpResponse(
         content_type="text/csv; charset=utf-8",
     )
     response.write("\ufeff")
 
-    filename = f"sales_report_{period}_{selected_date.isoformat()}.csv"
+    filename = (
+        f"sales_report_{period}_{selected_date.isoformat()}.csv"
+    )
     response["Content-Disposition"] = (
         f'attachment; filename="{filename}"'
     )
@@ -454,11 +443,19 @@ def export_sales_report_csv(request):
 
         gross_profit = sale.total_amount - product_cost
 
+        local_created_at = timezone.localtime(sale.created_at)
+
+        cashier_name = (
+            sale.cashier.get_username()
+            if sale.cashier
+            else "Unknown"
+        )
+
         writer.writerow([
             sale.receipt_number,
-            timezone.localtime(sale.created_at).strftime("%Y-%m-%d"),
-            timezone.localtime(sale.created_at).strftime("%H:%M:%S"),
-            sale.cashier.username,
+            local_created_at.strftime("%Y-%m-%d"),
+            local_created_at.strftime("%H:%M:%S"),
+            cashier_name,
             sale.get_payment_method_display(),
             sale.subtotal,
             sale.discount,
@@ -467,8 +464,26 @@ def export_sales_report_csv(request):
             gross_profit,
         ])
 
+    # One log per export request, not one log per sale.
+    log_activity(
+        request.user,
+        "Sales Report Exported",
+        {
+            "period": period,
+            "selected_date": selected_date.isoformat(),
+            "start_date": start_date.isoformat(),
+            "end_date": (end_date - timedelta(days=1)).isoformat(),
+            "transaction_count": transaction_count,
+            "filename": filename,
+        },
+    )
+
     return response
 
+
+# ============================================================
+# SALES ANALYTICS
+# ============================================================
 
 @login_required
 @owner_required
@@ -476,9 +491,6 @@ def sales_analytics_view(request):
     today = timezone.localdate()
     current_tz = timezone.get_current_timezone()
 
-    # =========================
-    # SALES TREND CHART
-    # =========================
     try:
         days = int(request.GET.get("days", "7"))
     except (ValueError, TypeError):
@@ -527,9 +539,6 @@ def sales_analytics_view(request):
             )
         )
 
-    # =========================
-    # BEST-SELLING PRODUCTS
-    # =========================
     period = request.GET.get("period", "7days")
     start_date = today - timedelta(days=6)
     end_date = today
@@ -595,14 +604,11 @@ def sales_analytics_view(request):
     )
 
     context = {
-        # Chart
         "days": days,
         "chart_labels": chart_labels,
         "chart_values": chart_values,
         "chart_start_date": chart_start_date,
         "today": today,
-
-        # Best-selling products
         "products": products,
         "period": period,
         "start_date": start_date,
@@ -610,75 +616,105 @@ def sales_analytics_view(request):
         "total_products": products.count(),
     }
 
-    return render(
-        request,
-        "reports/sales_analytics.html",
-        context,
-    )
+    return render(request, "reports/sales_analytics.html", context)
 
 
+# ============================================================
+# ACCOUNT SETTINGS
+# ============================================================
 
 @login_required
 def account_settings_view(request):
     if request.method == "POST":
         action = request.POST.get("action")
 
-        # Update username and email
         if action == "update_profile":
             username = request.POST.get("username", "").strip()
             email = request.POST.get("email", "").strip()
 
+            User = get_user_model()
+
             if not username:
                 messages.error(request, "Username is required.")
 
-            elif request.user.__class__.objects.filter(
+            elif User.objects.filter(
                 username__iexact=username
             ).exclude(pk=request.user.pk).exists():
-                messages.error(request, "That username is already taken.")
+                messages.error(
+                    request,
+                    "That username is already taken.",
+                )
 
             else:
                 request.user.username = username
                 request.user.email = email
                 request.user.save(
-                    update_fields=["username", "email"]
+                    update_fields=["username", "email"],
+                )
+
+                log_activity(
+                    request.user,
+                    "Profile Updated",
+                    {
+                        "username": request.user.username,
+                        "email": request.user.email,
+                    },
                 )
 
                 messages.success(
                     request,
-                    "Username and email updated successfully."
+                    "Username and email updated successfully.",
                 )
 
-        # Change password
         elif action == "change_password":
-            current_password = request.POST.get("current_password", "")
+            current_password = request.POST.get(
+                "current_password", ""
+            )
             new_password = request.POST.get("new_password", "")
-            confirm_password = request.POST.get("confirm_password", "")
+            confirm_password = request.POST.get(
+                "confirm_password", ""
+            )
 
             if not request.user.check_password(current_password):
                 messages.error(
-                    request, "Your current password is incorrect."
+                    request,
+                    "Your current password is incorrect.",
                 )
 
             elif new_password != confirm_password:
                 messages.error(
-                    request, "The new passwords do not match."
+                    request,
+                    "The new passwords do not match.",
                 )
 
             else:
                 try:
-                    validate_password(new_password, user=request.user)
+                    validate_password(
+                        new_password,
+                        user=request.user,
+                    )
                 except ValidationError as errors:
                     for error in errors.messages:
                         messages.error(request, error)
                 else:
                     request.user.set_password(new_password)
-                    request.user.save(update_fields=["password"])
+                    request.user.save(
+                        update_fields=["password"],
+                    )
 
-                    # Keep user logged in after password change
                     update_session_auth_hash(request, request.user)
 
+                    log_activity(
+                        request.user,
+                        "Password Changed",
+                        {
+                            "username": request.user.username,
+                        },
+                    )
+
                     messages.success(
-                        request, "Password changed successfully."
+                        request,
+                        "Password changed successfully.",
                     )
 
         else:
@@ -689,18 +725,25 @@ def account_settings_view(request):
     return render(request, "reports/settings.html")
 
 
+
+# ============================================================
+# MANAGE CASHIER ACCOUNTS
+# ============================================================
+
 @login_required
 def manage_accounts_view(request):
     User = get_user_model()
 
-    # Owner-only access
     is_owner = (
         request.user.is_superuser
         or request.user.groups.filter(name="Owner").exists()
     )
 
     if not is_owner:
-        messages.error(request, "You are not authorized to manage accounts.")
+        messages.error(
+            request,
+            "You are not authorized to manage accounts.",
+        )
         return redirect("account_settings")
 
     cashier_group, _ = Group.objects.get_or_create(name="Cashier")
@@ -709,7 +752,7 @@ def manage_accounts_view(request):
         action = request.POST.get("action")
         user_id = request.POST.get("user_id")
 
-        # Create cashier account
+        # CREATE CASHIER
         if action == "create":
             username = request.POST.get("username", "").strip()
             password = request.POST.get("password", "")
@@ -718,10 +761,18 @@ def manage_accounts_view(request):
             email = request.POST.get("email", "").strip()
 
             if not username or not password:
-                messages.error(request, "Username and password are required.")
+                messages.error(
+                    request,
+                    "Username and password are required.",
+                )
 
-            elif User.objects.filter(username__iexact=username).exists():
-                messages.error(request, "Username is already taken.")
+            elif User.objects.filter(
+                username__iexact=username
+            ).exists():
+                messages.error(
+                    request,
+                    "Username is already taken.",
+                )
 
             else:
                 new_user = User(
@@ -735,36 +786,74 @@ def manage_accounts_view(request):
 
                 try:
                     validate_password(password, user=new_user)
+
                 except ValidationError as errors:
                     for error in errors.messages:
                         messages.error(request, error)
+
                 else:
                     new_user.set_password(password)
                     new_user.save()
                     new_user.groups.add(cashier_group)
-                    messages.success(request, "Cashier account created.")
 
-        # Edit cashier details
+                    log_activity(
+                        request.user,
+                        "Cashier Account Created",
+                        {
+                            "cashier_id": new_user.pk,
+                            "username": new_user.username,
+                            "first_name": new_user.first_name,
+                            "last_name": new_user.last_name,
+                            "full_name": (
+                                f"{new_user.first_name} "
+                                f"{new_user.last_name}"
+                            ).strip(),
+                        },
+                    )
+
+                    messages.success(
+                        request,
+                        "Cashier account created.",
+                    )
+
+        # EDIT CASHIER
         elif action == "edit":
             cashier = User.objects.filter(
-                pk=user_id, groups__name="Cashier"
+                pk=user_id,
+                groups__name="Cashier",
             ).first()
 
             if not cashier:
-                messages.error(request, "Cashier account not found.")
+                messages.error(
+                    request,
+                    "Cashier account not found.",
+                )
+
             else:
-                username = request.POST.get("username", "").strip()
+                username = request.POST.get(
+                    "username", ""
+                ).strip()
                 email = request.POST.get("email", "").strip()
-                first_name = request.POST.get("first_name", "").strip()
-                last_name = request.POST.get("last_name", "").strip()
+                first_name = request.POST.get(
+                    "first_name", ""
+                ).strip()
+                last_name = request.POST.get(
+                    "last_name", ""
+                ).strip()
 
                 if not username:
-                    messages.error(request, "Username is required.")
+                    messages.error(
+                        request,
+                        "Username is required.",
+                    )
 
                 elif User.objects.filter(
                     username__iexact=username
                 ).exclude(pk=cashier.pk).exists():
-                    messages.error(request, "Username is already taken.")
+                    messages.error(
+                        request,
+                        "Username is already taken.",
+                    )
 
                 else:
                     cashier.username = username
@@ -772,50 +861,136 @@ def manage_accounts_view(request):
                     cashier.first_name = first_name
                     cashier.last_name = last_name
                     cashier.save()
-                    messages.success(request, "Cashier account updated.")
 
-        # Reset cashier password
+                    log_activity(
+                        request.user,
+                        "Cashier Account Updated",
+                        {
+                            "cashier_id": cashier.pk,
+                            "username": cashier.username,
+                            "first_name": cashier.first_name,
+                            "last_name": cashier.last_name,
+                            "full_name": (
+                                f"{cashier.first_name} "
+                                f"{cashier.last_name}"
+                            ).strip(),
+                        },
+                    )
+
+                    messages.success(
+                        request,
+                        "Cashier account updated.",
+                    )
+
+        # RESET CASHIER PASSWORD
         elif action == "reset_password":
             cashier = User.objects.filter(
-                pk=user_id, groups__name="Cashier"
+                pk=user_id,
+                groups__name="Cashier",
             ).first()
+
             new_password = request.POST.get("new_password", "")
 
             if not cashier:
-                messages.error(request, "Cashier account not found.")
+                messages.error(
+                    request,
+                    "Cashier account not found.",
+                )
+
             else:
                 try:
-                    validate_password(new_password, user=cashier)
+                    validate_password(
+                        new_password,
+                        user=cashier,
+                    )
+
                 except ValidationError as errors:
                     for error in errors.messages:
                         messages.error(request, error)
+
                 else:
                     cashier.set_password(new_password)
                     cashier.save(update_fields=["password"])
-                    messages.success(request, "Cashier password reset.")
 
-        # Activate or deactivate cashier
+                    log_activity(
+                        request.user,
+                        "Cashier Password Reset",
+                        {
+                            "cashier_id": cashier.pk,
+                            "username": cashier.username,
+                            "first_name": cashier.first_name,
+                            "last_name": cashier.last_name,
+                            "full_name": (
+                                f"{cashier.first_name} "
+                                f"{cashier.last_name}"
+                            ).strip(),
+                        },
+                    )
+
+                    messages.success(
+                        request,
+                        "Cashier password reset.",
+                    )
+
+        # ACTIVATE OR DEACTIVATE CASHIER
         elif action == "toggle_status":
             cashier = User.objects.filter(
-                pk=user_id, groups__name="Cashier"
+                pk=user_id,
+                groups__name="Cashier",
             ).first()
 
             if not cashier:
-                messages.error(request, "Cashier account not found.")
+                messages.error(
+                    request,
+                    "Cashier account not found.",
+                )
+
             else:
                 cashier.is_active = not cashier.is_active
                 cashier.save(update_fields=["is_active"])
 
-                status = "activated" if cashier.is_active else "deactivated"
-                messages.success(request, f"Cashier account {status}.")
+                status = (
+                    "activated"
+                    if cashier.is_active
+                    else "deactivated"
+                )
+
+                log_activity(
+                    request.user,
+                    "Cashier Account Status Changed",
+                    {
+                        "cashier_id": cashier.pk,
+                        "username": cashier.username,
+                        "first_name": cashier.first_name,
+                        "last_name": cashier.last_name,
+                        "full_name": (
+                            f"{cashier.first_name} "
+                            f"{cashier.last_name}"
+                        ).strip(),
+                        "is_active": cashier.is_active,
+                        "status": (
+                            "Active"
+                            if cashier.is_active
+                            else "Inactive"
+                        ),
+                    },
+                )
+
+                messages.success(
+                    request,
+                    f"Cashier account {status}.",
+                )
 
         else:
-            messages.error(request, "Invalid action.")
+            messages.error(
+                request,
+                "Invalid action.",
+            )
 
         return redirect("manage_accounts")
 
     cashiers = User.objects.filter(
-        groups__name="Cashier"
+        groups__name="Cashier",
     ).distinct().order_by("username")
 
     return render(
@@ -823,16 +998,22 @@ def manage_accounts_view(request):
         "reports/manage_accounts.html",
         {
             "cashiers": cashiers,
-            "active_cashiers_count": cashiers.filter(is_active=True).count(),
-            "inactive_cashiers_count": cashiers.filter(is_active=False).count(),
+            "active_cashiers_count": cashiers.filter(
+                is_active=True
+            ).count(),
+            "inactive_cashiers_count": cashiers.filter(
+                is_active=False
+            ).count(),
         },
     )
 
-    
+
+# ============================================================
+# RECEIPT SETTINGS
+# ============================================================
+
 @login_required
 def receipt_settings_view(request):
-    from sales.models import ReceiptSettings
-
     is_owner = (
         request.user.is_superuser
         or request.user.groups.filter(name="Owner").exists()
@@ -841,7 +1022,7 @@ def receipt_settings_view(request):
     if not is_owner:
         messages.error(
             request,
-            "You are not authorized to manage receipt settings."
+            "You are not authorized to manage receipt settings.",
         )
         return redirect("account_settings")
 
@@ -849,10 +1030,16 @@ def receipt_settings_view(request):
 
     if request.method == "POST":
         store_name = request.POST.get("store_name", "").strip()
-        store_address = request.POST.get("store_address", "").strip()
-        contact_number = request.POST.get("contact_number", "").strip()
+        store_address = request.POST.get(
+            "store_address", ""
+        ).strip()
+        contact_number = request.POST.get(
+            "contact_number", ""
+        ).strip()
         tin_number = request.POST.get("tin_number", "").strip()
-        receipt_footer = request.POST.get("receipt_footer", "").strip()
+        receipt_footer = request.POST.get(
+            "receipt_footer", ""
+        ).strip()
         paper_size = request.POST.get("paper_size", "80")
 
         if not store_name:
@@ -877,9 +1064,18 @@ def receipt_settings_view(request):
 
             receipt_settings.save()
 
+            log_activity(
+                request.user,
+                "Receipt Settings Updated",
+                {
+                    "store_name": receipt_settings.store_name,
+                    "paper_size": receipt_settings.paper_size,
+                },
+            )
+
             messages.success(
                 request,
-                "Receipt settings saved successfully."
+                "Receipt settings saved successfully.",
             )
             return redirect("receipt_settings")
 
@@ -887,4 +1083,43 @@ def receipt_settings_view(request):
         request,
         "reports/receipt_settings.html",
         {"receipt_settings": receipt_settings},
+    )
+
+
+# ============================================================
+# ACTIVITY LOG
+# ============================================================
+
+@login_required
+@owner_required
+def activity_log_view(request):
+    logs = AuditLog.objects.select_related("user").all()
+
+    search = request.GET.get("q", "").strip()
+    selected_date = request.GET.get("date", "").strip()
+
+    if search:
+        logs = logs.filter(
+            Q(user__username__icontains=search)
+            | Q(activity__icontains=search)
+        )
+
+    if selected_date:
+        try:
+            selected_date = date.fromisoformat(selected_date)
+            logs = logs.filter(timestamp__date=selected_date)
+        except ValueError:
+            selected_date = ""
+
+    context = {
+        "logs": logs,
+        "search": search,
+        "selected_date": selected_date,
+        "total_logs": logs.count(),
+    }
+
+    return render(
+        request,
+        "reports/activity_log.html",
+        context,
     )

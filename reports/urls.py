@@ -9,4 +9,5 @@ urlpatterns = [
     path("manage-accounts/",views.manage_accounts_view,name="manage_accounts"),
     path("sales-analytics/",views.sales_analytics_view,name="sales_analytics"),
     path("receipt-settings/",views.receipt_settings_view,name="receipt_settings"),
+    path("activity-log/",views.activity_log_view,name="activity_log"),
 ]

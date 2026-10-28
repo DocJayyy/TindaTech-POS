@@ -223,7 +223,25 @@
                     </a>
                 </div>
             </div>
-                        <div>
+            
+            <!-- Audit -->
+            <div>
+                <p class="mb-2 px-3 text-[11px] font-medium uppercase tracking-wider text-slate-400">
+                    Audit Logs
+                </p>
+
+                <div class="space-y-1">
+                    <a href="{% url 'activity_log' %}"
+                        class="flex items-center gap-3 rounded-xl px-3 py-2.5 text-slate-600 transition hover:bg-brand-soft hover:text-brand">
+                            <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l3 2m6-2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                            </svg>
+                        Activity Log
+                    </a>
+                </div>
+            </div>
+            
+            <div>
                 <p class="mb-2 px-3 text-[11px] font-medium uppercase tracking-wider text-slate-400">User Management</p>
                 <a href="{% url 'account_settings' %}"
                    class="flex items-center gap-3 rounded-xl px-3 py-2.5 text-slate-600 transition hover:bg-brand-soft hover:text-brand">

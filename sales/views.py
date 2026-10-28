@@ -1,31 +1,41 @@
-from django.contrib.auth.decorators import login_required
-from accounts.permissions import pos_access_required, is_cashier
 import json
-from decimal import Decimal, InvalidOperation
-from django.contrib import messages
-from django.core.exceptions import ValidationError
-from django.http import JsonResponse
-from django.shortcuts import render, redirect
-from django.views.decorators.http import require_POST
-from products.models import Product
-from .forms import CheckoutForm
-from .services import process_sale
+import logging
 from datetime import date, datetime, time, timedelta
-from django.db.models import Sum, Count, Prefetch, F, DecimalField, ExpressionWrapper
-from django.utils import timezone
-from .models import Sale
-from accounts.permissions import pos_access_required, owner_required
-from django.shortcuts import get_object_or_404
-from django.core.exceptions import PermissionDenied
-from .forms import SaleAdjustmentForm
-from .models import Sale, SaleItem, SaleAdjustment, CashierSession, XReading
-from .adjustment_services import process_adjustment
-from django.db import transaction
+from decimal import Decimal, InvalidOperation
+from io import BytesIO
 from uuid import uuid4
-from django.http import HttpResponse, Http404
+
+from django.contrib import messages
+from django.contrib.auth.decorators import login_required
+from django.core.exceptions import PermissionDenied, ValidationError
+from django.db import transaction
+from django.db.models import Sum, Prefetch
+from django.http import Http404, HttpResponse
+from django.shortcuts import render, redirect, get_object_or_404
 from django.template.loader import render_to_string
-from django.utils.html import escape
-from .models import ReceiptSettings
+from django.utils import timezone
+from django.views.decorators.http import require_POST
+
+from accounts.permissions import (
+    pos_access_required,
+    owner_required,
+)
+
+from products.models import Product
+
+from .adjustment_services import process_adjustment
+from .forms import CheckoutForm, SaleAdjustmentForm
+from .models import (
+    Sale,
+    SaleItem,
+    SaleAdjustment,
+    CashierSession,
+    XReading,
+    ReceiptSettings,
+    AuditLog,
+)
+from .services import process_sale
+from .utils import log_activity
 
 
 
@@ -93,42 +103,48 @@ def complete_sale_view(request):
             payment_method=form.cleaned_data["payment_method"],
             discount_type=form.cleaned_data["discount_type"],
             regular_discount_percent=(
-                form.cleaned_data["regular_discount_percent"] or Decimal("0")
+                form.cleaned_data["regular_discount_percent"]
+                or Decimal("0")
             ),
             special_discount_amount=(
-                form.cleaned_data["special_discount_amount"] or Decimal("0")
+                form.cleaned_data["special_discount_amount"]
+                or Decimal("0")
             ),
-            discount_customer_name=(
-                form.cleaned_data["discount_customer_name"]
-            ),
+            discount_customer_name=form.cleaned_data[
+                "discount_customer_name"
+            ],
             discount_reference=form.cleaned_data["discount_reference"],
             charges=[
                 {
                     "charge_type": "packaging",
                     "amount": (
-                        form.cleaned_data["packaging_charge"] or Decimal("0")
+                        form.cleaned_data["packaging_charge"]
+                        or Decimal("0")
                     ),
                 },
                 {
                     "charge_type": "delivery",
                     "amount": (
-                        form.cleaned_data["delivery_charge"] or Decimal("0")
+                        form.cleaned_data["delivery_charge"]
+                        or Decimal("0")
                     ),
                 },
                 {
                     "charge_type": "service",
                     "amount": (
-                        form.cleaned_data["service_charge"] or Decimal("0")
+                        form.cleaned_data["service_charge"]
+                        or Decimal("0")
                     ),
                 },
                 {
                     "charge_type": "other",
                     "amount": (
-                        form.cleaned_data["other_charge"] or Decimal("0")
+                        form.cleaned_data["other_charge"]
+                        or Decimal("0")
                     ),
-                    "description": (
-                        form.cleaned_data["other_charge_description"]
-                    ),
+                    "description": form.cleaned_data[
+                        "other_charge_description"
+                    ],
                 },
             ],
         )
@@ -150,6 +166,17 @@ def complete_sale_view(request):
 
         messages.error(request, error_message)
         return redirect("checkout")
+
+    log_activity(
+        request.user,
+        "Sale Completed",
+        {
+            "sale_id": sale.pk,
+            "receipt_number": sale.receipt_number,
+            "total_amount": str(sale.total_amount),
+            "payment_method": str(sale.payment_method),
+        },
+    )
 
     return redirect("sale_receipt", sale_id=sale.pk)
 
@@ -347,16 +374,14 @@ def sale_adjustment_view(request, sale_id):
         pk=sale_id,
     )
 
-    if request.method == "POST":
-        form = SaleAdjustmentForm(request.POST)
-    else:
-        form = SaleAdjustmentForm()
+    form = (
+        SaleAdjustmentForm(request.POST)
+        if request.method == "POST"
+        else SaleAdjustmentForm()
+    )
 
-    # Show only products included in this original sale.
     form.fields["sale_item_id"].queryset = (
-        SaleItem.objects
-        .filter(sale=sale)
-        .select_related("product")
+        SaleItem.objects.filter(sale=sale).select_related("product")
     )
 
     if request.method == "POST" and form.is_valid():
@@ -390,15 +415,28 @@ def sale_adjustment_view(request, sale_id):
             except ValidationError as exc:
                 form.add_error(None, "; ".join(exc.messages))
             else:
+                log_activity(
+                    request.user,
+                    "Sale Adjustment Processed",
+                    {
+                        "sale_id": sale.pk,
+                        "receipt_number": sale.receipt_number,
+                        "adjustment_id": adjustment.pk,
+                        "adjustment_number": adjustment.adjustment_number,
+                        "adjustment_type": str(
+                            adjustment.adjustment_type
+                        ),
+                        "amount": str(adjustment.amount),
+                        "reason": adjustment.reason,
+                    },
+                )
+
                 messages.success(
                     request,
                     f"Adjustment {adjustment.adjustment_number} "
                     "was processed successfully.",
                 )
-                return redirect(
-                    "sale_adjustment",
-                    sale_id=sale.pk,
-                )
+                return redirect("sale_adjustment", sale_id=sale.pk)
 
     return render(
         request,
@@ -411,7 +449,6 @@ def sale_adjustment_view(request, sale_id):
             ),
         },
     )
-
 
 @login_required
 @pos_access_required
@@ -459,16 +496,23 @@ def open_shift_view(request):
             messages.warning(request, "You already have an open shift.")
             return redirect("open_shift_page")
 
-        CashierSession.objects.create(
+        session = CashierSession.objects.create(
             cashier=request.user,
             opening_cash=opening_cash,
             status=CashierSession.Status.OPEN,
         )
 
+    log_activity(
+        request.user,
+        "Cashier Shift Opened",
+        {
+            "session_id": session.pk,
+            "opening_cash": str(session.opening_cash),
+        },
+    )
+
     messages.success(request, "Cashier shift opened successfully!")
     return redirect("checkout")
-
-
 
 
 
@@ -591,6 +635,22 @@ def x_reading_view(request):
                     report_data=report_data,
                 )
 
+                log_activity(
+                    request.user,
+                    "X Reading Generated",
+                    {
+                        "reading_id": reading.pk,
+                        "reading_number": reading.reading_number,
+                        "session_id": session.pk,
+                        "total_sales": str(total_sales),
+                        "cash_sales": str(cash_sales),
+                        "non_cash_sales": str(non_cash_sales),
+                        "transaction_count": transaction_count,
+                        "voided_count": voided_count,
+                        "expected_cash": str(expected_cash),
+                    },
+                )
+
             messages.success(
                 request,
                 f"X Reading #{reading.reading_number} "
@@ -662,12 +722,11 @@ def close_shift_view(request):
             return redirect("open_shift_page")
 
         sales = Sale.objects.filter(cashier_session=session)
+
         completed_sales = sales.filter(
             status=Sale.Status.COMPLETED
         )
 
-        # Exclude sales that have a completed void adjustment,
-        # even if the original sale status was not updated.
         voided_by_adjustment = SaleAdjustment.objects.filter(
             sale__cashier_session=session,
             status=SaleAdjustment.Status.COMPLETED,
@@ -697,7 +756,6 @@ def close_shift_view(request):
             or Decimal("0.00")
         )
 
-        # Only refunds/returns on cash transactions reduce drawer cash.
         cash_adjustments = SaleAdjustment.objects.filter(
             sale__cashier_session=session,
             sale__status=Sale.Status.COMPLETED,
@@ -723,13 +781,12 @@ def close_shift_view(request):
         ).quantize(Decimal("0.01"))
 
         completed_count = valid_sales.count()
+
         voided_count = sales.filter(
             status=Sale.Status.VOIDED
         ).count()
 
-        z_number = (
-            f"Z-{session.pk}-{uuid4().hex[:10].upper()}"
-        )
+        z_number = f"Z-{session.pk}-{uuid4().hex[:10].upper()}"
 
         report_data = {
             "cashier": request.user.username,
@@ -764,9 +821,35 @@ def close_shift_view(request):
             "closed_at",
         ])
 
+    log_activity(
+        request.user,
+        "Cashier Shift Closed",
+        {
+            "session_id": session.pk,
+            "z_number": z_number,
+            "expected_cash": str(expected_cash),
+            "actual_cash": str(actual_cash),
+            "cash_variance": str(cash_variance),
+            "total_sales": str(total_sales),
+            "cash_refunds": str(cash_refunds),
+            "completed_transactions": completed_count,
+            "voided_transactions": voided_count,
+        },
+    )
+
+    log_activity(
+        request.user,
+        "Z Reading Generated",
+        {
+            "session_id": session.pk,
+            "z_number": z_number,
+            "report_data": report_data,
+        },
+    )
+
     messages.success(
         request,
-        f"Shift closed successfully. Z Reading: {z_number}"
+        f"Shift closed successfully. Z Reading: {z_number}",
     )
     return redirect("z_reading")
 
@@ -1094,6 +1177,7 @@ def z_reading_export_pdf_view(request, session_id):
 
 
 
+
 @owner_required
 def electronic_journal_export(request):
     start_date = request.GET.get("start_date")
@@ -1123,25 +1207,32 @@ def electronic_journal_export(request):
         except ValueError:
             end_date = ""
 
+    # Count the filtered transactions once
+    transaction_count = sales.count()
+
     response = HttpResponse(
         content_type="text/plain; charset=utf-8"
     )
+
     filename = (
         f"electronic_journal_{start_date or 'all'}"
         f"_to_{end_date or 'all'}.txt"
     )
+
     response["Content-Disposition"] = (
         f'attachment; filename="{filename}"'
     )
 
     response.write("TINDA TECH POS - ELECTRONIC JOURNAL\n")
     response.write("=" * 60 + "\n")
-    response.write(f"Generated: {timezone.localtime():%Y-%m-%d %H:%M:%S}\n")
+    response.write(
+        f"Generated: {timezone.localtime():%Y-%m-%d %H:%M:%S}\n"
+    )
     response.write(f"Start date: {start_date or 'All'}\n")
     response.write(f"End date: {end_date or 'All'}\n")
     response.write("=" * 60 + "\n\n")
 
-    if not sales.exists():
+    if transaction_count == 0:
         response.write("No transactions found.\n")
 
     for sale in sales.iterator():
@@ -1164,8 +1255,22 @@ def electronic_journal_export(request):
         response.write(f"Status: {sale.status}\n")
         response.write("-" * 60 + "\n\n")
 
+    # Log once after preparing the journal
+    log_activity(
+        request.user,
+        "Electronic Journal Exported",
+        {
+            "start_date": start_date or "All",
+            "end_date": end_date or "All",
+            "transaction_count": transaction_count,
+            "filename": filename,
+        },
+    )
+
     return response
+
 
 @owner_required
 def electronic_journal_view(request):
     return render(request, "sales/electronic_journal.html")
+
