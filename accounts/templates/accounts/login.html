@@ -5,121 +5,283 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Sign in | TindaTech POS</title>
     {% load static %}
-    <link rel="icon" type="image/png"
-      href="{% static 'images/weblogo.png' %}">
-    <link rel="stylesheet" href="{% static 'css/tailwind.css' %}">
-    <script>
-        tailwind.config = {
-            theme: {
-                extend: {
-                    fontFamily: { sans: ['Poppins', 'ui-sans-serif', 'system-ui', 'sans-serif'] },
-                    colors: {
-                        brand: { DEFAULT: '#4349E8', dark: '#3338D0', soft: '#EEEFFD' },
-                        canvas: '#EEF0FA',
-                        ink: '#16161D'
-                    }
-                }
-            }
-        }
-    </script>
+    <link rel="icon" type="image/png" href="{% static 'images/weblogo.png' %}">
     <style>
-            @font-face {
-        font-family: 'Poppins';
-        src: url("{% static 'fonts/Poppins-Regular.ttf' %}") format('truetype');
-        font-weight: 400;
-        font-style: normal;
-        font-display: swap;
-    }
+        @font-face { font-family: 'Poppins'; src: url("{% static 'fonts/Poppins-Regular.ttf' %}") format('truetype'); font-weight: 400; font-style: normal; font-display: swap; }
+        @font-face { font-family: 'Poppins'; src: url("{% static 'fonts/Poppins-Medium.ttf' %}") format('truetype'); font-weight: 500; font-style: normal; font-display: swap; }
+        @font-face { font-family: 'Poppins'; src: url("{% static 'fonts/Poppins-SemiBold.ttf' %}") format('truetype'); font-weight: 600; font-style: normal; font-display: swap; }
+        @font-face { font-family: 'Poppins'; src: url("{% static 'fonts/Poppins-Bold.ttf' %}") format('truetype'); font-weight: 700; font-style: normal; font-display: swap; }
 
-    @font-face {
-        font-family: 'Poppins';
-        src: url("{% static 'fonts/Poppins-Medium.ttf' %}") format('truetype');
-        font-weight: 500;
-        font-style: normal;
-        font-display: swap;
-    }
+        :root {
+            --brand: #4349E8;
+            --brand-dark: #3338D0;
+            --brand-deep: #1E2170;
+            --brand-soft: #EEEFFD;
+            --ink: #16161D;
+            --muted: #6B7280;
+            --line: #E3E5F0;
+            --danger: #B42318;
+            --danger-bg: #FEF3F2;
+            --danger-line: #FECDCA;
+        }
 
-    @font-face {
-        font-family: 'Poppins';
-        src: url("{% static 'fonts/Poppins-SemiBold.ttf' %}") format('truetype');
-        font-weight: 600;
-        font-style: normal;
-        font-display: swap;
-    }
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
-    @font-face {
-        font-family: 'Poppins';
-        src: url("{% static 'fonts/Poppins-Bold.ttf' %}") format('truetype');
-        font-weight: 700;
-        font-style: normal;
-        font-display: swap;
-    }
+        html, body { height: 100%; }
 
-    body {
-        font-family: 'Poppins', sans-serif;
-    }
+        body {
+            font-family: 'Poppins', ui-sans-serif, system-ui, sans-serif;
+            color: var(--ink);
+            background: #fff;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        .layout {
+            display: grid;
+            grid-template-columns: 1fr;
+            min-height: 100vh;
+        }
+
+        /* ---------- Brand panel ---------- */
+        .panel {
+            display: none;
+            position: relative;
+            overflow: hidden;
+            padding: 3rem;
+            color: #fff;
+            background:
+                radial-gradient(circle at 15% 10%, rgba(255,255,255,.14), transparent 40%),
+                radial-gradient(circle at 90% 95%, rgba(120,130,255,.45), transparent 45%),
+                linear-gradient(155deg, var(--brand) 0%, var(--brand-deep) 100%);
+            flex-direction: column;
+            justify-content: space-between;
+        }
+        .panel::before, .panel::after {
+            content: "";
+            position: absolute;
+            border-radius: 50%;
+            border: 1px solid rgba(255,255,255,.12);
+            pointer-events: none;
+        }
+        .panel::before { width: 520px; height: 520px; right: -200px; top: -160px; }
+        .panel::after  { width: 360px; height: 360px; left: -140px; bottom: -120px; }
+
+        .panel-brand { display: flex; align-items: center; gap: .75rem; position: relative; z-index: 1; }
+        .panel-brand img { width: 40px; height: 40px; border-radius: 12px; object-fit: cover; background: #fff; }
+        .panel-brand span { font-weight: 600; font-size: 1.05rem; letter-spacing: .01em; }
+
+        .panel-body { position: relative; z-index: 1; max-width: 30rem; }
+        .panel-body h2 { font-size: 2.25rem; line-height: 1.2; font-weight: 600; letter-spacing: -.02em; }
+        .panel-body p { margin-top: 1rem; font-size: .95rem; line-height: 1.7; color: rgba(255,255,255,.78); }
+
+        .features { list-style: none; margin-top: 2rem; display: grid; gap: .9rem; }
+        .features li { display: flex; align-items: center; gap: .85rem; font-size: .9rem; font-weight: 500; }
+        .features .ico {
+            flex: none; width: 36px; height: 36px; border-radius: 10px;
+            display: grid; place-items: center;
+            background: rgba(255,255,255,.14);
+            border: 1px solid rgba(255,255,255,.18);
+        }
+        .features svg { width: 18px; height: 18px; }
+
+        .panel-foot { position: relative; z-index: 1; font-size: .75rem; color: rgba(255,255,255,.6); }
+
+        /* ---------- Form side ---------- */
+        .form-side {
+            display: flex; flex-direction: column; justify-content: center; align-items: center;
+            padding: 2rem 1.25rem;
+            background: #F7F8FD;
+        }
+        .form-wrap { width: 100%; max-width: 24rem; }
+
+        .mobile-brand { display: flex; align-items: center; gap: .75rem; margin-bottom: 2rem; }
+        .mobile-brand img { width: 44px; height: 44px; border-radius: 14px; object-fit: cover; box-shadow: 0 8px 20px rgba(67,73,232,.25); }
+        .mobile-brand strong { display: block; font-size: 1.05rem; font-weight: 600; }
+        .mobile-brand small { font-size: .72rem; color: var(--muted); }
+
+        .heading h1 { font-size: 1.75rem; font-weight: 600; letter-spacing: -.02em; }
+        .heading p { margin-top: .35rem; font-size: .9rem; color: var(--muted); }
+
+        .alert {
+            display: flex; gap: .6rem; margin-top: 1.5rem;
+            padding: .8rem .95rem; border-radius: 12px;
+            background: var(--danger-bg); border: 1px solid var(--danger-line);
+            color: var(--danger); font-size: .85rem; line-height: 1.45;
+        }
+        .alert svg { flex: none; width: 18px; height: 18px; margin-top: 1px; }
+
+        form { margin-top: 1.75rem; display: grid; gap: 1.1rem; }
+
+        label { display: block; margin-bottom: .4rem; font-size: .82rem; font-weight: 500; color: #374151; }
+
+        .field { position: relative; }
+        .field > svg.lead {
+            position: absolute; left: 14px; top: 50%; transform: translateY(-50%);
+            width: 18px; height: 18px; color: #9CA3AF; pointer-events: none;
+            transition: color .15s;
+        }
+        .field input {
+            width: 100%; height: 48px;
+            padding: 0 1rem 0 2.6rem;
+            font: inherit; font-size: .9rem; color: var(--ink);
+            background: #fff; border: 1.5px solid var(--line); border-radius: 12px;
+            transition: border-color .15s, box-shadow .15s;
+        }
+        .field input.has-toggle { padding-right: 4.5rem; }
+        .field input:hover { border-color: #CBCFE6; }
+        .field input:focus { outline: none; border-color: var(--brand); box-shadow: 0 0 0 4px rgba(67,73,232,.14); }
+        .field:focus-within > svg.lead { color: var(--brand); }
+
+        .toggle {
+            position: absolute; top: 6px; right: 6px; bottom: 6px;
+            padding: 0 .8rem; border: 0; border-radius: 8px;
+            font: inherit; font-size: .75rem; font-weight: 600; color: var(--brand);
+            background: transparent; cursor: pointer;
+        }
+        .toggle:hover { background: var(--brand-soft); }
+        .toggle:focus-visible { outline: 2px solid var(--brand); }
+
+        .submit {
+            margin-top: .4rem; height: 50px; width: 100%;
+            border: 0; border-radius: 12px; cursor: pointer;
+            font: inherit; font-size: .95rem; font-weight: 600; color: #fff;
+            background: linear-gradient(180deg, var(--brand) 0%, var(--brand-dark) 100%);
+            box-shadow: 0 10px 22px rgba(67,73,232,.3);
+            transition: transform .1s, box-shadow .15s, filter .15s;
+        }
+        .submit:hover { filter: brightness(1.06); box-shadow: 0 12px 26px rgba(67,73,232,.38); }
+        .submit:active { transform: translateY(1px); }
+        .submit:focus-visible { outline: 3px solid rgba(67,73,232,.4); outline-offset: 2px; }
+
+        .submit.is-loading { cursor: progress; opacity: .85; position: relative; }
+        .submit.is-loading::before {
+            content: ""; display: inline-block; width: 16px; height: 16px; margin-right: .6rem;
+            vertical-align: -3px; border-radius: 50%;
+            border: 2px solid rgba(255,255,255,.4); border-top-color: #fff;
+            animation: spin .7s linear infinite;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        .foot { margin-top: 2rem; text-align: center; font-size: .75rem; color: #9CA3AF; line-height: 1.6; }
+        .version {
+            display: inline-block; margin-bottom: .35rem; padding: .15rem .6rem;
+            border-radius: 999px; background: var(--brand-soft); color: var(--brand);
+            font-weight: 500;
+        }
+
+        @media (min-width: 960px) {
+            .layout { grid-template-columns: 1.05fr 1fr; }
+            .panel { display: flex; }
+            .mobile-brand { display: none; }
+            .form-side { padding: 3rem; }
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+            * { transition: none !important; }
+        }
     </style>
 </head>
 
-<body class="relative flex min-h-screen flex-col items-center justify-center overflow-hidden bg-canvas p-4 font-sans text-slate-800 antialiased">
+<body>
+    <div class="layout">
 
-    <!-- Soft background glows -->
-    <div class="pointer-events-none absolute -left-24 -top-24 h-80 w-80 rounded-full bg-brand/20 blur-3xl" aria-hidden="true"></div>
-    <div class="pointer-events-none absolute -bottom-32 -right-24 h-96 w-96 rounded-full bg-indigo-400/20 blur-3xl" aria-hidden="true"></div>
+        <!-- Brand panel (desktop) -->
+        <aside class="panel" aria-hidden="true">
+            <div class="panel-brand">
+                <img src="{% static 'images/weblogo.png' %}" alt="">
+                <span>TindaTech POS</span>
+            </div>
 
-    <div class="relative w-full max-w-sm">
+            <div class="panel-body">
+                <h2>Run your store with clarity.</h2>
+                <p>Ring up sales, track stock, and see how your business is doing, all from one simple system.</p>
 
-        <!-- Brand -->
-        <div class="mb-8 flex flex-col items-center text-center">
-            <img src="{% static 'images/weblogo.png' %}" alt="TindaTech POS logo"
-                 class="mb-4 h-14 w-14 rounded-2xl object-cover shadow-lg shadow-brand/20">
-            <h1 class="text-3xl font-semibold tracking-tight text-ink">TindaTech POS</h1>
-            <p class="mt-1 text-sm text-slate-500">Sign in to your account</p>
-        </div>
+                <ul class="features">
+                    <li>
+                        <span class="ico">
+                            <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><path stroke-linecap="round" stroke-linejoin="round" d="M3 3h2l.4 2M7 13h10l3-8H5.4M7 13L5.4 5M7 13l-2.3 2.3a1 1 0 00.7 1.7H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"/></svg>
+                        </span>
+                        Fast, reliable point of sale
+                    </li>
+                    <li>
+                        <span class="ico">
+                            <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><path stroke-linecap="round" stroke-linejoin="round" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/></svg>
+                        </span>
+                        Real-time inventory tracking
+                    </li>
+                    <li>
+                        <span class="ico">
+                            <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><path stroke-linecap="round" stroke-linejoin="round" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>
+                        </span>
+                        Clear sales reports
+                    </li>
+                </ul>
+            </div>
 
-        <!-- Card -->
-        <div class="rounded-3xl bg-white p-6 shadow-xl shadow-slate-300/40 sm:p-8">
+            <div class="panel-foot">Point of Sale and Inventory Management System</div>
+        </aside>
 
-            {% if form.errors %}
-                <div role="alert" class="mb-5 flex gap-2.5 rounded-2xl border border-red-200 bg-red-50 p-3.5 text-sm text-red-700">
-                    <svg class="mt-0.5 h-4 w-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v4m0 4h.01M10.3 3.9L1.8 18a2 2 0 001.7 3h17a2 2 0 001.7-3L13.7 3.9a2 2 0 00-3.4 0z"/></svg>
-                    <p>Incorrect username or password. Check your details and try again.</p>
-                </div>
-            {% endif %}
+        <!-- Form side -->
+        <main class="form-side">
+            <div class="form-wrap">
 
-            <form method="post" class="space-y-5">
-                {% csrf_token %}
-
-                <input type="hidden" name="next" value="{{ next }}">
-
-                <div>
-                    <label for="id_username" class="mb-1.5 block text-sm font-medium text-slate-700">Username</label>
-                    <input type="text" name="username" id="id_username"
-                           autocomplete="username" required autofocus
-                           class="w-full rounded-xl border border-slate-200 bg-canvas/50 px-4 py-3 text-sm placeholder:text-slate-400 focus:border-brand focus:bg-white focus:outline-none focus:ring-2 focus:ring-brand/30">
-                </div>
-
-                <div>
-                    <label for="id_password" class="mb-1.5 block text-sm font-medium text-slate-700">Password</label>
-                    <div class="relative">
-                        <input type="password" name="password" id="id_password"
-                               autocomplete="current-password" required
-                               class="w-full rounded-xl border border-slate-200 bg-canvas/50 py-3 pl-4 pr-16 text-sm placeholder:text-slate-400 focus:border-brand focus:bg-white focus:outline-none focus:ring-2 focus:ring-brand/30">
-                        <button type="button" id="toggle-password" aria-controls="id_password" aria-pressed="false"
-                                class="absolute inset-y-0 right-0 rounded-r-xl px-4 text-xs font-medium text-brand hover:text-brand-dark focus:outline-none focus:ring-2 focus:ring-brand/30">
-                            Show
-                        </button>
+                <div class="mobile-brand">
+                    <img src="{% static 'images/weblogo.png' %}" alt="TindaTech POS logo">
+                    <div>
+                        <strong>TindaTech POS</strong>
+                        <small>Point of Sale and Inventory Management</small>
                     </div>
                 </div>
 
-                <button type="submit"
-                        class="w-full rounded-full bg-brand px-4 py-3 text-sm font-semibold text-white shadow-lg shadow-brand/30 transition hover:bg-brand-dark focus:outline-none focus:ring-2 focus:ring-brand focus:ring-offset-2">
-                    Sign in
-                </button>
-            </form>
-        </div>
+                <div class="heading">
+                    <h1>Welcome back</h1>
+                    <p>Sign in to continue to your dashboard.</p>
+                </div>
 
-        <p class="mt-6 text-center text-xs text-slate-400">TindaTech POS System | All rights reserved.</p>
+                {% if form.errors %}
+                    <div role="alert" class="alert">
+                        <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v4m0 4h.01M10.3 3.9L1.8 18a2 2 0 001.7 3h17a2 2 0 001.7-3L13.7 3.9a2 2 0 00-3.4 0z"/></svg>
+                        <p>Incorrect username or password. Check your details and try again.</p>
+                    </div>
+                {% endif %}
+
+                <form method="post">
+                    {% csrf_token %}
+
+                    <input type="hidden" name="next" value="{{ next }}">
+
+                    <div>
+                        <label for="id_username">Username</label>
+                        <div class="field">
+                            <svg class="lead" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><path stroke-linecap="round" stroke-linejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/></svg>
+                            <input type="text" name="username" id="id_username"
+                                   autocomplete="username" required autofocus
+                                   placeholder="Enter your username">
+                        </div>
+                    </div>
+
+                    <div>
+                        <label for="id_password">Password</label>
+                        <div class="field">
+                            <svg class="lead" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8"><path stroke-linecap="round" stroke-linejoin="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/></svg>
+                            <input type="password" name="password" id="id_password" class="has-toggle"
+                                   autocomplete="current-password" required
+                                   placeholder="Enter your password">
+                            <button type="button" id="toggle-password" class="toggle"
+                                    aria-controls="id_password" aria-pressed="false">Show</button>
+                        </div>
+                    </div>
+
+                    <button type="submit" class="submit">Sign in</button>
+                </form>
+
+                <p class="foot">
+                    <span class="version">Version 1.0.0</span><br>
+                    TindaTech POS &middot; All rights reserved.
+                </p>
+
+            </div>
+        </main>
     </div>
 
     <script>
@@ -131,6 +293,25 @@
                 input.type = show ? 'text' : 'password';
                 btn.textContent = show ? 'Hide' : 'Show';
                 btn.setAttribute('aria-pressed', show ? 'true' : 'false');
+            });
+
+            // Flag the next page (dashboard) to show its loading animation,
+            // and give the button a loading state while the request is sent.
+            var form = document.querySelector('form');
+            var submit = form.querySelector('.submit');
+            form.addEventListener('submit', function () {
+                try { sessionStorage.setItem('tt_just_logged_in', '1'); } catch (e) {}
+                submit.classList.add('is-loading');
+                submit.disabled = true;
+                submit.textContent = 'Signing in…';
+            });
+            // Restore the button if the user returns via the back button.
+            window.addEventListener('pageshow', function (e) {
+                if (e.persisted) {
+                    submit.classList.remove('is-loading');
+                    submit.disabled = false;
+                    submit.textContent = 'Sign in';
+                }
             });
         })();
     </script>

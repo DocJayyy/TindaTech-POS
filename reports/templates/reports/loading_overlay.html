@@ -1,0 +1,88 @@
+{% load static %}
+{# Post-login loading overlay. Include once, right after <body> opens: {% include "loading_overlay.html" %} #}
+<div id="tt-loader" role="status" aria-live="polite" aria-label="Loading your dashboard">
+    <div class="tt-loader-inner">
+        <div class="tt-logo-wrap">
+            <span class="tt-ring"></span>
+            <span class="tt-ring tt-ring-2"></span>
+            <img src="{% static 'images/weblogo.png' %}" alt="" class="tt-logo">
+        </div>
+        <p class="tt-title">TindaTech POS</p>
+        <p class="tt-sub">Loading your dashboard<span class="tt-dots"><i>.</i><i>.</i><i>.</i></span></p>
+        <div class="tt-bar"><span></span></div>
+    </div>
+</div>
+
+<style>
+    #tt-loader {
+        position: fixed; inset: 0; z-index: 9999;
+        display: grid; place-items: center;
+        background:
+            radial-gradient(circle at 20% 15%, rgba(67,73,232,.12), transparent 45%),
+            radial-gradient(circle at 85% 90%, rgba(120,130,255,.16), transparent 45%),
+            #F7F8FD;
+        font-family: 'Poppins', ui-sans-serif, system-ui, sans-serif;
+        transition: opacity .45s ease, visibility .45s ease;
+    }
+    #tt-loader.tt-hide { opacity: 0; visibility: hidden; }
+    .tt-loader-inner { text-align: center; padding: 1.5rem; }
+
+    .tt-logo-wrap { position: relative; width: 84px; height: 84px; margin: 0 auto 1.5rem; display: grid; place-items: center; }
+    .tt-logo { position: relative; width: 64px; height: 64px; border-radius: 18px; object-fit: cover;
+               box-shadow: 0 12px 28px rgba(67,73,232,.3); animation: tt-float 2s ease-in-out infinite; }
+    .tt-ring { position: absolute; inset: 0; border-radius: 26px; border: 2px solid rgba(67,73,232,.45);
+               animation: tt-pulse 1.8s ease-out infinite; }
+    .tt-ring-2 { animation-delay: .9s; }
+
+    .tt-title { font-size: 1.15rem; font-weight: 600; color: #16161D; letter-spacing: -.01em; }
+    .tt-sub { margin-top: .25rem; font-size: .85rem; color: #6B7280; }
+    .tt-dots i { font-style: normal; animation: tt-blink 1.2s infinite both; }
+    .tt-dots i:nth-child(2) { animation-delay: .2s; }
+    .tt-dots i:nth-child(3) { animation-delay: .4s; }
+
+    .tt-bar { width: 180px; height: 4px; margin: 1.5rem auto 0; border-radius: 999px; background: #E3E5F0; overflow: hidden; }
+    .tt-bar span { display: block; height: 100%; width: 40%; border-radius: inherit;
+                   background: linear-gradient(90deg, #4349E8, #7B82FF); animation: tt-slide 1.3s ease-in-out infinite; }
+
+    @keyframes tt-float { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-5px); } }
+    @keyframes tt-pulse { 0% { transform: scale(.8); opacity: .8; } 100% { transform: scale(1.5); opacity: 0; } }
+    @keyframes tt-blink { 0%,80%,100% { opacity: .2; } 40% { opacity: 1; } }
+    @keyframes tt-slide { 0% { transform: translateX(-100%); } 100% { transform: translateX(350%); } }
+
+    @media (prefers-reduced-motion: reduce) {
+        .tt-logo, .tt-ring, .tt-dots i, .tt-bar span { animation: none; }
+        .tt-ring { display: none; }
+        .tt-bar span { width: 100%; }
+    }
+</style>
+
+<script>
+    (function () {
+        var el = document.getElementById('tt-loader');
+        if (!el) return;
+        var fromLogin = false;
+        try {
+            fromLogin = sessionStorage.getItem('tt_just_logged_in') === '1';
+            sessionStorage.removeItem('tt_just_logged_in');
+        } catch (e) {}
+
+        // Not a fresh login: remove immediately, before first paint.
+        if (!fromLogin) { el.parentNode.removeChild(el); return; }
+
+        var MIN_MS = 1200;            // minimum time the loader stays visible
+        var start = Date.now();
+        document.documentElement.style.overflow = 'hidden';
+
+        function hide() {
+            var wait = Math.max(0, MIN_MS - (Date.now() - start));
+            setTimeout(function () {
+                el.classList.add('tt-hide');
+                document.documentElement.style.overflow = '';
+                setTimeout(function () { if (el.parentNode) el.parentNode.removeChild(el); }, 500);
+            }, wait);
+        }
+
+        if (document.readyState === 'complete') hide();
+        else window.addEventListener('load', hide);
+    })();
+</script>
