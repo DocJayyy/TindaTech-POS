@@ -1394,7 +1394,12 @@ const ALT_SHORTCUTS = {
 
 function triggerAction(name) {
     if (name === "more") {
-        openActionsBtn.click();
+        // Alt+M toggles the More actions modal
+        if (actionsModal.hidden) {
+            openActionsBtn.click();
+        } else {
+            closeActionsModal();
+        }
         return;
     }
     document.querySelector(`[data-action="${name}"]`)?.click();
@@ -1529,10 +1534,16 @@ document.addEventListener("keydown", function (event) {
     // Let existing modal handlers process Escape.
     if (key === "Escape") return;
 
-    // Do not run shortcuts while a modal is open.
-    if (isAnyModalOpen()) return;
+    // Block everything if a message / confirm / lookup modal is open.
+    const otherModalOpen =
+        !messageModal.hidden ||
+        !confirmModal.hidden ||
+        !lookupModal.classList.contains("hidden");
 
-    // Alt + key: action buttons (works even while typing in an input)
+    if (otherModalOpen) return;
+
+    // Alt + key: action buttons (works while typing, and also while
+    // the More actions modal is open)
     if (event.altKey && !event.ctrlKey && !event.metaKey && !event.shiftKey) {
         const action = ALT_SHORTCUTS[event.code];
 
@@ -1543,6 +1554,9 @@ document.addEventListener("keydown", function (event) {
 
         return;
     }
+
+    // The rest (F-keys, cart navigation) stay disabled while More actions is open.
+    if (!actionsModal.hidden) return;
 
     // Ignore function-key shortcuts when modifier keys are pressed.
     if (event.ctrlKey || event.altKey || event.metaKey) return;
