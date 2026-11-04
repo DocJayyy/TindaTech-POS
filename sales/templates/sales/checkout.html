@@ -216,12 +216,61 @@
 
         /* ===== Action tiles with shortcut hint ===== */
         .pos-act { gap: .1rem; min-height: 3.75rem; padding: .35rem .25rem; }
-        .pos-act .lbl { font-size: .85rem; font-weight: 700; font-style: italic; line-height: 1.1; }
+        .pos-act .lbl { font-size: .85rem; font-weight: 700; font-style: normal; line-height: 1.1; }
         .pos-act .key { min-height: .8rem; font-size: .68rem; font-weight: 600; letter-spacing: .02em; opacity: .7; }
         .pos-act.danger .key, .pos-act.purple .key { opacity: .85; }
         .hint { margin-left: .3rem; border-radius: .3rem; background: rgba(0,0,0,.08); padding: 0 .3rem; font-size: .65rem; font-weight: 600; vertical-align: middle; }
         .pos-pay .hint { background: rgba(255,255,255,.22); }
         .pos-clear:hover .hint { background: rgba(255,255,255,.25); }
+
+        /* Action tile colors */
+        .pos-act.c-green  { background: #dcfce7; color: #166534; }
+        .pos-act.c-green:hover  { background: #bbf7d0; }
+        .pos-act.c-blue   { background: #dbeafe; color: #1e40af; }
+        .pos-act.c-blue:hover   { background: #bfdbfe; }
+        .pos-act.c-amber  { background: #fef3c7; color: #92400e; }
+        .pos-act.c-amber:hover  { background: #fde68a; }
+        .pos-act.c-orange { background: #ffedd5; color: #9a3412; }
+        .pos-act.c-orange:hover { background: #fed7aa; }
+        .pos-act.c-rose   { background: #ffe4e6; color: #9f1239; }
+        .pos-act.c-rose:hover   { background: #fecdd3; }
+        .pos-act.c-violet { background: #ede9fe; color: #5b21b6; }
+        .pos-act.c-violet:hover { background: #ddd6fe; }
+        .pos-act.c-teal   { background: #ccfbf1; color: #115e59; }
+        .pos-act.c-teal:hover   { background: #99f6e4; }
+        .pos-act.c-sky    { background: #e0f2fe; color: #075985; }
+        .pos-act.c-sky:hover    { background: #bae6fd; }
+        .pos-act.c-yellow { background: #fef08a; color: #854d0e; }
+        .pos-act.c-yellow:hover { background: #fde047; }
+        .pos-act.c-indigo { background: #e0e7ff; color: #3730a3; }
+        .pos-act.c-indigo:hover { background: #c7d2fe; }
+        .pos-act.c-cyan   { background: #cffafe; color: #155e75; }
+        .pos-act.c-cyan:hover   { background: #a5f3fc; }
+
+        /* More-actions tile colors */
+        .action-tile { font-family: 'Poppins', sans-serif; font-weight: 600; }
+        .action-tile.c-green  { background: #dcfce7; color: #166534; }
+        .action-tile.c-green:hover  { background: #bbf7d0; color: #166534; }
+        .action-tile.c-blue   { background: #dbeafe; color: #1e40af; }
+        .action-tile.c-blue:hover   { background: #bfdbfe; color: #1e40af; }
+        .action-tile.c-amber  { background: #fef3c7; color: #92400e; }
+        .action-tile.c-amber:hover  { background: #fde68a; color: #92400e; }
+        .action-tile.c-orange { background: #ffedd5; color: #9a3412; }
+        .action-tile.c-orange:hover { background: #fed7aa; color: #9a3412; }
+        .action-tile.c-rose   { background: #ffe4e6; color: #9f1239; }
+        .action-tile.c-rose:hover   { background: #fecdd3; color: #9f1239; }
+        .action-tile.c-violet { background: #ede9fe; color: #5b21b6; }
+        .action-tile.c-violet:hover { background: #ddd6fe; color: #5b21b6; }
+        .action-tile.c-teal   { background: #ccfbf1; color: #115e59; }
+        .action-tile.c-teal:hover   { background: #99f6e4; color: #115e59; }
+        .action-tile.c-sky    { background: #e0f2fe; color: #075985; }
+        .action-tile.c-sky:hover    { background: #bae6fd; color: #075985; }
+        .action-tile.c-yellow { background: #fef08a; color: #854d0e; }
+        .action-tile.c-yellow:hover { background: #fde047; color: #854d0e; }
+        .action-tile.c-indigo { background: #e0e7ff; color: #3730a3; }
+        .action-tile.c-indigo:hover { background: #c7d2fe; color: #3730a3; }
+        .action-tile.c-cyan   { background: #cffafe; color: #155e75; }
+        .action-tile.c-cyan:hover   { background: #a5f3fc; color: #155e75; }
     </style>
 </head>
 
@@ -377,17 +426,17 @@
             <div class="pos-actions" role="group" aria-label="Quick actions">
                 <button type="button" class="pos-act danger" data-action="cancel-order"><span class="lbl">Cancel Order</span><span class="key">Alt+C</span></button>
                 <button type="button" class="pos-act purple" data-action="govt-discount"><span class="lbl">Gov't Discount</span><span class="key">Alt+G</span></button>
-                <button type="button" class="pos-act " data-action="discount"><span class="lbl">Discount</span><span class="key">F6</span></button>
-                <button type="button" class="pos-act " data-action="change-qty"><span class="lbl">Change Qty</span><span class="key">+ / −</span></button>
-                <button type="button" class="pos-act " data-action="price-override"><span class="lbl">Price Override</span><span class="key">Alt+O</span></button>
-                <button type="button" class="pos-act " data-action="void-line"><span class="lbl">Void Line</span><span class="key">Del</span></button>
-                <button type="button" class="pos-act " data-action="void-all"><span class="lbl">Void All</span><span class="key">Alt+V</span></button>
-                <button type="button" class="pos-act " data-action="refund"><span class="lbl">Refund</span><span class="key">Alt+R</span></button>
-                <button type="button" class="pos-act " data-action="change-fund"><span class="lbl">Change Fund</span><span class="key">Alt+1</span></button>
-                <button type="button" class="pos-act " data-action="open-drawer"><span class="lbl">Open Drawer</span><span class="key">Alt+2</span></button>
-                <button type="button" class="pos-act " data-action="suspend"><span class="lbl">Suspend</span><span class="key">F8</span></button>
-                <button type="button" class="pos-act " data-action="inventory-lookup"><span class="lbl">Inventory Lookup</span><span class="key">Alt+I</span></button>
-                <button type="button" class="pos-act " data-action="price-check"><span class="lbl">Price Check</span><span class="key">Alt+P</span></button>
+                <button type="button" class="pos-act c-green" data-action="discount"><span class="lbl">Discount</span><span class="key">F6</span></button>
+                <button type="button" class="pos-act c-blue" data-action="change-qty"><span class="lbl">Change Qty</span><span class="key">+ / −</span></button>
+                <button type="button" class="pos-act c-amber" data-action="price-override"><span class="lbl">Price Override</span><span class="key">Alt+O</span></button>
+                <button type="button" class="pos-act c-orange" data-action="void-line"><span class="lbl">Void Line</span><span class="key">Del</span></button>
+                <button type="button" class="pos-act c-rose" data-action="void-all"><span class="lbl">Void All</span><span class="key">Alt+V</span></button>
+                <button type="button" class="pos-act c-violet" data-action="refund"><span class="lbl">Refund</span><span class="key">Alt+R</span></button>
+                <button type="button" class="pos-act c-teal" data-action="change-fund"><span class="lbl">Change Fund</span><span class="key">Alt+1</span></button>
+                <button type="button" class="pos-act c-sky" data-action="open-drawer"><span class="lbl">Open Drawer</span><span class="key">Alt+2</span></button>
+                <button type="button" class="pos-act c-yellow" data-action="suspend"><span class="lbl">Suspend</span><span class="key">F8</span></button>
+                <button type="button" class="pos-act c-indigo" data-action="inventory-lookup"><span class="lbl">Inventory Lookup</span><span class="key">Alt+I</span></button>
+                <button type="button" class="pos-act c-cyan" data-action="price-check"><span class="lbl">Price Check</span><span class="key">Alt+P</span></button>
                 <button type="button" class="pos-act soft" onclick="document.getElementById('open-actions').click()"><span class="lbl">More</span><span class="key">Alt+M</span></button>
             </div>
         </div>
@@ -407,24 +456,24 @@
             </div>
 
             <div class="actions-grid" role="group" aria-label="Quick actions">
-                <button type="button" class="action-tile" data-action="general-note"><span>General Note</span><span class="hint">Alt+N</span></button>
-                <button type="button" class="action-tile" data-action="reward"><span class="tile-icon">★</span><span>Reward</span><span class="hint">Alt+W</span></button>
-                <button type="button" class="action-tile" data-action="customer-note"><span class="tile-icon">■</span><span>Customer Note</span><span class="hint">Alt+B</span></button>
+                <button type="button" class="action-tile c-green" data-action="general-note"><span>General Note</span><span class="hint">Alt+N</span></button>
+                <button type="button" class="action-tile c-amber" data-action="reward"><span class="tile-icon">★</span><span>Reward</span><span class="hint">Alt+W</span></button>
+                <button type="button" class="action-tile c-blue" data-action="customer-note"><span class="tile-icon">■</span><span>Customer Note</span><span class="hint">Alt+B</span></button>
 
-                <button type="button" class="action-tile" data-action="pricelist"><span class="tile-icon">☰</span><span>Pricelist</span><span class="hint">Alt+L</span></button>
+                <button type="button" class="action-tile c-indigo" data-action="pricelist"><span class="tile-icon">☰</span><span>Pricelist</span><span class="hint">Alt+L</span></button>
 
-                <button type="button" class="action-tile" data-action="cash-takeout"><span class="tile-icon">₱</span><span>Cash Takeout</span><span class="hint">Alt+3</span></button>
-                <button type="button" class="action-tile" data-action="declare-tender"><span class="tile-icon">✓</span><span>Declare Tender</span><span class="hint">Alt+4</span></button>
+                <button type="button" class="action-tile c-teal" data-action="cash-takeout"><span class="tile-icon">₱</span><span>Cash Takeout</span><span class="hint">Alt+3</span></button>
+                <button type="button" class="action-tile c-orange" data-action="declare-tender"><span class="tile-icon">✓</span><span>Declare Tender</span><span class="hint">Alt+4</span></button>
 
-                <button type="button" class="action-tile" data-action="x-reading"><span class="tile-icon">📄</span><span>X-Reading</span><span class="hint">Alt+X</span></button>
+                <button type="button" class="action-tile c-sky" data-action="x-reading"><span class="tile-icon">📄</span><span>X-Reading</span><span class="hint">Alt+X</span></button>
                 <button type="button" class="action-tile action-tile--danger" data-action="z-reading"><span class="tile-icon">📄</span><span>Z-Reading</span><span class="hint">Alt+Z</span></button>
 
-                <button type="button" class="action-tile" data-action="item-finder"><span class="tile-icon">☰</span><span>Item Finder</span><span class="hint">Alt+5</span></button>
-                <button type="button" class="action-tile" data-action="salesperson"><span class="tile-icon">👤</span><span>Salesperson</span><span class="hint">Alt+S</span></button>
+                <button type="button" class="action-tile c-cyan" data-action="item-finder"><span class="tile-icon">☰</span><span>Item Finder</span><span class="hint">Alt+5</span></button>
+                <button type="button" class="action-tile c-violet" data-action="salesperson"><span class="tile-icon">👤</span><span>Salesperson</span><span class="hint">Alt+S</span></button>
 
-                <button type="button" class="action-tile" data-action="retrieve"><span class="tile-icon">▶</span><span>Retrieve</span><span class="hint">Alt+8</span></button>
+                <button type="button" class="action-tile c-yellow" data-action="retrieve"><span class="tile-icon">▶</span><span>Retrieve</span><span class="hint">Alt+8</span></button>
 
-                <button type="button" class="action-tile" data-action="sales-history"><span class="tile-icon">↺</span><span>Sales History</span><span class="hint">Alt+Y</span></button>
+                <button type="button" class="action-tile c-rose" data-action="sales-history"><span class="tile-icon">↺</span><span>Sales History</span><span class="hint">Alt+Y</span></button>
             </div>
         </div>
     </div>
