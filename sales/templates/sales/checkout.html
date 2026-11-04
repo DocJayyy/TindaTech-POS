@@ -123,7 +123,7 @@
             background: #fff;
             border-radius: 1.25rem;
             padding: 1.5rem;
-            box-shadow: 0 20px 40px rgba(0,0,0,.15);
+            box-shadow: 0 25px 60px -12px rgba(0,0,0,.55), 0 0 0 1px rgba(0,0,0,.08);
         }
 
         .govt-modal-card h2 {
@@ -157,8 +157,8 @@
 
         .govt-modal-field input:focus,
         .govt-modal-field select:focus {
-            border-color: #6b5baf;
-            box-shadow: 0 0 0 3px rgba(107,91,175,.15);
+            border-color: #22c55e;
+            box-shadow: 0 0 0 3px rgba(34,197,94,.2);
         }
 
         .govt-modal-actions {
@@ -175,21 +175,64 @@
             font: inherit;
             font-weight: 600;
             cursor: pointer;
+            transition: background .15s, transform .1s;
+        }
+
+        .govt-modal-actions button:active {
+            transform: scale(.98);
         }
 
         .govt-apply {
-            background: #6b5baf;
+            background: #16a34a;
             color: white;
         }
 
         .govt-apply:hover {
-            background: #5a4b9a;
+            background: #15803d;
+        }
+
+        .govt-apply:focus-visible {
+            outline: 2px solid #16a34a;
+            outline-offset: 2px;
         }
 
         .govt-cancel {
             background: #f1f5f9;
             color: #475569;
         }
+
+        .govt-cancel:hover {
+            background: #e2e8f0;
+        }
+
+        .govt-remove {
+            background: #fee2e2;
+            color: #dc2626;
+        }
+
+        .govt-remove:hover {
+            background: #fecaca;
+        }
+
+        /* Price Override modal */
+        .po-card {
+            box-shadow: 0 25px 60px -12px rgba(0,0,0,.55), 0 0 0 1px rgba(0,0,0,.08);
+        }
+        .po-input:focus {
+            outline: none !important;
+            border-color: #22c55e !important;
+            box-shadow: 0 0 0 3px rgba(34,197,94,.2) !important;
+        }
+        .po-apply {
+            background: #16a34a;
+            color: #fff;
+            border: 0;
+            cursor: pointer;
+            transition: background .15s, transform .1s;
+        }
+        .po-apply:hover { background: #15803d; }
+        .po-apply:active { transform: scale(.98); }
+        .po-apply:focus-visible { outline: 2px solid #16a34a; outline-offset: 2px; }
 
         /* ===== POS layout (plain CSS) ===== */
         .pos-body { min-height: 100vh; }
@@ -630,8 +673,7 @@
                     Cancel
                 </button>
 
-                <button type="button" id="govt-modal-remove"
-                    class="rounded-xl border border-red-200 px-4 py-2.5 font-semibold text-red-600 hover:bg-red-50">
+                <button type="button" id="govt-modal-remove" class="govt-remove">
                     Remove Discount
                 </button>
 
@@ -724,6 +766,89 @@
 
         </div>
     </div>
+
+
+    <!-- PRICE OVERRIDE MODAL -->
+    <div id="price-override-modal"
+        class="fixed inset-0 z-[100] hidden items-center justify-center bg-black/50 p-4">
+
+        <div class="po-card w-full max-w-md rounded-2xl bg-white p-6">
+
+            <div class="mb-5 flex items-center justify-between">
+                <div>
+                    <h2 class="text-xl font-bold text-gray-800">Price Override</h2>
+                    <p class="mt-1 text-sm text-gray-500">
+                        Change the selling price of a selected product.
+                    </p>
+                </div>
+
+                <button type="button" id="price-override-close"
+                        class="rounded-lg p-2 text-gray-400 hover:bg-gray-100">
+                    ✕
+                </button>
+            </div>
+
+            <div class="mb-5 rounded-xl bg-gray-50 p-4">
+                <p class="text-xs font-semibold uppercase text-gray-500">
+                    Selected Product
+                </p>
+                <p id="override-product-name"
+                class="mt-1 font-semibold text-gray-800">
+                    No product selected
+                </p>
+
+                <div class="mt-3 flex justify-between text-sm">
+                    <span class="text-gray-500">Original Price</span>
+                    <span id="override-original-price"
+                        class="font-semibold text-gray-800">₱0.00</span>
+                </div>
+
+                <div class="mt-2 flex justify-between text-sm">
+                    <span class="text-gray-500">Current Cart Price</span>
+                    <span id="override-current-price"
+                        class="font-semibold text-gray-800">₱0.00</span>
+                </div>
+            </div>
+
+            <form id="price-override-form">
+                <label for="override-new-price"
+                    class="mb-2 block text-sm font-semibold text-gray-700">
+                    New Unit Price
+                </label>
+
+                <div class="relative">
+                    <span class="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500">
+                        ₱
+                    </span>
+
+                    <input type="number"
+                        id="override-new-price"
+                        min="0.01"
+                        step="0.01"
+                        required
+                        placeholder="0.00"
+                        class="po-input w-full rounded-xl border border-gray-300 py-3 pl-9 pr-4 text-lg font-semibold outline-none">
+                </div>
+
+                <p id="price-override-error"
+                class="mt-2 hidden text-sm text-red-600"></p>
+
+                <div class="mt-6 flex gap-3">
+                    <button type="button" id="price-override-cancel"
+                            class="flex-1 rounded-xl border border-gray-300 px-4 py-3 font-semibold text-gray-600 hover:bg-gray-50">
+                        Cancel
+                    </button>
+
+                    <button type="submit"
+                            class="po-apply flex-1 rounded-xl px-4 py-3 font-semibold">
+                        Apply Override
+                    </button>
+                </div>
+            </form>
+
+        </div>
+    </div>
+
 
     <!-- Message modal -->
     <div id="message-modal" class="msg-modal" role="alertdialog" aria-modal="true"
@@ -1118,7 +1243,9 @@ lookupModal.addEventListener("click", event => {
 document.addEventListener("keydown", event => {
     if (event.key !== "Escape") return;
 
-    if (!regularModal.hidden) {
+    if (!priceOverrideModal.classList.contains("hidden")) {
+        closePriceOverrideModal();
+    } else if (!regularModal.hidden) {
         closeRegularDiscountModal();
     } else if (!govtModal.hidden) {
         closeGovtDiscountModal();
@@ -1229,7 +1356,7 @@ actionTiles.forEach(tile => {
                 if (firstQty) firstQty.focus();
                 break;
             case "price-override":
-                showMessage("Price overrides require manager approval.", "Price Override");
+                openPriceOverrideModal();
                 break;
             case "void-line": {
                 if (cart.size === 0) {
@@ -1661,22 +1788,155 @@ document.getElementById("regular-modal-remove")
         );
     });
 
+
+
+// ---------- Price Override Modal ----------
+
+const priceOverrideModal = document.getElementById("price-override-modal");
+const overrideProductName = document.getElementById("override-product-name");
+const overrideOriginalPrice = document.getElementById("override-original-price");
+const overrideCurrentPrice = document.getElementById("override-current-price");
+const overrideNewPrice = document.getElementById("override-new-price");
+const overrideError = document.getElementById("price-override-error");
+const overrideForm = document.getElementById("price-override-form");
+
+function openPriceOverrideModal() {
+
+    if (cart.size === 0) {
+        showMessage(
+            "Add products to the cart before overriding a price.",
+            "Empty Cart"
+        );
+        return;
+    }
+
+    if (
+        selectedCartItemId === null ||
+        !cart.has(selectedCartItemId)
+    ) {
+        showMessage(
+            "Select a product in the cart before applying a price override.",
+            "No Item Selected"
+        );
+        return;
+    }
+
+    const item = cart.get(selectedCartItemId);
+
+    overrideProductName.textContent = item.name;
+
+    overrideOriginalPrice.textContent =
+        "₱" + item.originalPrice.toFixed(2);
+
+    overrideCurrentPrice.textContent =
+        "₱" + item.price.toFixed(2);
+
+    overrideNewPrice.value = item.price.toFixed(2);
+
+    overrideError.textContent = "";
+    overrideError.classList.add("hidden");
+
+    priceOverrideModal.classList.remove("hidden");
+    priceOverrideModal.classList.add("flex");
+
+    overrideNewPrice.focus();
+    overrideNewPrice.select();
+}
+
+function closePriceOverrideModal() {
+    priceOverrideModal.classList.add("hidden");
+    priceOverrideModal.classList.remove("flex");
+
+    search.focus();
+}
+
+document.getElementById("price-override-close")
+    .addEventListener("click", closePriceOverrideModal);
+
+document.getElementById("price-override-cancel")
+    .addEventListener("click", closePriceOverrideModal);
+
+priceOverrideModal.addEventListener("click", event => {
+    if (event.target === priceOverrideModal) {
+        closePriceOverrideModal();
+    }
+});
+
+overrideForm.addEventListener("submit", event => {
+    event.preventDefault();
+
+    if (
+        selectedCartItemId === null ||
+        !cart.has(selectedCartItemId)
+    ) {
+        closePriceOverrideModal();
+
+        showMessage(
+            "The selected cart item no longer exists.",
+            "Item Not Found"
+        );
+        return;
+    }
+
+    const newPrice = Number(overrideNewPrice.value);
+
+    if (
+        !Number.isFinite(newPrice) ||
+        newPrice <= 0
+    ) {
+        overrideError.textContent =
+            "Please enter a valid price greater than zero.";
+
+        overrideError.classList.remove("hidden");
+        overrideNewPrice.focus();
+        return;
+    }
+
+    const item = cart.get(selectedCartItemId);
+
+    const oldPrice = item.price;
+
+    // Apply new unit price.
+    item.price = money(newPrice);
+    item.priceOverridden = true;
+
+    renderCart();
+
+    closePriceOverrideModal();
+
+    showMessage(
+        `${item.name}\n\n` +
+        `Previous Price: ₱${oldPrice.toFixed(2)}\n` +
+        `New Price: ₱${item.price.toFixed(2)}`,
+        "Price Override Applied"
+    );
+});
+
+
+
 function addProduct(button) {
     const id = button.dataset.id;
     const existing = cart.get(id);
+
     if (existing) {
         existing.quantity += 1;
     } else {
+        const originalPrice = Number(button.dataset.price);
+
         cart.set(id, {
             id,
             name: button.dataset.name,
-            price: Number(button.dataset.price),
+            price: originalPrice,
+            originalPrice: originalPrice,
+            priceOverridden: false,
             unit: button.dataset.unit,
             quantity: 1
         });
     }
+
     renderCart();
 }
+
 
 productButtons.forEach(button => {
     button.addEventListener("click", () => addProduct(button));
@@ -1830,11 +2090,13 @@ function renderCart() {
     cartBody.hidden = cart.size === 0;
 
     document.getElementById("cart-data").value = JSON.stringify(
-        Array.from(cart.values()).map(item => ({
-            product_id: item.id,
-            quantity: item.quantity
-        }))
-    );
+    Array.from(cart.values()).map(item => ({
+        product_id: item.id,
+        quantity: item.quantity,
+        unit_price: item.price,
+        price_overridden: item.priceOverridden || false
+    }))
+);
     updateTotals();
 }
 
@@ -2109,9 +2371,11 @@ document.addEventListener("keydown", function (event) {
     const otherModalOpen =
         !messageModal.hidden ||
         !confirmModal.hidden ||
+        !actionsModal.hidden ||
         !govtModal.hidden ||
         !regularModal.hidden ||
-        !lookupModal.classList.contains("hidden");
+        !lookupModal.classList.contains("hidden") ||
+        !priceOverrideModal.classList.contains("hidden");
 
     if (otherModalOpen) return;
 
