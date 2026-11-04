@@ -33,7 +33,8 @@ from .models import (
     XReading,
     ReceiptSettings,
     AuditLog,
-    CashFundMovement
+    CashFundMovement,
+    SuspendedSale,
 )
 from .services import process_sale
 from .utils import log_activity
@@ -148,6 +149,7 @@ def inventory_lookup_view(request):
     return JsonResponse({"products": results})
 
 
+
 @login_required
 @pos_access_required
 @require_POST
@@ -173,11 +175,9 @@ def complete_sale_view(request):
             cart_items=cart_items,
             cashier=request.user,
 
-            # Payment
             amount_tendered=form.cleaned_data["amount_tendered"],
             payment_method=form.cleaned_data["payment_method"],
 
-            # Discount
             discount_type=form.cleaned_data["discount_type"],
             regular_discount_percent=(
                 form.cleaned_data["regular_discount_percent"]
@@ -194,7 +194,6 @@ def complete_sale_view(request):
                 form.cleaned_data["discount_reference"]
             ),
 
-            # Additional charges
             charges=[
                 {
                     "charge_type": "packaging",
@@ -250,6 +249,22 @@ def complete_sale_view(request):
 
         messages.error(request, error_message)
         return redirect("checkout")
+
+    # Delete the retrieved suspended transaction only after sale succeeds.
+    suspended_sale_id = request.POST.get("suspended_sale_id")
+
+    if suspended_sale_id:
+        cashier_session = CashierSession.objects.filter(
+            cashier=request.user,
+            status=CashierSession.Status.OPEN,
+        ).first()
+
+        if cashier_session:
+            SuspendedSale.objects.filter(
+                pk=suspended_sale_id,
+                cashier=request.user,
+                cashier_session=cashier_session,
+            ).delete()
 
     # Record completed sale activity.
     log_activity(
@@ -1597,4 +1612,125 @@ def change_fund_view(request):
         "success": True,
         "message": "Change fund added successfully.",
         "amount": str(movement.amount),
+    })
+
+
+@login_required
+@pos_access_required
+@require_POST
+def suspend_sale_view(request):
+    cashier_session = CashierSession.objects.filter(
+        cashier=request.user,
+        status=CashierSession.Status.OPEN,
+    ).first()
+
+    if not cashier_session:
+        return JsonResponse({
+            "success": False,
+            "message": "Please open your cashier shift first.",
+        }, status=400)
+
+    try:
+        payload = json.loads(request.body.decode("utf-8"))
+
+        if not isinstance(payload, dict):
+            raise ValueError("Invalid transaction data.")
+
+        cart_items = payload.get("cart")
+
+        if not isinstance(cart_items, list) or not cart_items:
+            raise ValueError("Your cart is empty.")
+
+        if not all(isinstance(item, dict) for item in cart_items):
+            raise ValueError("Invalid cart items.")
+
+        suspended_sale = SuspendedSale.objects.create(
+            cashier=request.user,
+            cashier_session=cashier_session,
+            transaction_data=payload,
+        )
+
+        return JsonResponse({
+            "success": True,
+            "message": "Transaction suspended successfully.",
+            "suspended_sale_id": suspended_sale.pk,
+        })
+
+    except (json.JSONDecodeError, UnicodeDecodeError, ValueError):
+        return JsonResponse({
+            "success": False,
+            "message": "Invalid transaction data.",
+        }, status=400)
+
+
+@login_required
+@pos_access_required
+@require_GET
+def suspended_sales_list_view(request):
+    cashier_session = CashierSession.objects.filter(
+        cashier=request.user,
+        status=CashierSession.Status.OPEN,
+    ).first()
+
+    if not cashier_session:
+        return JsonResponse({
+            "success": False,
+            "message": "Please open your cashier shift first.",
+        }, status=400)
+
+    suspended_sales = SuspendedSale.objects.filter(
+        cashier=request.user,
+        cashier_session=cashier_session,
+    ).order_by("-created_at")
+
+    results = []
+
+    for sale in suspended_sales:
+        cart_items = sale.transaction_data.get("cart", [])
+
+        results.append({
+            "id": sale.pk,
+            "items_count": len(cart_items),
+            "created_at": sale.created_at.strftime(
+                "%b %d, %Y %I:%M %p"
+            ),
+        })
+
+    return JsonResponse({
+        "success": True,
+        "suspended_sales": results,
+    })
+
+
+@login_required
+@pos_access_required
+@require_GET
+def retrieve_suspended_sale_view(request, suspended_sale_id):
+    cashier_session = CashierSession.objects.filter(
+        cashier=request.user,
+        status=CashierSession.Status.OPEN,
+    ).first()
+
+    if not cashier_session:
+        return JsonResponse({
+            "success": False,
+            "message": "Please open your cashier shift first.",
+        }, status=400)
+
+    suspended_sale = SuspendedSale.objects.filter(
+        pk=suspended_sale_id,
+        cashier=request.user,
+        cashier_session=cashier_session,
+    ).first()
+
+    if not suspended_sale:
+        return JsonResponse({
+            "success": False,
+            "message": "Suspended transaction not found.",
+        }, status=404)
+
+    return JsonResponse({
+        "success": True,
+        "suspended_sale_id": suspended_sale.pk,
+        "transaction_data": suspended_sale.transaction_data,
     })

@@ -216,24 +216,126 @@
             background: #fecaca;
         }
 
-        /* Price Override modal */
+                /* Price Override modal */
+        #price-override-modal {
+            background: rgba(15, 23, 42, .6);
+            align-items: center;
+            justify-content: center;
+            padding: 1rem;
+        }
         .po-card {
+            width: 100%;
+            max-width: 26rem;
+            background: #fff;
+            border-radius: 1.25rem;
+            overflow: hidden;
             box-shadow: 0 25px 60px -12px rgba(0,0,0,.55), 0 0 0 1px rgba(0,0,0,.08);
         }
-        .po-input:focus {
-            outline: none !important;
-            border-color: #22c55e !important;
-            box-shadow: 0 0 0 3px rgba(34,197,94,.2) !important;
+        .po-head {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 1rem 1.25rem;
+            border-bottom: 1px solid #e5e7eb;
         }
-        .po-apply {
-            background: #16a34a;
-            color: #fff;
+        .po-head h2 { margin: 0; font-size: 1.05rem; font-weight: 700; color: #16161D; }
+        .po-head p { margin: .1rem 0 0; font-size: .78rem; color: #64748b; }
+        .po-close {
             border: 0;
+            background: transparent;
+            font-size: 1.5rem;
+            line-height: 1;
+            color: #94a3b8;
+            cursor: pointer;
+        }
+        .po-close:hover { color: #334155; }
+
+        .po-body { padding: 1.1rem 1.25rem 1.25rem; }
+
+        .po-summary {
+            padding: .8rem 1rem;
+            margin-bottom: 1rem;
+            background: #f8fafc;
+            border: 1px solid #e5e7eb;
+            border-left: 4px solid #16a34a;
+            border-radius: .75rem;
+        }
+        .po-label {
+            margin: 0;
+            font-size: .68rem;
+            font-weight: 600;
+            letter-spacing: .05em;
+            text-transform: uppercase;
+            color: #64748b;
+        }
+        .po-name { margin: .15rem 0 .5rem; font-size: 1rem; font-weight: 600; color: #16161D; }
+        .po-row {
+            display: flex;
+            justify-content: space-between;
+            font-size: .82rem;
+            color: #64748b;
+        }
+        .po-row + .po-row { margin-top: .25rem; }
+        .po-row strong { color: #16161D; font-variant-numeric: tabular-nums; }
+
+        .po-field-label {
+            display: block;
+            margin-bottom: .35rem;
+            font-size: .8rem;
+            font-weight: 600;
+            color: #475569;
+        }
+        .po-input-wrap { position: relative; }
+        .po-peso {
+            position: absolute;
+            left: 1rem;
+            top: 50%;
+            transform: translateY(-50%);
+            font-weight: 600;
+            color: #94a3b8;
+            pointer-events: none;
+        }
+        .po-input {
+            width: 100%;
+            padding: .65rem 1rem .65rem 2.1rem;
+            border: 1px solid #d1d5db;
+            border-radius: .75rem;
+            font: inherit;
+            font-size: 1.15rem;
+            font-weight: 700;
+            font-variant-numeric: tabular-nums;
+            color: #16161D;
+            outline: none;
+        }
+        .po-input:focus {
+            border-color: #22c55e;
+            box-shadow: 0 0 0 3px rgba(34,197,94,.2);
+        }
+        .po-error {
+            margin: .5rem 0 0;
+            padding: .5rem .75rem;
+            border-radius: .5rem;
+            background: #fef2f2;
+            font-size: .8rem;
+            color: #dc2626;
+        }
+
+        .po-actions { display: flex; gap: .65rem; margin-top: 1.1rem; }
+        .po-actions button {
+            flex: 1;
+            padding: .65rem 1rem;
+            border-radius: .75rem;
+            font: inherit;
+            font-size: .875rem;
+            font-weight: 600;
             cursor: pointer;
             transition: background .15s, transform .1s;
         }
+        .po-actions button:active { transform: scale(.98); }
+        .po-cancel { border: 1px solid #d1d5db; background: #fff; color: #475569; }
+        .po-cancel:hover { background: #f8fafc; }
+        .po-apply { border: 0; background: #16a34a; color: #fff; }
         .po-apply:hover { background: #15803d; }
-        .po-apply:active { transform: scale(.98); }
         .po-apply:focus-visible { outline: 2px solid #16a34a; outline-offset: 2px; }
 
         /* Refund modal */
@@ -341,7 +443,44 @@
         .cf-btn:disabled { opacity: .5; cursor: not-allowed; }
         .cf-btn:disabled:hover { background: #16a34a; }
 
+        /* Retrieve modal */
+        #retrieveModal {
+            background: rgba(15, 23, 42, .6);
+            align-items: center;
+            justify-content: center;
+            padding: 1rem;
+        }
+        .rt-card {
+            max-width: 32rem;
+            box-shadow: 0 25px 60px -12px rgba(0,0,0,.55), 0 0 0 1px rgba(0,0,0,.08);
+        }
+        .rt-item:hover {
+            border-color: #22c55e;
+        }
+        .rt-btn {
+            background: #16a34a;
+            color: #fff;
+            border: 0;
+            cursor: pointer;
+            transition: background .15s, transform .1s;
+        }
+        .rt-btn:hover { background: #15803d; }
+        .rt-btn:active { transform: scale(.98); }
+        .rt-btn:focus-visible { outline: 2px solid #16a34a; outline-offset: 2px; }
+        .rt-btn:disabled { opacity: .5; cursor: not-allowed; }
+        .rt-btn:disabled:hover { background: #16a34a; }
+        .rt-total { color: #15803d; }
 
+        #suspendedSalesList button {
+            background: #16a34a !important;
+            color: #fff !important;
+            border: 0;
+            border-radius: .75rem;
+            padding: .5rem 1rem;
+            font-weight: 600;
+            cursor: pointer;
+        }
+        #suspendedSalesList button:hover { background: #15803d !important; }
 
 
         /* ===== POS layout (plain CSS) ===== */
@@ -588,42 +727,77 @@
                 <details class="pos-details" open>
                     <summary>Payment</summary>
                     <div class="pos-details-body field">
+
                         <form method="post" action="{% url 'complete_sale' %}" id="checkout-form">
                             {% csrf_token %}
+
+                            <!-- Cart Data -->
                             <input type="hidden" name="cart" id="cart-data">
-                            {# Discount type is set by keyboard shortcuts / actions, so no dropdown is shown #}
+
+                            <!-- Retrieved Suspended Transaction ID -->
+                            <input
+                                type="hidden"
+                                name="suspended_sale_id"
+                                id="suspended_sale_id"
+                                value=""
+                            >
+
+                            {# Discount type is set by keyboard shortcuts / actions #}
                             {{ form.discount_type.as_hidden }}
 
                             <div class="group" style="margin-top:.25rem">
                                 <p class="group-title">Payment</p>
+
                                 <div class="row row-2">
                                     <div>
                                         <label for="id_payment_method">Method <span class="hint">F4</span></label>
                                         {{ form.payment_method }}
                                     </div>
+
                                     <div>
                                         <label for="id_amount_tendered">Received (₱) <span class="hint">F5</span></label>
                                         {{ form.amount_tendered }}
                                     </div>
                                 </div>
+
                                 <div class="row row-5" style="margin-top:.5rem" role="group" aria-label="Quick amounts">
-                                    <button type="button" data-quick="exact" class="bg-brand text-white rounded-full px-1 py-2 text-xs font-semibold transition hover:bg-brand-dark hover:text-white focus:outline-none focus:ring-2 focus:ring-brand active:scale-95">Exact</button><button type="button" data-quick="100" class="bg-brand-soft text-brand rounded-full px-1 py-2 text-xs font-semibold transition hover:bg-brand-dark hover:text-white focus:outline-none focus:ring-2 focus:ring-brand active:scale-95">₱100</button><button type="button" data-quick="200" class="bg-brand-soft text-brand rounded-full px-1 py-2 text-xs font-semibold transition hover:bg-brand-dark hover:text-white focus:outline-none focus:ring-2 focus:ring-brand active:scale-95">₱200</button><button type="button" data-quick="500" class="bg-brand-soft text-brand rounded-full px-1 py-2 text-xs font-semibold transition hover:bg-brand-dark hover:text-white focus:outline-none focus:ring-2 focus:ring-brand active:scale-95">₱500</button><button type="button" data-quick="1000" class="bg-brand-soft text-brand rounded-full px-1 py-2 text-xs font-semibold transition hover:bg-brand-dark hover:text-white focus:outline-none focus:ring-2 focus:ring-brand active:scale-95">₱1000</button>
+                                    <button type="button" data-quick="exact" class="bg-brand text-white rounded-full px-1 py-2 text-xs font-semibold transition hover:bg-brand-dark hover:text-white focus:outline-none focus:ring-2 focus:ring-brand active:scale-95">Exact</button>
+                                    <button type="button" data-quick="100" class="bg-brand-soft text-brand rounded-full px-1 py-2 text-xs font-semibold transition hover:bg-brand-dark hover:text-white focus:outline-none focus:ring-2 focus:ring-brand active:scale-95">₱100</button>
+                                    <button type="button" data-quick="200" class="bg-brand-soft text-brand rounded-full px-1 py-2 text-xs font-semibold transition hover:bg-brand-dark hover:text-white focus:outline-none focus:ring-2 focus:ring-brand active:scale-95">₱200</button>
+                                    <button type="button" data-quick="500" class="bg-brand-soft text-brand rounded-full px-1 py-2 text-xs font-semibold transition hover:bg-brand-dark hover:text-white focus:outline-none focus:ring-2 focus:ring-brand active:scale-95">₱500</button>
+                                    <button type="button" data-quick="1000" class="bg-brand-soft text-brand rounded-full px-1 py-2 text-xs font-semibold transition hover:bg-brand-dark hover:text-white focus:outline-none focus:ring-2 focus:ring-brand active:scale-95">₱1000</button>
                                 </div>
                             </div>
 
-                            {# Charges and discount are driven by keyboard shortcuts/actions: kept in the DOM but not shown #}
+                            {# Charges and discount are driven by keyboard shortcuts/actions #}
                             <div hidden>
                                 {{ form.packaging_charge }}
                                 {{ form.delivery_charge }}
                                 {{ form.service_charge }}
                                 {{ form.other_charge }}
-                                {{ form.other_charge_description }}
-                                <div id="regular-discount-fields">{{ form.regular_discount_percent }}</div>
-                                <div id="special-discount-fields" hidden>{{ form.special_discount_amount }}</div>
-                                <div id="discount-customer-field" hidden>{{ form.discount_customer_name }}</div>
-                                <div id="discount-reference-field" hidden>{{ form.discount_reference }}</div>
+
+                                <div id="other-charge-description-container">
+                                    {{ form.other_charge_description }}
+                                </div>
+
+                                <div id="regular-discount-fields">
+                                    {{ form.regular_discount_percent }}
+                                </div>
+
+                                <div id="special-discount-fields" hidden>
+                                    {{ form.special_discount_amount }}
+                                </div>
+
+                                <div id="discount-customer-field" hidden>
+                                    {{ form.discount_customer_name }}
+                                </div>
+
+                                <div id="discount-reference-field" hidden>
+                                    {{ form.discount_reference }}
+                                </div>
                             </div>
                         </form>
+
                     </div>
                 </details>
 
@@ -905,85 +1079,60 @@
     <div id="price-override-modal"
         class="fixed inset-0 z-[100] hidden items-center justify-center bg-black/50 p-4">
 
-        <div class="po-card w-full max-w-md rounded-2xl bg-white p-6">
+        <div class="po-card">
 
-            <div class="mb-5 flex items-center justify-between">
+            <div class="po-head">
                 <div>
-                    <h2 class="text-xl font-bold text-gray-800">Price Override</h2>
-                    <p class="mt-1 text-sm text-gray-500">
-                        Change the selling price of a selected product.
-                    </p>
+                    <h2>Price Override</h2>
+                    <p>Change the selling price of a selected product.</p>
                 </div>
-
-                <button type="button" id="price-override-close"
-                        class="rounded-lg p-2 text-gray-400 hover:bg-gray-100">
-                    ✕
-                </button>
+                <button type="button" id="price-override-close" class="po-close" aria-label="Close">&times;</button>
             </div>
 
-            <div class="mb-5 rounded-xl bg-gray-50 p-4">
-                <p class="text-xs font-semibold uppercase text-gray-500">
-                    Selected Product
-                </p>
-                <p id="override-product-name"
-                class="mt-1 font-semibold text-gray-800">
-                    No product selected
-                </p>
+            <div class="po-body">
 
-                <div class="mt-3 flex justify-between text-sm">
-                    <span class="text-gray-500">Original Price</span>
-                    <span id="override-original-price"
-                        class="font-semibold text-gray-800">₱0.00</span>
+                <div class="po-summary">
+                    <p class="po-label">Selected Product</p>
+                    <p id="override-product-name" class="po-name">No product selected</p>
+
+                    <div class="po-row">
+                        <span>Original Price</span>
+                        <strong id="override-original-price">₱0.00</strong>
+                    </div>
+                    <div class="po-row">
+                        <span>Current Cart Price</span>
+                        <strong id="override-current-price">₱0.00</strong>
+                    </div>
                 </div>
 
-                <div class="mt-2 flex justify-between text-sm">
-                    <span class="text-gray-500">Current Cart Price</span>
-                    <span id="override-current-price"
-                        class="font-semibold text-gray-800">₱0.00</span>
-                </div>
+                <form id="price-override-form">
+                    <label for="override-new-price" class="po-field-label">New Unit Price</label>
+
+                    <div class="po-input-wrap">
+                        <span class="po-peso">₱</span>
+                        <input type="number"
+                            id="override-new-price"
+                            class="po-input"
+                            min="0.01"
+                            step="0.01"
+                            required
+                            placeholder="0.00">
+                    </div>
+
+                    <p id="price-override-error" class="po-error hidden"></p>
+
+                    <div class="po-actions">
+                        <button type="button" id="price-override-cancel" class="po-cancel">Cancel</button>
+                        <button type="submit" class="po-apply">Apply Override</button>
+                    </div>
+                </form>
+
             </div>
-
-            <form id="price-override-form">
-                <label for="override-new-price"
-                    class="mb-2 block text-sm font-semibold text-gray-700">
-                    New Unit Price
-                </label>
-
-                <div class="relative">
-                    <span class="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500">
-                        ₱
-                    </span>
-
-                    <input type="number"
-                        id="override-new-price"
-                        min="0.01"
-                        step="0.01"
-                        required
-                        placeholder="0.00"
-                        class="po-input w-full rounded-xl border border-gray-300 py-3 pl-9 pr-4 text-lg font-semibold outline-none">
-                </div>
-
-                <p id="price-override-error"
-                class="mt-2 hidden text-sm text-red-600"></p>
-
-                <div class="mt-6 flex gap-3">
-                    <button type="button" id="price-override-cancel"
-                            class="flex-1 rounded-xl border border-gray-300 px-4 py-3 font-semibold text-gray-600 hover:bg-gray-50">
-                        Cancel
-                    </button>
-
-                    <button type="submit"
-                            class="po-apply flex-1 rounded-xl px-4 py-3 font-semibold">
-                        Apply Override
-                    </button>
-                </div>
-            </form>
-
         </div>
     </div>
 
     
-    <!-- ---------- REFUND MODAL ---------- -->
+    <!------------ REFUND MODAL ------------>
     <div id="refund-modal"
         class="fixed inset-0 z-[100] hidden items-center justify-center bg-black/50 p-4">
 
@@ -1242,6 +1391,46 @@
 </div>
 
 
+    <!-- RETRIEVE TRANSACTION MODAL -->
+    <div id="retrieveModal"
+        class="fixed inset-0 z-[100] hidden items-center justify-center bg-black/50 p-4">
+
+        <div class="rt-card w-full max-w-xl overflow-hidden rounded-2xl bg-white">
+
+            <!-- Header -->
+            <div class="flex items-center justify-between border-b border-gray-200 px-6 py-4">
+                <div>
+                    <h2 class="text-lg font-bold text-gray-800">Retrieve Transaction</h2>
+                    <p class="text-sm text-gray-500">Select a suspended transaction to continue.</p>
+                </div>
+
+                <button type="button"
+                        id="retrieveClose"
+                        class="text-2xl text-gray-400 hover:text-gray-700">
+                    &times;
+                </button>
+            </div>
+
+            <!-- Suspended Transactions -->
+            <div class="max-h-[400px] overflow-y-auto p-6">
+                <div id="suspendedSalesList" class="space-y-3">
+                    <p class="py-8 text-center text-sm text-gray-500">
+                        Loading suspended transactions...
+                    </p>
+                </div>
+            </div>
+
+            <!-- Footer -->
+            <div class="flex justify-end border-t border-gray-200 px-6 py-4">
+                <button type="button"
+                        id="retrieveCancel"
+                        class="rounded-xl border border-gray-300 px-5 py-2.5 font-semibold text-gray-600 hover:bg-gray-50">
+                    Cancel
+                </button>
+            </div>
+
+        </div>
+    </div>
 
     <!-- Message modal -->
     <div id="message-modal" class="msg-modal" role="alertdialog" aria-modal="true"
@@ -1791,11 +1980,11 @@ actionTiles.forEach(tile => {
                 showMessage("Scan the customer's loyalty card to apply rewards.", "Reward");
                 break;
             case "suspend":
-                if (cart.size === 0) { showMessage("Add items before suspending a sale.", "Suspend"); break; }
-                showMessage("The current sale can be suspended.", "Suspend");
+                await suspendCurrentSale();
                 break;
             case "retrieve":
-                showMessage("Retrieve a previously suspended sale.", "Retrieve");
+                openRetrieveModal();
+                loadSuspendedSales();
                 break;
             default:
                 showMessage("This action is not wired up yet.", "Action");
@@ -2715,6 +2904,394 @@ changeFundForm.addEventListener("submit", async event => {
     }
 });
 
+// ---------- SUSPEND TRANSACTION ----------
+
+async function suspendCurrentSale() {
+    if (cart.size === 0) {
+        showMessage("Add items before suspending a sale.", "Suspend");
+        return;
+    }
+
+    const otherDescriptionInput = document.querySelector(
+        '[name="other_charge_description"]'
+    );
+
+    const transactionData = {
+        cart: Array.from(cart.values()).map(item => ({
+            product_id: item.id,
+            name: item.name,
+            unit: item.unit,
+            quantity: item.quantity,
+            unit_price: item.price,
+            original_price: item.originalPrice,
+            price_overridden: !!item.priceOverridden
+        })),
+
+        discount: {
+            type: discountType.value,
+            regular_discount_percent: regularDiscountInput.value,
+            special_discount_amount: specialDiscountInput.value,
+            customer_name: customerNameInput.value,
+            reference: discountReferenceInput.value
+        },
+
+        charges: {
+            packaging: chargeInputs[0].value,
+            delivery: chargeInputs[1].value,
+            service: chargeInputs[2].value,
+            other: chargeInputs[3].value,
+            other_description: otherDescriptionInput
+                ? otherDescriptionInput.value
+                : ""
+        }
+    };
+
+    const csrfToken = checkoutForm.querySelector(
+        '[name="csrfmiddlewaretoken"]'
+    ).value;
+
+    try {
+        const response = await fetch("{% url 'suspend_sale' %}", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+                "X-CSRFToken": csrfToken
+            },
+            credentials: "same-origin",
+            body: JSON.stringify(transactionData)
+        });
+
+        const result = await response.json();
+
+        if (!response.ok || !result.success) {
+            throw new Error(
+                result.message || "Unable to suspend transaction."
+            );
+        }
+
+        cart.clear();
+        selectedCartItemId = null;
+
+        renderCart();
+
+        const suspendedSaleIdInput = document.getElementById(
+            "suspended_sale_id"
+        );
+
+        if (suspendedSaleIdInput) {
+            suspendedSaleIdInput.value = "";
+        }
+
+        discountType.value = "none";
+        regularDiscountInput.value = "";
+        specialDiscountInput.value = "";
+        customerNameInput.value = "";
+        discountReferenceInput.value = "";
+
+        chargeInputs.forEach(input => {
+            input.value = "";
+        });
+
+        if (otherDescriptionInput) {
+            otherDescriptionInput.value = "";
+        }
+
+        updateDiscountFields();
+
+        amountInput.value = "";
+        changeDisplay.textContent = "0.00";
+
+        search.focus();
+
+        showMessage(
+            "Transaction suspended successfully.",
+            "Suspend"
+        );
+
+    } catch (error) {
+        console.error("Suspend error:", error);
+
+        showMessage(
+            error.message || "Unable to suspend transaction. Your cart is still safe.",
+            "Suspend"
+        );
+    }
+}
+
+
+// ---------- RETRIEVE TRANSACTION MODAL ----------
+
+const retrieveModal = document.getElementById("retrieveModal");
+const suspendedSalesList = document.getElementById("suspendedSalesList");
+const retrieveClose = document.getElementById("retrieveClose");
+const retrieveCancel = document.getElementById("retrieveCancel");
+
+function openRetrieveModal() {
+    retrieveModal.classList.remove("hidden");
+    retrieveModal.classList.add("flex");
+}
+
+function closeRetrieveModal() {
+    retrieveModal.classList.add("hidden");
+    retrieveModal.classList.remove("flex");
+}
+
+
+// ---------- LOAD SUSPENDED TRANSACTIONS ----------
+
+async function loadSuspendedSales() {
+    suspendedSalesList.replaceChildren();
+
+    const loading = document.createElement("p");
+    loading.className = "py-8 text-center text-sm text-gray-500";
+    loading.textContent = "Loading suspended transactions...";
+    suspendedSalesList.appendChild(loading);
+
+    try {
+        const response = await fetch("{% url 'suspended_sales_list' %}", {
+            method: "GET",
+            credentials: "same-origin",
+            headers: {
+                "X-Requested-With": "XMLHttpRequest"
+            }
+        });
+
+        const data = await response.json();
+
+        if (!response.ok || !data.success) {
+            throw new Error(
+                data.message || "Unable to load suspended transactions."
+            );
+        }
+
+        suspendedSalesList.replaceChildren();
+
+        const sales = data.suspended_sales || [];
+
+        if (sales.length === 0) {
+            const empty = document.createElement("p");
+            empty.className = "py-8 text-center text-sm text-gray-500";
+            empty.textContent = "No suspended transactions found.";
+            suspendedSalesList.appendChild(empty);
+            return;
+        }
+
+        sales.forEach(sale => {
+            const card = document.createElement("div");
+
+            card.className =
+                "flex items-center justify-between gap-4 rounded-xl border border-gray-200 p-4";
+
+            const details = document.createElement("div");
+
+            const title = document.createElement("p");
+            title.className = "font-semibold text-gray-800";
+            title.textContent = `Transaction #${sale.id}`;
+
+            const info = document.createElement("p");
+            info.className = "mt-1 text-sm text-gray-500";
+            info.textContent =
+                `${sale.items_count} item(s) • ${sale.created_at}`;
+
+            details.append(title, info);
+
+            const retrieveButton = document.createElement("button");
+            retrieveButton.type = "button";
+            retrieveButton.dataset.suspendedId = sale.id;
+            retrieveButton.className =
+                "shrink-0 rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700";
+            retrieveButton.textContent = "Retrieve";
+
+            card.append(details, retrieveButton);
+            suspendedSalesList.appendChild(card);
+        });
+
+    } catch (error) {
+        suspendedSalesList.replaceChildren();
+
+        const errorMessage = document.createElement("p");
+        errorMessage.className =
+            "py-8 text-center text-sm text-red-600";
+        errorMessage.textContent = error.message;
+
+        suspendedSalesList.appendChild(errorMessage);
+    }
+}
+
+
+// ---------- RETRIEVE SELECTED TRANSACTION ----------
+
+async function retrieveSuspendedSale(suspendedSaleId) {
+
+    if (cart.size > 0) {
+        showMessage(
+            "Please finish or suspend your current transaction first.",
+            "Cart Not Empty"
+        );
+        return;
+    }
+
+    const buttons = suspendedSalesList.querySelectorAll(
+        "[data-suspended-id]"
+    );
+
+    buttons.forEach(button => {
+        button.disabled = true;
+        button.textContent = "Please wait...";
+    });
+
+    try {
+        const url = "{% url 'retrieve_suspended_sale' 0 %}"
+            .replace("/0/retrieve/", `/${suspendedSaleId}/retrieve/`);;
+
+        const response = await fetch(url, {
+            method: "GET",
+            credentials: "same-origin",
+            headers: {
+                "X-Requested-With": "XMLHttpRequest"
+            }
+        });
+
+        const data = await response.json();
+
+        if (!response.ok || !data.success) {
+            throw new Error(
+                data.message || "Unable to retrieve transaction."
+            );
+        }
+
+        const transaction = data.transaction_data;
+
+        if (!transaction || !Array.isArray(transaction.cart)) {
+            throw new Error("Invalid suspended transaction data.");
+        }
+
+        if (transaction.cart.length === 0) {
+            throw new Error("This suspended transaction has no items.");
+        }
+
+        // Restore cart items.
+        cart.clear();
+
+        transaction.cart.forEach(item => {
+            const id = String(item.product_id);
+
+            cart.set(id, {
+                id: id,
+                name: item.name,
+                unit: item.unit,
+                quantity: Number(item.quantity),
+                price: Number(item.unit_price),
+                originalPrice: Number(
+                    item.original_price ?? item.unit_price
+                ),
+                priceOverridden: !!item.price_overridden
+            });
+        });
+
+        // Restore discount settings.
+        const discount = transaction.discount || {};
+
+        discountType.value = discount.type || "none";
+
+        // Update fields before restoring their values.
+        updateDiscountFields();
+
+        regularDiscountInput.value =
+            discount.regular_discount_percent || "";
+
+        specialDiscountInput.value =
+            discount.special_discount_amount || "";
+
+        customerNameInput.value =
+            discount.customer_name || "";
+
+        discountReferenceInput.value =
+            discount.reference || "";
+
+        // Restore additional charges.
+        const charges = transaction.charges || {};
+
+        chargeInputs[0].value = charges.packaging || "";
+        chargeInputs[1].value = charges.delivery || "";
+        chargeInputs[2].value = charges.service || "";
+        chargeInputs[3].value = charges.other || "";
+
+        const otherDescriptionInput = document.querySelector(
+            '[name="other_charge_description"]'
+        );
+
+        if (otherDescriptionInput) {
+            otherDescriptionInput.value =
+                charges.other_description || "";
+        }
+
+        // Reset payment fields.
+        amountInput.value = "";
+        changeDisplay.textContent = "0.00";
+
+        selectedCartItemId = null;
+
+        renderCart();
+
+        const suspendedSaleIdInput = document.getElementById(
+            "suspended_sale_id"
+        );
+
+        if (suspendedSaleIdInput) {
+            suspendedSaleIdInput.value = suspendedSaleId;
+        }
+
+        closeRetrieveModal();
+
+        search.focus();
+
+        showMessage(
+            "Suspended transaction retrieved successfully.",
+            "Retrieve"
+        );
+
+    } catch (error) {
+        console.error("Retrieve error:", error);
+
+        showMessage(error.message, "Retrieve Error");
+
+        buttons.forEach(button => {
+            button.disabled = false;
+            button.textContent = "Retrieve";
+        });
+    }
+}
+
+
+// ---------- RETRIEVE BUTTON CLICK ----------
+
+suspendedSalesList.addEventListener("click", event => {
+    const button = event.target.closest("[data-suspended-id]");
+
+    if (!button) return;
+
+    retrieveSuspendedSale(button.dataset.suspendedId);
+});
+
+
+// ---------- RETRIEVE MODAL EVENTS ----------
+
+retrieveClose.addEventListener("click", closeRetrieveModal);
+retrieveCancel.addEventListener("click", closeRetrieveModal);
+
+retrieveModal.addEventListener("click", event => {
+    if (event.target === retrieveModal) {
+        closeRetrieveModal();
+    }
+});
+
+
+
+
+
+
+
 
 function addProduct(button) {
     const id = button.dataset.id;
@@ -3177,7 +3754,6 @@ document.addEventListener("keydown", function (event) {
     const otherModalOpen =
         !messageModal.hidden ||
         !confirmModal.hidden ||
-        !actionsModal.hidden ||
         !govtModal.hidden ||
         !regularModal.hidden ||
         !lookupModal.classList.contains("hidden") ||

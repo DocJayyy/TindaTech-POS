@@ -27,4 +27,7 @@ urlpatterns = [
     path("refund/search/", views.refund_search_view, name="refund_search"),
     path("refund/process/", views.refund_process_view, name="refund_process"),
     path("change-fund/",views.change_fund_view,name="change_fund"),
+    path("suspend/",views.suspend_sale_view,name="suspend_sale"),
+    path("suspended/",views.suspended_sales_list_view,name="suspended_sales_list"),
+    path("suspended/<int:suspended_sale_id>/retrieve/",views.retrieve_suspended_sale_view,name="retrieve_suspended_sale"),
 ]

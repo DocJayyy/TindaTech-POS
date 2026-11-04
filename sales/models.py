@@ -572,3 +572,39 @@ class AuditLog(models.Model):
     def __str__(self):
         username = self.user.username if self.user else "System"
         return f"{self.timestamp} - {username} - {self.activity}"
+
+
+class SuspendedSale(models.Model):
+    cashier = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.PROTECT,
+        related_name="suspended_sales",
+    )
+
+    cashier_session = models.ForeignKey(
+        CashierSession,
+        on_delete=models.PROTECT,
+        related_name="suspended_sales",
+    )
+
+    # Stores cart items, discounts, and additional charges.
+    transaction_data = models.JSONField(
+        default=dict,
+        blank=True,
+    )
+
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ["-created_at"]
+        indexes = [
+            models.Index(fields=["cashier", "created_at"]),
+            models.Index(fields=["cashier_session"]),
+        ]
+
+    def __str__(self):
+        return (
+            f"Suspended Sale #{self.pk} - "
+            f"{self.cashier.username}"
+        )
