@@ -78,6 +78,9 @@ def process_sale(
     if not special_discount_amount.is_finite():
         raise ValidationError("Invalid special discount amount.")
 
+    if special_discount_amount < ZERO:
+        raise ValidationError("Special discount cannot be negative.")
+
     if amount_tendered < ZERO:
         raise ValidationError("Payment cannot be negative.")
 
@@ -267,10 +270,15 @@ def process_sale(
             * regular_discount_percent
             / Decimal("100")
         )
+
     elif discount_type in special_types:
-        discount = special_discount_amount
+        discount = money(special_discount_amount)
+
     else:
         discount = ZERO
+
+    if discount < ZERO:
+        raise ValidationError("Discount cannot be negative.")
 
     if discount > subtotal:
         raise ValidationError(

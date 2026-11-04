@@ -116,7 +116,82 @@
             .action-tile--empty { display: none; }
         }
 
-        /* ===== Odoo-style POS layout (plain CSS) ===== */
+        /* Government Discount Modal */
+        .govt-modal-card {
+            width: 100%;
+            max-width: 30rem;
+            background: #fff;
+            border-radius: 1.25rem;
+            padding: 1.5rem;
+            box-shadow: 0 20px 40px rgba(0,0,0,.15);
+        }
+
+        .govt-modal-card h2 {
+            font-size: 1.2rem;
+            font-weight: 700;
+            color: #16161D;
+        }
+
+        .govt-modal-field {
+            margin-top: 1rem;
+        }
+
+        .govt-modal-field label {
+            display: block;
+            margin-bottom: .35rem;
+            font-size: .8rem;
+            font-weight: 600;
+            color: #475569;
+        }
+
+        .govt-modal-field input,
+        .govt-modal-field select {
+            width: 100%;
+            padding: .7rem .85rem;
+            border: 1px solid #e2e8f0;
+            border-radius: .7rem;
+            font: inherit;
+            font-size: .875rem;
+            outline: none;
+        }
+
+        .govt-modal-field input:focus,
+        .govt-modal-field select:focus {
+            border-color: #6b5baf;
+            box-shadow: 0 0 0 3px rgba(107,91,175,.15);
+        }
+
+        .govt-modal-actions {
+            display: flex;
+            gap: .75rem;
+            margin-top: 1.5rem;
+        }
+
+        .govt-modal-actions button {
+            flex: 1;
+            padding: .7rem;
+            border: 0;
+            border-radius: .7rem;
+            font: inherit;
+            font-weight: 600;
+            cursor: pointer;
+        }
+
+        .govt-apply {
+            background: #6b5baf;
+            color: white;
+        }
+
+        .govt-apply:hover {
+            background: #5a4b9a;
+        }
+
+        .govt-cancel {
+            background: #f1f5f9;
+            color: #475569;
+        }
+
+        /* ===== POS layout (plain CSS) ===== */
         .pos-body { min-height: 100vh; }
         .pos-top { display: flex; align-items: center; gap: 1rem; background: #fff; padding: .5rem 1rem; box-shadow: 0 1px 2px rgba(0,0,0,.06); flex-shrink: 0; }
         .pos-brand { display: flex; align-items: center; gap: .6rem; }
@@ -476,6 +551,92 @@
 
                 <button type="button" class="action-tile c-rose" data-action="sales-history"><span class="tile-icon">↺</span><span>Sales History</span><span class="hint">Alt+Y</span></button>
             </div>
+        </div>
+    </div>
+
+
+    <!-- GOVERNMENT DISCOUNT MODAL -->
+    <div id="govt-discount-modal"
+        class="msg-modal"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="govt-modal-title"
+        hidden>
+
+        <div class="govt-modal-card">
+
+            <div class="flex items-center justify-between">
+                <div>
+                    <h2 id="govt-modal-title">Government Discount</h2>
+                    <p class="mt-1 text-xs text-slate-500">
+                        Enter the customer's discount information.
+                    </p>
+                </div>
+
+                <button type="button"
+                        id="govt-modal-close"
+                        class="rounded-lg px-3 py-2 text-slate-400 hover:bg-slate-100"
+                        aria-label="Close">
+                    ✕
+                </button>
+            </div>
+
+            <div class="govt-modal-field">
+                <label for="govt-discount-type">Discount Type</label>
+                <select id="govt-discount-type">
+                    <option value="senior">Senior Citizen</option>
+                    <option value="pwd">Person with Disability (PWD)</option>
+                    <option value="naac">NAAC</option>
+                    <option value="solo_parent">Solo Parent</option>
+                </select>
+            </div>
+
+            <div class="govt-modal-field">
+                <label for="govt-customer-name">Customer Name</label>
+                <input type="text"
+                    id="govt-customer-name"
+                    maxlength="200"
+                    placeholder="Enter customer's full name">
+            </div>
+
+            <div class="govt-modal-field">
+                <label for="govt-reference">ID / Reference Number</label>
+                <input type="text"
+                    id="govt-reference"
+                    maxlength="100"
+                    placeholder="Enter ID or reference number">
+            </div>
+
+            <div class="govt-modal-field">
+                <label for="govt-amount">Discount Amount (₱)</label>
+                <input type="number"
+                    id="govt-amount"
+                    min="0.01"
+                    step="0.01"
+                    placeholder="0.00">
+            </div>
+
+            <div class="mt-3 rounded-lg bg-purple-50 p-3">
+                <p class="text-xs text-purple-700">
+                    The discount amount must be documented and must not exceed
+                    the current sale subtotal.
+                </p>
+            </div>
+
+            <div class="govt-modal-actions">
+                <button type="button"
+                        id="govt-modal-cancel"
+                        class="govt-cancel">
+                    Cancel
+                </button>
+
+                <button type="button"
+                        id="govt-modal-apply"
+                        class="govt-apply">
+                    Apply Discount
+                </button>
+            </div>
+
         </div>
     </div>
 
@@ -870,6 +1031,12 @@ lookupModal.addEventListener("click", event => {
 });
 
 document.addEventListener("keydown", event => {
+    if (event.key === "Escape" && !govtModal.hidden) {
+        closeGovtDiscountModal();
+    }
+});
+
+document.addEventListener("keydown", event => {
     if (
         event.key === "Escape" &&
         !lookupModal.classList.contains("hidden")
@@ -960,10 +1127,14 @@ actionTiles.forEach(tile => {
             case "salesperson":
                 showMessage("Assign a salesperson to this sale.", "Salesperson");
                 break;
-            case "discount":
             case "govt-discount":
-                discountType.focus();
-                showMessage("Choose the discount type below.", action === "govt-discount" ? "Government Discount" : "Discount");
+                openGovtDiscountModal();
+                break;
+
+            case "discount":
+                discountType.value = "regular";
+                updateDiscountFields();
+                showMessage("Regular discount selected.", "Discount");
                 break;
             case "change-qty":
                 if (cart.size === 0) { showMessage("Add items to the cart first.", "Change Quantity"); break; }
@@ -1091,6 +1262,126 @@ function updateDiscountFields() {
     }
     updateTotals();
 }
+
+// ---------- Government Discount Modal ----------
+
+const govtModal = document.getElementById("govt-discount-modal");
+
+const govtType = document.getElementById("govt-discount-type");
+const govtName = document.getElementById("govt-customer-name");
+const govtReference = document.getElementById("govt-reference");
+const govtAmount = document.getElementById("govt-amount");
+
+function openGovtDiscountModal() {
+
+    if (cart.size === 0) {
+        showMessage(
+            "Add products to the cart before applying a government discount.",
+            "Empty Cart"
+        );
+        return;
+    }
+
+    // Restore previously entered values when reopening.
+    if (["senior", "pwd", "naac", "solo_parent"].includes(discountType.value)) {
+        govtType.value = discountType.value;
+        govtName.value = customerNameInput.value;
+        govtReference.value = discountReferenceInput.value;
+        govtAmount.value = specialDiscountInput.value;
+    } else {
+        govtType.value = "senior";
+        govtName.value = "";
+        govtReference.value = "";
+        govtAmount.value = "";
+    }
+
+    govtModal.hidden = false;
+    govtName.focus();
+}
+
+function closeGovtDiscountModal() {
+    govtModal.hidden = true;
+    search.focus();
+}
+
+document.getElementById("govt-modal-close")
+    .addEventListener("click", closeGovtDiscountModal);
+
+document.getElementById("govt-modal-cancel")
+    .addEventListener("click", closeGovtDiscountModal);
+
+govtModal.addEventListener("click", event => {
+    if (event.target === govtModal) {
+        closeGovtDiscountModal();
+    }
+});
+
+document.getElementById("govt-modal-apply")
+    .addEventListener("click", () => {
+
+        const type = govtType.value;
+        const name = govtName.value.trim();
+        const reference = govtReference.value.trim();
+        const amount = Number(govtAmount.value);
+
+        if (!name) {
+            showMessage(
+                "Please enter the eligible customer's name.",
+                "Missing Customer Name",
+                govtName
+            );
+            return;
+        }
+
+        if (!reference) {
+            showMessage(
+                "Please enter the customer's ID or reference number.",
+                "Missing ID Number",
+                govtReference
+            );
+            return;
+        }
+
+        if (!Number.isFinite(amount) || amount <= 0) {
+            showMessage(
+                "Enter a valid discount amount.",
+                "Invalid Discount",
+                govtAmount
+            );
+            return;
+        }
+
+        const subtotal = getSubtotal();
+
+        if (amount > subtotal) {
+            showMessage(
+                "The discount cannot exceed the current subtotal of ₱" +
+                subtotal.toFixed(2),
+                "Invalid Discount",
+                govtAmount
+            );
+            return;
+        }
+
+        // Apply to existing Django form fields.
+        discountType.value = type;
+
+        updateDiscountFields();
+
+        customerNameInput.value = name;
+        discountReferenceInput.value = reference;
+        specialDiscountInput.value = amount.toFixed(2);
+
+        updateTotals();
+
+        closeGovtDiscountModal();
+
+        showMessage(
+            "Government discount successfully applied.\n" +
+            "Discount: ₱" + amount.toFixed(2),
+            "Discount Applied"
+        );
+    });
 
 function addProduct(button) {
     const id = button.dataset.id;
@@ -1410,6 +1701,7 @@ function isAnyModalOpen() {
         !messageModal.hidden ||
         !confirmModal.hidden ||
         !actionsModal.hidden ||
+        !govtModal.hidden ||
         !lookupModal.classList.contains("hidden")
     );
 }
@@ -1538,6 +1830,7 @@ document.addEventListener("keydown", function (event) {
     const otherModalOpen =
         !messageModal.hidden ||
         !confirmModal.hidden ||
+        !govtModal.hidden ||
         !lookupModal.classList.contains("hidden");
 
     if (otherModalOpen) return;

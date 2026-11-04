@@ -155,20 +155,29 @@ def complete_sale_view(request):
     form = CheckoutForm(request.POST)
 
     if not form.is_valid():
-        messages.error(request, "Please enter a valid checkout form.")
+        for field, errors in form.errors.items():
+            for error in errors:
+                messages.error(request, error)
+
         return redirect("checkout")
 
     try:
         cart_items = json.loads(request.POST.get("cart", "[]"))
 
-        if not isinstance(cart_items, list):
-            raise ValidationError("Invalid shopping cart.")
+        if not isinstance(cart_items, list) or not cart_items:
+            raise ValidationError(
+                "Your shopping cart is empty or invalid."
+            )
 
         sale = process_sale(
             cart_items=cart_items,
             cashier=request.user,
+
+            # Payment
             amount_tendered=form.cleaned_data["amount_tendered"],
             payment_method=form.cleaned_data["payment_method"],
+
+            # Discount
             discount_type=form.cleaned_data["discount_type"],
             regular_discount_percent=(
                 form.cleaned_data["regular_discount_percent"]
@@ -178,10 +187,14 @@ def complete_sale_view(request):
                 form.cleaned_data["special_discount_amount"]
                 or Decimal("0")
             ),
-            discount_customer_name=form.cleaned_data[
-                "discount_customer_name"
-            ],
-            discount_reference=form.cleaned_data["discount_reference"],
+            discount_customer_name=(
+                form.cleaned_data["discount_customer_name"]
+            ),
+            discount_reference=(
+                form.cleaned_data["discount_reference"]
+            ),
+
+            # Additional charges
             charges=[
                 {
                     "charge_type": "packaging",
@@ -210,9 +223,9 @@ def complete_sale_view(request):
                         form.cleaned_data["other_charge"]
                         or Decimal("0")
                     ),
-                    "description": form.cleaned_data[
-                        "other_charge_description"
-                    ],
+                    "description": (
+                        form.cleaned_data["other_charge_description"]
+                    ),
                 },
             ],
         )
@@ -222,7 +235,10 @@ def complete_sale_view(request):
         ValidationError,
         TypeError,
         ValueError,
+        KeyError,
+        ArithmeticError,
     ) as exc:
+
         if isinstance(exc, ValidationError):
             error_message = (
                 "; ".join(exc.messages)
@@ -235,6 +251,7 @@ def complete_sale_view(request):
         messages.error(request, error_message)
         return redirect("checkout")
 
+    # Record completed sale activity.
     log_activity(
         request.user,
         "Sale Completed",
@@ -243,6 +260,8 @@ def complete_sale_view(request):
             "receipt_number": sale.receipt_number,
             "total_amount": str(sale.total_amount),
             "payment_method": str(sale.payment_method),
+            "discount_type": str(sale.discount_type),
+            "discount_amount": str(sale.discount),
         },
     )
 
