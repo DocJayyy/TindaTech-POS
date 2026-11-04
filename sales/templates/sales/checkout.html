@@ -630,11 +630,96 @@
                     Cancel
                 </button>
 
+                <button type="button" id="govt-modal-remove"
+                    class="rounded-xl border border-red-200 px-4 py-2.5 font-semibold text-red-600 hover:bg-red-50">
+                    Remove Discount
+                </button>
+
                 <button type="button"
                         id="govt-modal-apply"
                         class="govt-apply">
                     Apply Discount
                 </button>
+            </div>
+
+        </div>
+    </div>
+
+    <!-- REGULAR DISCOUNT MODAL -->
+    <div id="regular-discount-modal"
+        class="msg-modal"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="regular-discount-title"
+        hidden>
+
+        <div class="govt-modal-card">
+
+            <div class="flex items-center justify-between">
+                <div>
+                    <h2 id="regular-discount-title">Regular Discount</h2>
+                    <p class="mt-1 text-xs text-slate-500">
+                        Apply a percentage discount to this transaction.
+                    </p>
+                </div>
+
+                <button type="button"
+                        id="regular-modal-close"
+                        class="rounded-lg px-3 py-2 text-slate-400 hover:bg-slate-100"
+                        aria-label="Close">
+                    ✕
+                </button>
+            </div>
+
+            <div class="govt-modal-field">
+                <label for="regular-discount-percent">
+                    Discount Percentage (%)
+                </label>
+
+                <input type="number"
+                    id="regular-discount-percent"
+                    min="0.01"
+                    max="100"
+                    step="0.01"
+                    placeholder="Enter percentage">
+            </div>
+
+            <div class="mt-3 rounded-lg bg-green-50 p-3">
+                <div class="flex justify-between text-sm">
+                    <span class="text-slate-600">Subtotal</span>
+                    <strong id="regular-modal-subtotal">₱0.00</strong>
+                </div>
+
+                <div class="mt-2 flex justify-between text-sm">
+                    <span class="text-slate-600">Discount Amount</span>
+                    <strong id="regular-modal-amount" class="text-green-700">
+                        ₱0.00
+                    </strong>
+                </div>
+            </div>
+
+            <div class="govt-modal-actions">
+
+                <button type="button"
+                        id="regular-modal-cancel"
+                        class="govt-cancel">
+                    Cancel
+                </button>
+
+                <button type="button"
+                        id="regular-modal-remove"
+                        class="govt-cancel"
+                        style="background:#fee2e2;color:#dc2626">
+                    Remove Discount
+                </button>
+
+                <button type="button"
+                        id="regular-modal-apply"
+                        class="govt-apply"
+                        style="background:#16a34a">
+                    Apply Discount
+                </button>
+
             </div>
 
         </div>
@@ -1031,7 +1116,11 @@ lookupModal.addEventListener("click", event => {
 });
 
 document.addEventListener("keydown", event => {
-    if (event.key === "Escape" && !govtModal.hidden) {
+    if (event.key !== "Escape") return;
+
+    if (!regularModal.hidden) {
+        closeRegularDiscountModal();
+    } else if (!govtModal.hidden) {
         closeGovtDiscountModal();
     }
 });
@@ -1132,9 +1221,7 @@ actionTiles.forEach(tile => {
                 break;
 
             case "discount":
-                discountType.value = "regular";
-                updateDiscountFields();
-                showMessage("Regular discount selected.", "Discount");
+                openRegularDiscountModal();
                 break;
             case "change-qty":
                 if (cart.size === 0) { showMessage("Add items to the cart first.", "Change Quantity"); break; }
@@ -1380,6 +1467,197 @@ document.getElementById("govt-modal-apply")
             "Government discount successfully applied.\n" +
             "Discount: ₱" + amount.toFixed(2),
             "Discount Applied"
+        );
+    });
+
+document.getElementById("govt-modal-remove")
+    .addEventListener("click", () => {
+
+        const governmentTypes = [
+            "senior",
+            "pwd",
+            "naac",
+            "solo_parent"
+        ];
+
+        if (!governmentTypes.includes(discountType.value)) {
+            showMessage(
+                "There is no government discount to remove.",
+                "No Discount"
+            );
+            return;
+        }
+
+        // Reset discount fields
+        discountType.value = "none";
+        specialDiscountInput.value = "0";
+        customerNameInput.value = "";
+        discountReferenceInput.value = "";
+
+        // Update checkout
+        updateDiscountFields();
+        updateTotals();
+
+        // Clear modal fields
+        govtType.value = "senior";
+        govtName.value = "";
+        govtReference.value = "";
+        govtAmount.value = "";
+
+        closeGovtDiscountModal();
+
+        showMessage(
+            "Government discount has been removed.",
+            "Discount Removed"
+        );
+    });
+
+    
+
+    // ---------- Regular Discount Modal ----------
+
+const regularModal = document.getElementById("regular-discount-modal");
+
+const regularPercentInput = document.getElementById(
+    "regular-discount-percent"
+);
+
+const regularModalSubtotal = document.getElementById(
+    "regular-modal-subtotal"
+);
+
+const regularModalAmount = document.getElementById(
+    "regular-modal-amount"
+);
+
+function openRegularDiscountModal() {
+
+    if (cart.size === 0) {
+        showMessage(
+            "Add products to the cart before applying a discount.",
+            "Empty Cart"
+        );
+        return;
+    }
+
+    // Restore previously entered percentage.
+    regularPercentInput.value =
+        discountType.value === "regular"
+            ? regularDiscountInput.value
+            : "";
+
+    updateRegularDiscountPreview();
+
+    regularModal.hidden = false;
+    regularPercentInput.focus();
+}
+
+function closeRegularDiscountModal() {
+    regularModal.hidden = true;
+    search.focus();
+}
+
+function updateRegularDiscountPreview() {
+
+    const subtotal = getSubtotal();
+    const percent = Math.min(
+        Math.max(Number(regularPercentInput.value) || 0, 0),
+        100
+    );
+
+    const amount = subtotal * percent / 100;
+
+    regularModalSubtotal.textContent =
+        "₱" + subtotal.toFixed(2);
+
+    regularModalAmount.textContent =
+        "₱" + amount.toFixed(2);
+}
+
+regularPercentInput.addEventListener(
+    "input",
+    updateRegularDiscountPreview
+);
+
+document.getElementById("regular-modal-close")
+    .addEventListener("click", closeRegularDiscountModal);
+
+document.getElementById("regular-modal-cancel")
+    .addEventListener("click", closeRegularDiscountModal);
+
+regularModal.addEventListener("click", event => {
+    if (event.target === regularModal) {
+        closeRegularDiscountModal();
+    }
+});
+
+document.getElementById("regular-modal-apply")
+    .addEventListener("click", () => {
+
+        const percent = Number(regularPercentInput.value);
+
+        if (!Number.isFinite(percent) || percent <= 0 || percent > 100) {
+            showMessage(
+                "Enter a discount percentage between 0.01 and 100.",
+                "Invalid Discount"
+            );
+            regularPercentInput.focus();
+            return;
+        }
+
+        // Apply to existing Django form fields.
+        discountType.value = "regular";
+
+        updateDiscountFields();
+
+        regularDiscountInput.value = percent.toFixed(2);
+
+        updateTotals();
+
+        const discountAmount =
+            getSubtotal() * percent / 100;
+
+        closeRegularDiscountModal();
+
+        showMessage(
+            "Regular discount successfully applied.\n" +
+            "Discount: ₱" + discountAmount.toFixed(2),
+            "Discount Applied"
+        );
+    });
+
+// ---------- Remove Regular Discount ----------
+
+document.getElementById("regular-modal-remove")
+    .addEventListener("click", () => {
+
+        if (discountType.value !== "regular") {
+            showMessage(
+                "There is no regular discount to remove.",
+                "No Discount"
+            );
+            return;
+        }
+
+        // Reset regular discount fields.
+        discountType.value = "none";
+        regularDiscountInput.value = "0";
+
+        // Clear special discount fields as well.
+        specialDiscountInput.value = "0";
+        customerNameInput.value = "";
+        discountReferenceInput.value = "";
+
+        updateDiscountFields();
+        updateTotals();
+
+        regularPercentInput.value = "";
+
+        closeRegularDiscountModal();
+
+        showMessage(
+            "Regular discount has been removed.",
+            "Discount Removed"
         );
     });
 
@@ -1702,6 +1980,7 @@ function isAnyModalOpen() {
         !confirmModal.hidden ||
         !actionsModal.hidden ||
         !govtModal.hidden ||
+        !regularModal.hidden ||
         !lookupModal.classList.contains("hidden")
     );
 }
@@ -1831,6 +2110,7 @@ document.addEventListener("keydown", function (event) {
         !messageModal.hidden ||
         !confirmModal.hidden ||
         !govtModal.hidden ||
+        !regularModal.hidden ||
         !lookupModal.classList.contains("hidden");
 
     if (otherModalOpen) return;
@@ -1886,7 +2166,7 @@ document.addEventListener("keydown", function (event) {
 
         case "F6":
             event.preventDefault();
-            discountType.focus();
+            openRegularDiscountModal();
             return;
 
         case "F7":
