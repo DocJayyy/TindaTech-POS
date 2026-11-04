@@ -24,4 +24,6 @@ urlpatterns = [
     path("electronic-journal/",views.electronic_journal_view,name="electronic_journal"),
     path("price-check/",views.price_check_view,name="price_check"),
     path("inventory-lookup/",views.inventory_lookup_view,name="inventory_lookup"),
+    path("refund/search/", views.refund_search_view, name="refund_search"),
+    path("refund/process/", views.refund_process_view, name="refund_process"),
 ]

@@ -14,7 +14,7 @@ from django.http import Http404, HttpResponse
 from django.shortcuts import render, redirect, get_object_or_404
 from django.template.loader import render_to_string
 from django.utils import timezone
-from django.views.decorators.http import require_POST
+from django.views.decorators.http import require_POST, require_GET
 
 from accounts.permissions import (
     pos_access_required,
@@ -39,7 +39,6 @@ from .utils import log_activity
 
 from django.http import JsonResponse
 from django.db.models import Q
-
 
 
 
@@ -1361,3 +1360,140 @@ def electronic_journal_export(request):
 def electronic_journal_view(request):
     return render(request, "sales/electronic_journal.html")
 
+def is_owner_user(user):
+    return (
+        user.is_superuser
+        or user.groups.filter(name="Owner").exists()
+    )
+
+
+@login_required
+@pos_access_required
+@require_GET
+def refund_search_view(request):
+    if not is_owner_user(request.user):
+        return JsonResponse({
+            "success": False,
+            "message": "Only the owner can process refunds.",
+        }, status=403)
+
+    receipt_number = request.GET.get(
+        "receipt_number", ""
+    ).strip()
+
+    if not receipt_number:
+        return JsonResponse({
+            "success": False,
+            "message": "Enter a receipt number.",
+        }, status=400)
+
+    sale = Sale.objects.filter(
+        receipt_number__iexact=receipt_number,
+        status=Sale.Status.COMPLETED,
+    ).first()
+
+    if sale is None:
+        return JsonResponse({
+            "success": False,
+            "message": "Completed receipt not found.",
+        }, status=404)
+
+    previous_refunds = SaleAdjustment.objects.filter(
+        sale=sale,
+        status=SaleAdjustment.Status.COMPLETED,
+    ).aggregate(
+        total=Sum("amount")
+    )["total"] or Decimal("0.00")
+
+    remaining = max(
+        Decimal("0.00"),
+        sale.total_amount - previous_refunds,
+    )
+
+    if remaining <= 0:
+        return JsonResponse({
+            "success": False,
+            "message": "This receipt has no remaining refundable balance.",
+        }, status=400)
+
+    return JsonResponse({
+        "success": True,
+        "sale": {
+            "id": sale.pk,
+            "receipt_number": sale.receipt_number,
+            "date": sale.created_at.strftime("%b %d, %Y %I:%M %p"),
+            "cashier": sale.cashier.get_full_name()
+                or sale.cashier.username,
+            "payment_method": sale.get_payment_method_display(),
+            "total_amount": str(sale.total_amount),
+            "previous_adjustments": str(previous_refunds),
+            "remaining_refundable": str(remaining),
+        },
+    })
+
+
+@login_required
+@pos_access_required
+@require_POST
+def refund_process_view(request):
+    if not is_owner_user(request.user):
+        return JsonResponse({
+            "success": False,
+            "message": "Only the owner can process refunds.",
+        }, status=403)
+
+    sale_id = request.POST.get("sale_id")
+    refund_amount = request.POST.get("refund_amount")
+    reason = request.POST.get("reason", "").strip()
+
+    if not sale_id:
+        return JsonResponse({
+            "success": False,
+            "message": "Invalid receipt.",
+        }, status=400)
+
+    try:
+        sale = Sale.objects.get(
+            pk=sale_id,
+            status=Sale.Status.COMPLETED,
+        )
+
+        adjustment = process_adjustment(
+            sale_id=sale.pk,
+            adjustment_type=SaleAdjustment.AdjustmentType.REFUND,
+            reason=reason,
+            processed_by=request.user,
+            refund_amount=refund_amount,
+        )
+
+    except Sale.DoesNotExist:
+        return JsonResponse({
+            "success": False,
+            "message": "Completed receipt not found.",
+        }, status=404)
+
+    except ValidationError as exc:
+        return JsonResponse({
+            "success": False,
+            "message": " ".join(exc.messages),
+        }, status=400)
+
+    log_activity(
+        request.user,
+        "Sale Refund Processed",
+        {
+            "sale_id": sale.pk,
+            "receipt_number": sale.receipt_number,
+            "adjustment_id": adjustment.pk,
+            "adjustment_number": adjustment.adjustment_number,
+            "amount": str(adjustment.amount),
+            "reason": adjustment.reason,
+        },
+    )
+
+    return JsonResponse({
+        "success": True,
+        "message": "Refund processed successfully.",
+        "adjustment_number": adjustment.adjustment_number,
+        "amount": str(adjustment.amount),
+    })
