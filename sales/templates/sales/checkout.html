@@ -22,48 +22,51 @@
         }
     </script>
     <style>
-        @font-face {
-            font-family: 'Poppins';
-            src: url("{% static 'fonts/Poppins-Regular.ttf' %}") format('truetype');
-            font-weight: 400;
-            font-style: normal;
-            font-display: swap;
-        }
-        @font-face {
-            font-family: 'Poppins';
-            src: url("{% static 'fonts/Poppins-Medium.ttf' %}") format('truetype');
-            font-weight: 500;
-            font-style: normal;
-            font-display: swap;
-        }
-        @font-face {
-            font-family: 'Poppins';
-            src: url("{% static 'fonts/Poppins-SemiBold.ttf' %}") format('truetype');
-            font-weight: 600;
-            font-style: normal;
-            font-display: swap;
-        }
-        @font-face {
-            font-family: 'Poppins';
-            src: url("{% static 'fonts/Poppins-Bold.ttf' %}") format('truetype');
-            font-weight: 700;
-            font-style: normal;
-            font-display: swap;
-        }
+        @font-face { font-family: 'Poppins'; src: url("{% static 'fonts/Poppins-Regular.ttf' %}") format('truetype'); font-weight: 400; font-style: normal; font-display: swap; }
+        @font-face { font-family: 'Poppins'; src: url("{% static 'fonts/Poppins-Medium.ttf' %}") format('truetype'); font-weight: 500; font-style: normal; font-display: swap; }
+        @font-face { font-family: 'Poppins'; src: url("{% static 'fonts/Poppins-SemiBold.ttf' %}") format('truetype'); font-weight: 600; font-style: normal; font-display: swap; }
+        @font-face { font-family: 'Poppins'; src: url("{% static 'fonts/Poppins-Bold.ttf' %}") format('truetype'); font-weight: 700; font-style: normal; font-display: swap; }
 
-        body {
-            font-family: 'Poppins', sans-serif;
-        }
+        body { font-family: 'Poppins', sans-serif; }
         html { font-size: 112.5%; }
         .tabular { font-variant-numeric: tabular-nums; }
         [hidden] { display: none !important; }
-        .hero-card {
-            background: linear-gradient(135deg, #4F55F0 0%, #3A40DC 55%, #3035C9 100%);
-        }
+        .hero-card { background: linear-gradient(135deg, #4F55F0 0%, #3A40DC 55%, #3035C9 100%); }
 
         /* Live clock */
         .live-clock { display: block; }
         @media (max-width: 480px) { .live-clock { display: none; } }
+
+        /* Form fields (payment panel) */
+        .field label { display: block; margin-bottom: .25rem; font-size: .75rem; font-weight: 500; color: #64748b; }
+        .field input, .field select {
+            width: 100%; border: 1px solid #e2e8f0; border-radius: .75rem; background: #fff;
+            padding: .55rem .75rem; font-size: .875rem; font-variant-numeric: tabular-nums; color: #16161D;
+        }
+        .field input:focus, .field select:focus { outline: none; border-color: #4349E8; box-shadow: 0 0 0 3px rgba(67,73,232,.2); }
+
+
+        /* Layout helpers (plain CSS so they work with your prebuilt tailwind.css) */
+        .search-input { padding-left: 3rem !important; }
+        #product-list { min-height: 14rem; }
+        .pay-panel { flex: 0 0 auto; }
+        .pay-form { display: grid; grid-template-columns: 1fr; gap: 1rem 1.5rem; padding: 1rem; }
+        .pay-col > * + * { margin-top: .85rem; }
+        .row { display: grid; gap: .65rem; }
+        .row-2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+        .row-4 { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+        .row-5 { grid-template-columns: repeat(5, minmax(0, 1fr)); gap: .4rem; }
+        .field .stack-sm > * + * { margin-top: .35rem; }
+        .field input, .field select { padding: .45rem .65rem; }
+        @media (min-width: 1024px) {
+            .pay-panel { max-height: 40vh; overflow-y: auto; }
+            .pay-form { grid-template-columns: minmax(0, 1fr) minmax(0, 1.5fr); }
+            .pay-col-right { border-left: 1px solid #f1f5f9; padding-left: 1.5rem; }
+        }
+        @media (max-width: 640px) { .row-4 { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+
+        /* Section titles inside payment panel */
+        .group-title { margin-bottom: .5rem; font-size: .8125rem; font-weight: 600; color: #16161D; }
 
         /* Message modal */
         .msg-modal { position: fixed; inset: 0; z-index: 60; display: flex; align-items: center; justify-content: center; padding: 1rem; background: rgba(15, 23, 42, .5); }
@@ -87,220 +90,278 @@
         .msg-ok.danger { background: #dc2626; }
         .msg-ok.danger:hover { background: #b91c1c; }
 
-        /* ---------- Actions Modal (POS Grid) ---------- */
-        .msg-card.actions-card {
-            max-width: 48rem;
-            padding: 0;
-            text-align: left;
-            overflow: hidden;
-            border-radius: 1.25rem;
-            background: #f8f9fc;
-        }
-        .actions-header {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            padding: 1rem 1.25rem;
-            background: #fff;
-            border-bottom: 1px solid #e5e7eb;
-        }
-        .actions-header h2 {
-            margin: 0;
-            font-size: 1rem;
-            font-weight: 500;
-            color: #374151;
-        }
-        .actions-close {
-            display: flex;
-            width: 2rem;
-            height: 2rem;
-            align-items: center;
-            justify-content: center;
-            border: 0;
-            border-radius: 0.375rem;
-            background: transparent;
-            color: #9ca3af;
-            cursor: pointer;
-            transition: background .15s, color .15s;
-        }
+        /* Actions modal */
+        .msg-card.actions-card { max-width: 48rem; padding: 0; text-align: left; overflow: hidden; border-radius: 1.25rem; background: #f8f9fc; }
+        .actions-header { display: flex; align-items: center; justify-content: space-between; padding: 1rem 1.25rem; background: #fff; border-bottom: 1px solid #e5e7eb; }
+        .actions-header h2 { margin: 0; font-size: 1rem; font-weight: 500; color: #374151; }
+        .actions-close { display: flex; width: 2rem; height: 2rem; align-items: center; justify-content: center; border: 0; border-radius: .375rem; background: transparent; color: #9ca3af; cursor: pointer; transition: background .15s, color .15s; }
         .actions-close:hover { background: #f3f4f6; color: #374151; }
         .actions-close:focus-visible { outline: 2px solid #4349E8; outline-offset: 2px; }
-        
-        .actions-grid {
-            display: grid;
-            grid-template-columns: repeat(3, minmax(0, 1fr));
-            gap: 0.6rem;
-            padding: 1rem 1.25rem 1.5rem;
-            max-height: 75vh;
-            overflow-y: auto;
-        }
-        .action-tile {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 0.5rem;
-            min-height: 3.2rem;
-            padding: 0.65rem 0.5rem;
-            border: 0;
-            border-radius: 0.375rem;
-            background: #e5e7eb; /* Light grey base */
-            color: #4b5563;
-            font: inherit;
-            font-size: 0.8125rem;
-            font-weight: 500;
-            text-align: center;
-            cursor: pointer;
-            transition: background .15s, color .15s, transform .1s;
-            box-shadow: 0 1px 2px rgba(0,0,0,0.05);
-        }
+        .actions-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: .6rem; padding: 1rem 1.25rem 1.5rem; max-height: 75vh; overflow-y: auto; }
+        .action-tile { display: flex; align-items: center; justify-content: center; gap: .5rem; min-height: 3.2rem; padding: .65rem .5rem; border: 0; border-radius: .375rem; background: #e5e7eb; color: #4b5563; font: inherit; font-size: .8125rem; font-weight: 500; text-align: center; cursor: pointer; transition: background .15s, color .15s, transform .1s; box-shadow: 0 1px 2px rgba(0,0,0,.05); }
         .action-tile:hover { background: #d1d5db; color: #1f2937; }
-        .action-tile:active { transform: scale(0.98); }
+        .action-tile:active { transform: scale(.98); }
         .action-tile:focus-visible { outline: 2px solid #4349E8; outline-offset: 2px; }
-
-        .action-tile .tile-icon {
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 0.9rem;
-            line-height: 1;
-            opacity: 0.8;
-            flex-shrink: 0;
-        }
-
-        /* Red accent tile (Z-Reading) */
-        .action-tile--danger {
-            background: #ef4444;
-            color: #fff;
-        }
+        .action-tile .tile-icon { display: inline-flex; align-items: center; justify-content: center; font-size: .9rem; line-height: 1; opacity: .8; flex-shrink: 0; }
+        .action-tile--danger { background: #ef4444; color: #fff; }
         .action-tile--danger:hover { background: #dc2626; color: #fff; }
         .action-tile--danger .tile-icon { opacity: 1; }
-
-        /* Purple accent tile (Gov't Discount) */
-        .action-tile--purple {
-            background: #6b5baf;
-            color: #fff;
-            font-weight: 700;
-            letter-spacing: 0.02em;
-        }
+        .action-tile--purple { background: #6b5baf; color: #fff; font-weight: 700; letter-spacing: .02em; }
         .action-tile--purple:hover { background: #5a4b9a; color: #fff; }
         .action-tile--purple .tile-icon { opacity: 1; }
-
-        /* Placeholder tiles */
-        .action-tile--empty {
-            background: transparent;
-            cursor: default;
-            pointer-events: none;
-            border: 0;
-            box-shadow: none;
-        }
-
+        .action-tile--empty { background: transparent; cursor: default; pointer-events: none; border: 0; box-shadow: none; }
         @media (max-width: 640px) {
             .actions-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
             .action-tile--empty { display: none; }
         }
+
+        /* ===== Odoo-style POS layout (plain CSS) ===== */
+        .pos-body { min-height: 100vh; }
+        .pos-top { display: flex; align-items: center; gap: 1rem; background: #fff; padding: .5rem 1rem; box-shadow: 0 1px 2px rgba(0,0,0,.06); flex-shrink: 0; }
+        .pos-brand { display: flex; align-items: center; gap: .6rem; }
+        .pos-search { position: relative; flex: 1; max-width: 32rem; margin: 0 auto; }
+        .pos-search input { width: 100%; border: 1px solid #e2e8f0; border-radius: 999px; background: #EEF0FA; padding: .55rem 1rem .55rem 2.75rem; font-size: .9rem; color: #16161D; }
+        .pos-search input:focus { outline: none; background: #fff; border-color: #4349E8; box-shadow: 0 0 0 3px rgba(67,73,232,.2); }
+        .pos-search svg { position: absolute; left: 1rem; top: 50%; transform: translateY(-50%); width: 1.1rem; height: 1.1rem; color: #94a3b8; pointer-events: none; }
+        .pos-nav { display: flex; align-items: center; gap: .5rem; font-size: .875rem; }
+        .pos-nav .btn { border-radius: 999px; padding: .45rem .9rem; font-weight: 500; text-decoration: none; transition: background .15s, color .15s; }
+        .pos-nav .btn-solid { background: #4349E8; color: #fff; border: 0; cursor: pointer; font: inherit; font-weight: 500; }
+        .pos-nav .btn-solid:hover { background: #3338D0; }
+        .pos-nav .btn-soft { background: #EEEFFD; color: #4349E8; }
+        .pos-nav .btn-soft:hover { background: #4349E8; color: #fff; }
+        .pos-nav .btn-line { border: 1px solid #e2e8f0; color: #475569; }
+        .pos-nav .btn-line:hover { background: #EEEFFD; color: #4349E8; }
+        .pos-user { display: none; align-items: center; gap: .5rem; border-left: 1px solid #e2e8f0; padding-left: 1rem; margin-left: .25rem; }
+        @media (min-width: 640px) { .pos-user { display: flex; } }
+        @media (max-width: 900px) { .pos-brand .pos-brand-text, .pos-nav .btn-line { display: none; } }
+
+        .pos-main { display: flex; flex-direction: column; gap: .75rem; padding: .75rem; flex: 1; min-height: 0; }
+        .pos-cart { display: flex; flex-direction: column; min-height: 0; background: #fff; border-radius: 1rem; box-shadow: 0 1px 2px rgba(0,0,0,.06); overflow: hidden; }
+        .pos-cart-head { display: flex; align-items: center; justify-content: space-between; padding: .85rem 1rem .5rem; }
+        .pos-cart-list { flex: 1; min-height: 14rem; overflow-y: auto; padding: 0 .75rem .5rem; }
+        .pos-cart-foot { flex-shrink: 0; border-top: 1px solid #eef0f5; background: #f8f9fc; padding: .75rem; }
+        .pos-totals { display: grid; grid-template-columns: 1fr 1fr; gap: .5rem; }
+        .pos-total-box { grid-column: 1 / -1; border-radius: .9rem; padding: .7rem 1rem; color: #fff; display: flex; align-items: flex-end; justify-content: space-between; }
+        .pos-change-box { grid-column: 1 / -1; display: flex; align-items: baseline; justify-content: space-between; border-radius: .9rem; background: #ecfdf5; padding: .45rem 1rem; color: #047857; }
+        .pos-details { margin-top: .6rem; border-radius: .9rem; background: #fff; border: 1px solid #e5e7eb; }
+        .pos-details summary { cursor: pointer; list-style: none; padding: .6rem .9rem; font-size: .85rem; font-weight: 600; color: #16161D; display: flex; justify-content: space-between; align-items: center; }
+        .pos-details summary::-webkit-details-marker { display: none; }
+        .pos-details summary::after { content: "▾"; color: #94a3b8; transition: transform .15s; }
+        .pos-details[open] summary::after { transform: rotate(180deg); }
+        .pos-details-body { max-height: 34vh; overflow-y: auto; padding: 0 .9rem .9rem; }
+        .pos-details-body .group { margin-top: .85rem; }
+        .pos-buttons { display: flex; gap: .6rem; margin-top: .6rem; }
+        .pos-pay { flex: 1; border: 0; border-radius: 999px; background: #4349E8; color: #fff; padding: .8rem 1rem; font: inherit; font-size: 1.1rem; font-weight: 700; cursor: pointer; box-shadow: 0 8px 16px -6px rgba(67,73,232,.5); transition: background .15s, transform .1s; }
+        .pos-pay:hover { background: #3338D0; }
+        .pos-pay:active { transform: scale(.98); }
+        .pos-clear { display: flex; align-items: center; gap: .4rem; border: 0; border-radius: 999px; background: #fef2f2; color: #dc2626; padding: .8rem 1.1rem; font: inherit; font-size: .9rem; font-weight: 600; cursor: pointer; box-shadow: inset 0 0 0 1px #fecaca; transition: background .15s, color .15s; }
+        .pos-clear:hover { background: #dc2626; color: #fff; }
+
+        .pos-right { display: flex; flex-direction: column; gap: .75rem; flex: 1; min-width: 0; min-height: 0; }
+        .pos-products { flex: 1; min-height: 18rem; overflow-y: auto; background: #fff; border-radius: 1rem; padding: .75rem; box-shadow: 0 1px 2px rgba(0,0,0,.06); }
+        .pos-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(8.25rem, 1fr)); gap: .5rem; }
+        .product { display: flex; flex-direction: column; height: 6.75rem; padding: .5rem .65rem; background: #fff; border: 1px solid #e5e7eb; border-radius: .5rem; text-align: left; cursor: pointer; font: inherit; transition: border-color .15s, background .15s, transform .1s; }
+        .product:hover { border-color: #4349E8; background: #EEEFFD; }
+        .product:active { transform: scale(.97); }
+        .product:focus-visible { outline: 2px solid #4349E8; outline-offset: 1px; }
+        .product .p-name { flex: 1; display: flex; align-items: center; justify-content: center; text-align: center; overflow: hidden; font-size: .8rem; font-weight: 500; line-height: 1.25; color: #16161D; }
+        .product .p-foot { display: flex; justify-content: space-between; align-items: baseline; gap: .25rem; }
+        .product .p-price { font-size: .8rem; font-weight: 700; color: #4349E8; font-variant-numeric: tabular-nums; }
+        .product .p-unit { font-size: .65rem; color: #94a3b8; }
+
+        .pos-actions { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: .4rem; flex-shrink: 0; }
+        .pos-act { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: .2rem; min-height: 3.5rem; border: 0; border-radius: .5rem; background: #e5e7eb; color: #374151; font: inherit; font-size: .7rem; font-weight: 500; text-align: center; cursor: pointer; transition: background .15s, transform .1s; }
+        .pos-act:hover { background: #d1d5db; }
+        .pos-act:active { transform: scale(.97); }
+        .pos-act:focus-visible { outline: 2px solid #4349E8; outline-offset: 2px; }
+        .pos-act .ic { font-size: 1.05rem; line-height: 1; }
+        .pos-act.soft { background: #EEEFFD; color: #4349E8; }
+        .pos-act.soft:hover { background: #dcdefb; }
+        .pos-act.danger { background: #ef4444; color: #fff; }
+        .pos-act.danger:hover { background: #dc2626; }
+        .pos-act.purple { background: #6b5baf; color: #fff; }
+        .pos-act.purple:hover { background: #5a4b9a; }
+
+        @media (min-width: 1024px) {
+            .pos-body { height: 100vh; overflow: hidden; display: flex; flex-direction: column; }
+            .pos-main { flex-direction: row; }
+            .pos-cart { width: 30%; flex-shrink: 0; }
+            .pos-cart-list { min-height: 0; }
+            .pos-products { min-height: 0; }
+            .pos-actions { grid-template-columns: repeat(7, minmax(0, 1fr)); }
+        }
+
+        /* ===== Compact cart + payment (more rows visible) ===== */
+        .pos-cart-head { padding: .6rem .85rem .35rem; }
+        .pos-cart-head h1 { font-size: 1rem; }
+        .pos-cart-list { padding: 0 .5rem .35rem; }
+        #cart-items { zoom: .82; }
+        #cart-items > li { padding-top: .3rem !important; padding-bottom: .3rem !important; margin: 0 !important; }
+        .pos-cart-foot { padding: .5rem; }
+        .pos-total-box { padding: .45rem .85rem; }
+        .pos-total-box .text-4xl { font-size: 1.75rem; }
+        .pos-change-box { padding: .3rem .85rem; }
+        .pos-change-box .text-xl { font-size: 1.05rem; }
+        .pos-details { margin-top: .4rem; border-radius: .75rem; }
+        .pos-details summary { padding: .4rem .75rem; font-size: .8rem; }
+        .pos-details-body { padding: 0 .75rem .6rem; max-height: 28vh; }
+        .pos-details-body .group-title { margin-bottom: .3rem; font-size: .75rem; }
+        .pos-details-body .field label, .pos-details-body label { font-size: .68rem; margin-bottom: .1rem; }
+        .pos-details-body input, .pos-details-body select { padding: .3rem .55rem; font-size: .8rem; border-radius: .6rem; }
+        .pos-details-body .row { gap: .45rem; }
+        .pos-details-body .row-5 button { padding-top: .35rem; padding-bottom: .35rem; font-size: .68rem; }
+        .pos-buttons { margin-top: .4rem; gap: .45rem; }
+        .pos-pay { padding: .55rem 1rem; font-size: 1rem; }
+        .pos-clear { padding: .55rem .9rem; font-size: .8rem; }
+
+        /* ===== Action tiles with shortcut hint ===== */
+        .pos-act { gap: .1rem; min-height: 3.75rem; padding: .35rem .25rem; }
+        .pos-act .lbl { font-size: .85rem; font-weight: 700; font-style: italic; line-height: 1.1; }
+        .pos-act .key { min-height: .8rem; font-size: .68rem; font-weight: 600; letter-spacing: .02em; opacity: .7; }
+        .pos-act.danger .key, .pos-act.purple .key { opacity: .85; }
+        .hint { margin-left: .3rem; border-radius: .3rem; background: rgba(0,0,0,.08); padding: 0 .3rem; font-size: .65rem; font-weight: 600; vertical-align: middle; }
+        .pos-pay .hint { background: rgba(255,255,255,.22); }
+        .pos-clear:hover .hint { background: rgba(255,255,255,.25); }
     </style>
 </head>
 
-<body class="bg-canvas font-sans text-slate-800 antialiased lg:flex lg:h-screen lg:flex-col lg:overflow-hidden">
+<body class="pos-body bg-canvas font-sans text-slate-800 antialiased">
 
     <!-- Top bar -->
-    <header class="shrink-0 px-3 pt-3">
-        <div class="flex items-center justify-between gap-4 rounded-2xl bg-white px-4 py-2.5 shadow-sm sm:px-5">
-            <div class="flex items-center gap-3">
-                <img src="{% static 'images/weblogo.png' %}" alt="TindaTech POS logo"
-                     class="h-10 w-10 rounded-xl object-cover">
-                <div class="leading-tight">
-                    <p class="text-base font-semibold text-ink">TindaTech POS</p>
-                    <p class="text-xs font-medium text-brand">Checkout</p>
-                </div>
+    <header class="pos-top">
+        <div class="pos-brand">
+            <img src="{% static 'images/weblogo.png' %}" alt="TindaTech POS logo" class="h-10 w-10 rounded-xl object-cover">
+            <div class="pos-brand-text leading-tight">
+                <p class="text-base font-semibold text-ink">TindaTech POS</p>
+                <p class="text-xs font-medium text-brand">Checkout</p>
             </div>
-
-            <nav class="flex items-center gap-2 text-sm">
-                <!-- Live date and time -->
-                <div class="live-clock mr-2 border-r border-slate-200 pr-4 text-right leading-tight" aria-live="off">
-                    <p id="live-time" class="tabular text-base font-semibold text-ink"></p>
-                    <p id="live-date" class="text-xs text-slate-500">{% now "D, M j, Y" %}</p>
-                </div>
-
-                <!-- ACTIONS BUTTON -->
-                <button type="button" id="open-actions"
-                        class="rounded-full bg-brand px-4 py-2 font-medium text-white transition hover:bg-brand-dark focus:outline-none focus:ring-2 focus:ring-brand">
-                    Actions
-                </button>
-
-                <a href="/dashboard/"
-                   class="rounded-full bg-brand-soft px-4 py-2 font-medium text-brand transition hover:bg-brand hover:text-white focus:outline-none focus:ring-2 focus:ring-brand">Dashboard</a>
-                <a href="{% url 'sales_history' %}"
-                   class="rounded-full border border-slate-200 px-4 py-2 font-medium text-slate-600 transition hover:bg-brand-soft hover:text-brand focus:outline-none focus:ring-2 focus:ring-brand">Sales history</a>
-                <span class="ml-2 hidden items-center gap-2 border-l border-slate-200 pl-4 sm:flex">
-                    <span class="flex h-9 w-9 items-center justify-center rounded-full bg-brand text-sm font-semibold uppercase text-white" aria-hidden="true">{{ request.user.username|slice:":1" }}</span>
-                    <span class="text-sm font-medium text-ink">{{ request.user.username }}</span>
-                </span>
-            </nav>
         </div>
+
+        <div class="pos-search">
+            <label for="search" class="sr-only">Search product name or barcode</label>
+            <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-4.3-4.3M17 10a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+            <input id="search" type="text" autocomplete="off" autofocus placeholder="Search products or scan barcode…  (F1)">
+        </div>
+
+        <nav class="pos-nav">
+            <div class="live-clock mr-2 text-right leading-tight" aria-live="off">
+                <p id="live-time" class="tabular text-base font-semibold text-ink"></p>
+                <p id="live-date" class="text-xs text-slate-500">{% now "D, M j, Y" %}</p>
+            </div>
+            <button type="button" id="open-actions" class="btn btn-solid">Actions</button>
+            <a href="/dashboard/" class="btn btn-soft">Dashboard</a>
+            <a href="{% url 'sales_history' %}" class="btn btn-line">Sales history</a>
+            <span class="pos-user">
+                <span class="flex h-9 w-9 items-center justify-center rounded-full bg-brand text-sm font-semibold uppercase text-white" aria-hidden="true">{{ request.user.username|slice:":1" }}</span>
+                <span class="text-sm font-medium text-ink">{{ request.user.username }}</span>
+            </span>
+        </nav>
     </header>
 
-    <main class="flex min-h-0 flex-1 flex-col gap-3 p-3 lg:flex-row">
+    <main class="pos-main">
 
-        <!-- ============ LEFT: CART ============ -->
-        <section class="flex min-h-0 flex-col overflow-hidden rounded-3xl bg-white shadow-sm lg:w-[36%] lg:shrink-0 xl:w-[34%]" aria-label="Shopping cart">
-            <div class="flex items-center justify-between px-5 pt-5 pb-3">
+        <!-- ============ LEFT: ORDER ============ -->
+        <section class="pos-cart" aria-label="Shopping cart">
+            <div class="pos-cart-head">
                 <div>
-                    <h1 class="text-xl font-semibold text-ink">Current sale</h1>
-                    <p class="text-xs text-slate-500">Tap a product tile to add it</p>
+                    <h1 class="text-lg font-semibold text-ink">Current sale <span class="hint">F3</span></h1>
+                    <p class="text-xs text-slate-500">Tap a product to add it</p>
                 </div>
                 <span id="item-count" class="tabular rounded-full bg-brand-soft px-3.5 py-1 text-sm font-semibold text-brand">0 items</span>
             </div>
 
-            <div class="mx-3 grid grid-cols-[1fr_auto] rounded-xl bg-canvas px-4 py-2 text-xs font-semibold uppercase tracking-wide text-slate-500">
-                <span>Item</span>
-                <span>Price</span>
-            </div>
-
-            <div class="min-h-[12rem] flex-1 overflow-y-auto px-3 pb-3 pt-2 lg:min-h-0">
+            <div class="pos-cart-list">
                 <div id="cart-empty" class="flex h-full flex-col items-center justify-center px-5 py-10 text-center">
-                    <span class="flex h-14 w-14 items-center justify-center rounded-2xl bg-brand-soft text-brand">
-                        <svg class="h-7 w-7" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" d="M3 4h2l2.4 10.2a1 1 0 001 .8h8.9a1 1 0 001-.8L20 8H6M9 20h.01M17 20h.01"/></svg>
-                    </span>
-                    <p class="mt-3 font-semibold text-slate-700">Cart is empty</p>
-                    <p class="mt-1 text-sm text-slate-500">Pick a product to start a sale.</p>
+                    <svg class="h-14 w-14 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" d="M3 4h2l2.4 10.2a1 1 0 001 .8h8.9a1 1 0 001-.8L20 8H6M9 20h.01M17 20h.01"/></svg>
+                    <p class="mt-3 font-semibold text-slate-600">Start adding products</p>
+                    <p class="mt-1 text-sm text-slate-500">Pick a product or scan a barcode.</p>
                 </div>
                 <ul id="cart-items" class="space-y-1"></ul>
             </div>
-        </section>
 
-        <!-- ============ RIGHT: PRODUCTS + PAYMENT ============ -->
-        <div class="flex min-h-0 flex-1 flex-col gap-3">
-
-            <!-- Product tiles -->
-            <section class="flex min-h-0 flex-1 flex-col rounded-3xl bg-white p-4 shadow-sm" aria-label="Products">
-                <label for="search" class="sr-only">Search product name or barcode</label>
-                <div class="relative shrink-0">
-                    <svg class="pointer-events-none absolute right-4 top-1/2 h-5 w-5 -translate-y-1/2 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-4.3-4.3M17 10a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
-                    <input id="search" type="text" autocomplete="off" autofocus
-                           placeholder="Product — search name or scan barcode, then press Enter"
-                           class="w-full rounded-full border border-slate-200 bg-canvas/60 py-3 pl-5 pr-12 text-base placeholder:text-slate-400 focus:border-brand focus:bg-white focus:outline-none focus:ring-2 focus:ring-brand/30">
+            <div class="pos-cart-foot">
+                <div class="pos-totals">
+                    <div class="pos-total-box hero-card">
+                        <span class="text-sm font-medium text-indigo-100">Total</span>
+                        <span class="tabular text-4xl font-bold leading-none tracking-tight">₱<span id="total">0.00</span></span>
+                    </div>
+                    <div class="pos-change-box">
+                        <span class="text-sm font-semibold">Change</span>
+                        <span class="tabular text-xl font-bold">₱<span id="change">0.00</span></span>
+                    </div>
                 </div>
 
-                <div id="product-list" class="mt-3 grid max-h-[28rem] flex-1 auto-rows-min grid-cols-2 gap-3 overflow-y-auto pr-1 sm:grid-cols-3 lg:max-h-none xl:grid-cols-4 2xl:grid-cols-5">
+                <details class="pos-details" open>
+                    <summary>Payment</summary>
+                    <div class="pos-details-body field">
+                        <form method="post" action="{% url 'complete_sale' %}" id="checkout-form">
+                            {% csrf_token %}
+                            <input type="hidden" name="cart" id="cart-data">
+                            {# Discount type is set by keyboard shortcuts / actions, so no dropdown is shown #}
+                            {{ form.discount_type.as_hidden }}
+
+                            <div class="group" style="margin-top:.25rem">
+                                <p class="group-title">Payment</p>
+                                <div class="row row-2">
+                                    <div>
+                                        <label for="id_payment_method">Method <span class="hint">F4</span></label>
+                                        {{ form.payment_method }}
+                                    </div>
+                                    <div>
+                                        <label for="id_amount_tendered">Received (₱) <span class="hint">F5</span></label>
+                                        {{ form.amount_tendered }}
+                                    </div>
+                                </div>
+                                <div class="row row-5" style="margin-top:.5rem" role="group" aria-label="Quick amounts">
+                                    <button type="button" data-quick="exact" class="bg-brand text-white rounded-full px-1 py-2 text-xs font-semibold transition hover:bg-brand-dark hover:text-white focus:outline-none focus:ring-2 focus:ring-brand active:scale-95">Exact</button><button type="button" data-quick="100" class="bg-brand-soft text-brand rounded-full px-1 py-2 text-xs font-semibold transition hover:bg-brand-dark hover:text-white focus:outline-none focus:ring-2 focus:ring-brand active:scale-95">₱100</button><button type="button" data-quick="200" class="bg-brand-soft text-brand rounded-full px-1 py-2 text-xs font-semibold transition hover:bg-brand-dark hover:text-white focus:outline-none focus:ring-2 focus:ring-brand active:scale-95">₱200</button><button type="button" data-quick="500" class="bg-brand-soft text-brand rounded-full px-1 py-2 text-xs font-semibold transition hover:bg-brand-dark hover:text-white focus:outline-none focus:ring-2 focus:ring-brand active:scale-95">₱500</button><button type="button" data-quick="1000" class="bg-brand-soft text-brand rounded-full px-1 py-2 text-xs font-semibold transition hover:bg-brand-dark hover:text-white focus:outline-none focus:ring-2 focus:ring-brand active:scale-95">₱1000</button>
+                                </div>
+                            </div>
+
+                            {# Charges and discount are driven by keyboard shortcuts/actions: kept in the DOM but not shown #}
+                            <div hidden>
+                                {{ form.packaging_charge }}
+                                {{ form.delivery_charge }}
+                                {{ form.service_charge }}
+                                {{ form.other_charge }}
+                                {{ form.other_charge_description }}
+                                <div id="regular-discount-fields">{{ form.regular_discount_percent }}</div>
+                                <div id="special-discount-fields" hidden>{{ form.special_discount_amount }}</div>
+                                <div id="discount-customer-field" hidden>{{ form.discount_customer_name }}</div>
+                                <div id="discount-reference-field" hidden>{{ form.discount_reference }}</div>
+                            </div>
+                        </form>
+                    </div>
+                </details>
+
+                <div class="pos-buttons">
+                    <button type="button" id="clear-cart" class="pos-clear">
+                        <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M6 7h12M9 7V4h6m-8 0l1 13h8l1-13M10 11v6m4-6v6"/></svg>
+                        Clear <span class="hint">F7</span>
+                    </button>
+                    <button type="submit" id="pay-button" form="checkout-form" class="pos-pay">Pay <span class="hint">F9</span></button>
+                </div>
+            </div>
+        </section>
+
+        <!-- ============ RIGHT: PRODUCTS + ACTION BAR ============ -->
+        <div class="pos-right">
+            <section class="pos-products" aria-label="Products">
+                <div id="product-list" class="pos-grid">
                     {% for product in products %}
-                    <button type="button"
-                        class="product group flex min-h-[6.5rem] flex-col overflow-hidden rounded-2xl border border-slate-100 bg-canvas/60 text-left shadow-sm transition hover:border-brand hover:bg-brand-soft focus:outline-none focus:ring-2 focus:ring-brand focus:ring-offset-1 active:scale-[0.97]"
+                    <button type="button" class="product"
                         data-id="{{ product.id }}"
                         data-name="{{ product.name|escape }}"
                         data-barcode="{{ product.barcode|default_if_none:''|escape }}"
                         data-price="{{ product.selling_price }}"
                         data-unit="{{ product.get_unit_display|escape }}">
-                        <span class="flex flex-1 flex-col items-center justify-center px-2.5 py-3 text-center">
-                            <span class="line-clamp-2 text-sm font-semibold leading-snug text-ink">{{ product.name }}</span>
-                            <span class="mt-0.5 block max-w-full truncate text-[0.7rem] text-slate-500">
-                                {{ product.get_unit_display }}{% if product.barcode %} · {{ product.barcode }}{% endif %}
-                            </span>
+                        <span class="p-name">{{ product.name }}</span>
+                        <span class="p-foot">
+                            <span class="p-price">₱{{ product.selling_price }}</span>
+                            <span class="p-unit">{{ product.get_unit_display }}</span>
                         </span>
-                        <span class="tabular block bg-brand py-1.5 text-center text-base font-bold text-white transition group-hover:bg-brand-dark">₱{{ product.selling_price }}</span>
                     </button>
                     {% empty %}
-                    <div class="col-span-full rounded-2xl border border-dashed border-slate-300 px-5 py-12 text-center">
+                    <div style="grid-column:1/-1" class="rounded-2xl border border-dashed border-slate-300 px-5 py-12 text-center">
                         <p class="font-semibold text-slate-700">No active products</p>
                         <p class="mt-1 text-sm text-slate-500">Add products in Django Admin first.</p>
                     </div>
@@ -313,124 +374,31 @@
                 </div>
             </section>
 
-            <!-- Total / payment -->
-            <section class="shrink-0 rounded-3xl bg-white shadow-sm lg:max-h-[58vh] lg:overflow-y-auto" aria-label="Payment">
-                <form method="post" action="{% url 'complete_sale' %}" id="checkout-form" class="grid gap-4 p-4 md:grid-cols-[0.8fr_1.7fr]">
-                    {% csrf_token %}
-                    <input type="hidden" name="cart" id="cart-data">
-
-                    <div class="flex flex-col gap-3 md:col-start-1 md:row-start-1">
-                        <div class="hero-card rounded-2xl p-4 text-white shadow-lg shadow-brand/25">
-                            <p class="text-sm font-medium uppercase tracking-wide text-indigo-100">Total</p>
-                            <p class="tabular text-4xl font-bold tracking-tight">₱<span id="total">0.00</span></p>
-                        </div>
-                        <div class="flex items-baseline justify-between rounded-2xl bg-emerald-50 px-4 py-3">
-                            <span class="text-sm font-semibold uppercase tracking-wide text-emerald-700">Change</span>
-                            <span class="tabular text-2xl font-bold text-emerald-700">₱<span id="change">0.00</span></span>
-                        </div>
-                    </div>
-
-                    <div class="space-y-4 md:col-start-2 md:row-span-2 md:row-start-1
-                        [&_input]:w-full [&_input]:rounded-xl [&_input]:border [&_input]:border-slate-200 [&_input]:bg-white [&_input]:px-3 [&_input]:py-2 [&_input]:text-sm [&_input]:[font-variant-numeric:tabular-nums] [&_input]:focus:border-brand [&_input]:focus:outline-none [&_input]:focus:ring-2 [&_input]:focus:ring-brand/30
-                        [&_select]:w-full [&_select]:rounded-xl [&_select]:border [&_select]:border-slate-200 [&_select]:bg-white [&_select]:px-3 [&_select]:py-2 [&_select]:text-sm [&_select]:font-medium [&_select]:focus:border-brand [&_select]:focus:outline-none [&_select]:focus:ring-2 [&_select]:focus:ring-brand/30">
-
-                        <div>
-                            <p class="mb-2 text-xs font-semibold uppercase tracking-wider text-slate-400">Discount</p>
-                            <div class="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-                                <div>
-                                    <label for="id_discount_type" class="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-500">Discount Type</label>
-                                    {{ form.discount_type }}
-                                </div>
-                                <div id="regular-discount-fields">
-                                    <label for="id_regular_discount_percent" class="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-500">Regular Discount (%)</label>
-                                    {{ form.regular_discount_percent }}
-                                </div>
-                                <div id="special-discount-fields" hidden>
-                                    <label for="id_special_discount_amount" class="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-500">Discount Amount (₱)</label>
-                                    {{ form.special_discount_amount }}
-                                </div>
-                                <div id="discount-customer-field" hidden>
-                                    <label for="id_discount_customer_name" class="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-500">Eligible Customer Name</label>
-                                    {{ form.discount_customer_name }}
-                                </div>
-                                <div id="discount-reference-field" hidden>
-                                    <label for="id_discount_reference" class="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-500">ID / Reference Number</label>
-                                    {{ form.discount_reference }}
-                                </div>
-                            </div>
-                        </div>
-
-                        <div>
-                            <p class="mb-2 text-xs font-semibold uppercase tracking-wider text-slate-400">Additional charges</p>
-                            <div class="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-                                <div>
-                                    <label for="id_packaging_charge" class="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-500">Packaging (₱)</label>
-                                    {{ form.packaging_charge }}
-                                </div>
-                                <div>
-                                    <label for="id_delivery_charge" class="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-500">Delivery (₱)</label>
-                                    {{ form.delivery_charge }}
-                                </div>
-                                <div>
-                                    <label for="id_service_charge" class="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-500">Service (₱)</label>
-                                    {{ form.service_charge }}
-                                </div>
-                                <div class="space-y-1.5">
-                                    <label for="id_other_charge" class="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-500">Other (₱)</label>
-                                    {{ form.other_charge }}
-                                    {{ form.other_charge_description }}
-                                </div>
-                            </div>
-                        </div>
-
-                        <div>
-                            <p class="mb-2 text-xs font-semibold uppercase tracking-wider text-slate-400">Payment</p>
-                            <div class="space-y-2.5">
-                                <div class="grid grid-cols-2 gap-3">
-                                    <div>
-                                        <label for="id_payment_method" class="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-500">Payment</label>
-                                        {{ form.payment_method }}
-                                    </div>
-                                    <div>
-                                        <label for="id_amount_tendered" class="mb-1 block text-xs font-semibold uppercase tracking-wide text-slate-500">Received (₱)</label>
-                                        {{ form.amount_tendered }}
-                                    </div>
-                                </div>
-                                <div class="grid grid-cols-5 gap-1.5" role="group" aria-label="Quick amounts">
-                                    <button type="button" data-quick="exact" class="rounded-full bg-brand px-1 py-2.5 text-xs font-semibold text-white shadow-sm shadow-brand/30 transition hover:bg-brand-dark focus:outline-none focus:ring-2 focus:ring-brand focus:ring-offset-1 active:scale-95">Exact</button>
-                                    <button type="button" data-quick="100" class="rounded-full bg-brand-soft px-1 py-2.5 text-xs font-semibold text-brand transition hover:bg-brand hover:text-white focus:outline-none focus:ring-2 focus:ring-brand active:scale-95">₱100</button>
-                                    <button type="button" data-quick="200" class="rounded-full bg-brand-soft px-1 py-2.5 text-xs font-semibold text-brand transition hover:bg-brand hover:text-white focus:outline-none focus:ring-2 focus:ring-brand active:scale-95">₱200</button>
-                                    <button type="button" data-quick="500" class="rounded-full bg-brand-soft px-1 py-2.5 text-xs font-semibold text-brand transition hover:bg-brand hover:text-white focus:outline-none focus:ring-2 focus:ring-brand active:scale-95">₱500</button>
-                                    <button type="button" data-quick="1000" class="rounded-full bg-brand-soft px-1 py-2.5 text-xs font-semibold text-brand transition hover:bg-brand hover:text-white focus:outline-none focus:ring-2 focus:ring-brand active:scale-95">₱1000</button>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="flex gap-3 md:col-start-1 md:row-start-2 md:flex-col md:self-end">
-                        <button type="submit" id="pay-button"
-                                class="flex-[2] rounded-full bg-brand px-4 py-4 text-lg font-bold uppercase tracking-wide text-white shadow-lg shadow-brand/30 transition hover:bg-brand-dark focus:outline-none focus:ring-2 focus:ring-brand focus:ring-offset-2 active:scale-[0.98] md:order-1">
-                            Pay
-                        </button>
-                        <button type="button" id="clear-cart"
-                                class="flex flex-1 items-center justify-center gap-2 rounded-full bg-red-50 px-4 py-3 text-base font-semibold uppercase tracking-wide text-red-600 ring-1 ring-inset ring-red-200 transition hover:bg-red-600 hover:text-white focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 active:scale-[0.98] md:order-2">
-                            <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M6 7h12M9 7V4h6m-8 0l1 13h8l1-13M10 11v6m4-6v6"/></svg>
-                            Clear
-                        </button>
-                    </div>
-                </form>
-            </section>
+            <div class="pos-actions" role="group" aria-label="Quick actions">
+                <button type="button" class="pos-act danger" data-action="cancel-order"><span class="lbl">Cancel Order</span><span class="key">Alt+C</span></button>
+                <button type="button" class="pos-act purple" data-action="govt-discount"><span class="lbl">Gov't Discount</span><span class="key">Alt+G</span></button>
+                <button type="button" class="pos-act " data-action="discount"><span class="lbl">Discount</span><span class="key">F6</span></button>
+                <button type="button" class="pos-act " data-action="change-qty"><span class="lbl">Change Qty</span><span class="key">+ / −</span></button>
+                <button type="button" class="pos-act " data-action="price-override"><span class="lbl">Price Override</span><span class="key">Alt+O</span></button>
+                <button type="button" class="pos-act " data-action="void-line"><span class="lbl">Void Line</span><span class="key">Del</span></button>
+                <button type="button" class="pos-act " data-action="void-all"><span class="lbl">Void All</span><span class="key">Alt+V</span></button>
+                <button type="button" class="pos-act " data-action="refund"><span class="lbl">Refund</span><span class="key">Alt+R</span></button>
+                <button type="button" class="pos-act " data-action="change-fund"><span class="lbl">Change Fund</span><span class="key">Alt+1</span></button>
+                <button type="button" class="pos-act " data-action="open-drawer"><span class="lbl">Open Drawer</span><span class="key">Alt+2</span></button>
+                <button type="button" class="pos-act " data-action="suspend"><span class="lbl">Suspend</span><span class="key">F8</span></button>
+                <button type="button" class="pos-act " data-action="inventory-lookup"><span class="lbl">Inventory Lookup</span><span class="key">Alt+I</span></button>
+                <button type="button" class="pos-act " data-action="price-check"><span class="lbl">Price Check</span><span class="key">Alt+P</span></button>
+                <button type="button" class="pos-act soft" onclick="document.getElementById('open-actions').click()"><span class="lbl">More</span><span class="key">Alt+M</span></button>
+            </div>
         </div>
     </main>
 
-    <!-- ============================================================ -->
-    <!-- ACTIONS MODAL (matches the POS grid)                         -->
-    <!-- ============================================================ -->
+    <!-- ACTIONS MODAL -->
     <div id="actions-modal" class="msg-modal" role="dialog" aria-modal="true"
          aria-labelledby="actions-modal-title" hidden>
         <div class="msg-card actions-card">
             <div class="actions-header">
-                <h2 id="actions-modal-title">Actions</h2>
+                <h2 id="actions-modal-title">More actions</h2>
                 <button type="button" id="actions-close" class="actions-close" aria-label="Close actions">
                     <svg width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                         <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/>
@@ -439,50 +407,24 @@
             </div>
 
             <div class="actions-grid" role="group" aria-label="Quick actions">
-                <!-- Row 1 -->
-                <button type="button" class="action-tile" data-action="general-note"><span>General Note</span></button>
-                <button type="button" class="action-tile" data-action="reward"><span class="tile-icon">★</span><span>Reward</span></button>
-                <button type="button" class="action-tile" data-action="customer-note"><span class="tile-icon">■</span><span>Customer Note</span></button>
+                <button type="button" class="action-tile" data-action="general-note"><span>General Note</span><span class="hint">Alt+N</span></button>
+                <button type="button" class="action-tile" data-action="reward"><span class="tile-icon">★</span><span>Reward</span><span class="hint">Alt+W</span></button>
+                <button type="button" class="action-tile" data-action="customer-note"><span class="tile-icon">■</span><span>Customer Note</span><span class="hint">Alt+B</span></button>
 
-                <!-- Row 2 -->
-                <button type="button" class="action-tile" data-action="pricelist"><span class="tile-icon">☰</span><span>Pricelist</span></button>
-                <button type="button" class="action-tile" data-action="refund"><span class="tile-icon">↺</span><span>Refund</span></button>
-                <button type="button" class="action-tile" data-action="cancel-order"><span class="tile-icon">🗑</span><span>Cancel Order</span></button>
+                <button type="button" class="action-tile" data-action="pricelist"><span class="tile-icon">☰</span><span>Pricelist</span><span class="hint">Alt+L</span></button>
 
-                <!-- Row 3 -->
-                <button type="button" class="action-tile" data-action="change-fund"><span class="tile-icon">⇄</span><span>Change Fund</span></button>
-                <button type="button" class="action-tile" data-action="cash-takeout"><span class="tile-icon">₱</span><span>Cash Takeout</span></button>
-                <button type="button" class="action-tile" data-action="declare-tender"><span class="tile-icon">✓</span><span>Declare Tender</span></button>
+                <button type="button" class="action-tile" data-action="cash-takeout"><span class="tile-icon">₱</span><span>Cash Takeout</span><span class="hint">Alt+3</span></button>
+                <button type="button" class="action-tile" data-action="declare-tender"><span class="tile-icon">✓</span><span>Declare Tender</span><span class="hint">Alt+4</span></button>
 
-                <!-- Row 4 -->
-                <button type="button" class="action-tile" data-action="x-reading"><span class="tile-icon">📄</span><span>X-Reading</span></button>
-                <button type="button" class="action-tile action-tile--danger" data-action="z-reading"><span class="tile-icon">📄</span><span>Z-Reading</span></button>
-                <button type="button" class="action-tile" data-action="price-check"><span class="tile-icon">🔍</span><span>Price Check</span></button>
+                <button type="button" class="action-tile" data-action="x-reading"><span class="tile-icon">📄</span><span>X-Reading</span><span class="hint">Alt+X</span></button>
+                <button type="button" class="action-tile action-tile--danger" data-action="z-reading"><span class="tile-icon">📄</span><span>Z-Reading</span><span class="hint">Alt+Z</span></button>
 
-                <!-- Row 5 -->
-                <button type="button" class="action-tile" data-action="inventory-lookup"><span class="tile-icon">📦</span><span>Inventory Lookup</span></button>
-                <button type="button" class="action-tile" data-action="item-finder"><span class="tile-icon">☰</span><span>Item Finder</span></button>
-                <button type="button" class="action-tile" data-action="salesperson"><span class="tile-icon">👤</span><span>Salesperson</span></button>
+                <button type="button" class="action-tile" data-action="item-finder"><span class="tile-icon">☰</span><span>Item Finder</span><span class="hint">Alt+5</span></button>
+                <button type="button" class="action-tile" data-action="salesperson"><span class="tile-icon">👤</span><span>Salesperson</span><span class="hint">Alt+S</span></button>
 
-                <!-- Row 6 -->
-                <button type="button" class="action-tile" data-action="discount"><span class="tile-icon">%</span><span>Discount</span></button>
-                <button type="button" class="action-tile" data-action="change-qty"><span class="tile-icon">#</span><span>Change Qty</span></button>
-                <button type="button" class="action-tile" data-action="price-override"><span class="tile-icon">₱</span><span>Price Override</span></button>
+                <button type="button" class="action-tile" data-action="retrieve"><span class="tile-icon">▶</span><span>Retrieve</span><span class="hint">Alt+8</span></button>
 
-                <!-- Row 7 -->
-                <button type="button" class="action-tile action-tile--purple" data-action="govt-discount"><span class="tile-icon">▣</span><span>GOV'T DISCOUNT</span></button>
-                <button type="button" class="action-tile" data-action="void-line"><span class="tile-icon">⊘</span><span>Void Line</span></button>
-                <button type="button" class="action-tile" data-action="void-all"><span class="tile-icon">⊘</span><span>Void All</span></button>
-
-                <!-- Row 8 -->
-                <button type="button" class="action-tile" data-action="suspend"><span class="tile-icon">‖</span><span>Suspend</span></button>
-                <button type="button" class="action-tile" data-action="retrieve"><span class="tile-icon">▶</span><span>Retrieve</span></button>
-                <button type="button" class="action-tile" data-action="open-drawer"><span class="tile-icon">🔓</span><span>Open Drawer</span></button>
-
-                <!-- Row 9 -->
-                <button type="button" class="action-tile" data-action="sales-history"><span class="tile-icon">↺</span><span>Sales History</span></button>
-                <span class="action-tile action-tile--empty" aria-hidden="true"></span>
-                <span class="action-tile action-tile--empty" aria-hidden="true"></span>
+                <button type="button" class="action-tile" data-action="sales-history"><span class="tile-icon">↺</span><span>Sales History</span><span class="hint">Alt+Y</span></button>
             </div>
         </div>
     </div>
@@ -515,6 +457,42 @@
             <div class="msg-actions">
                 <button type="button" id="confirm-modal-cancel" class="msg-cancel">Cancel</button>
                 <button type="button" id="confirm-modal-yes" class="msg-ok">Confirm</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Product Lookup Modal -->
+    <div id="product-lookup-modal"
+         class="fixed inset-0 z-[100] hidden items-center justify-center bg-slate-900/50 p-4 backdrop-blur-sm">
+        <div class="flex w-full max-w-2xl flex-col overflow-hidden rounded-2xl bg-white shadow-2xl ring-1 ring-slate-900/5"
+             style="height: min(680px, 85vh); max-height: 85vh;">
+
+            <div class="flex shrink-0 items-start justify-between border-b border-slate-100 px-5 py-4 sm:px-6">
+                <div class="min-w-0">
+                    <h2 id="lookup-title" class="text-lg font-semibold tracking-tight text-slate-900">Price Check</h2>
+                    <p id="lookup-subtitle" class="mt-0.5 text-sm text-slate-500">Search by product name, barcode, or SKU.</p>
+                </div>
+                <button type="button" id="lookup-close" aria-label="Close product lookup"
+                        class="ml-3 flex h-9 w-9 shrink-0 items-center justify-center rounded-lg text-slate-400 transition hover:bg-slate-100 hover:text-slate-700 focus:outline-none focus:ring-2 focus:ring-slate-400">✕</button>
+            </div>
+
+            <div class="flex flex-1 flex-col overflow-hidden p-5 sm:p-6" style="min-height: 0;">
+                <div class="relative shrink-0">
+                    <span class="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-slate-400">
+                        <svg width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-4.3-4.3M17 10a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+                    </span>
+                    <input id="lookup-search" type="text" autocomplete="off"
+                           placeholder="Enter product name, barcode, or SKU..."
+                           class="w-full rounded-xl border border-slate-200 bg-slate-50 py-3 pl-11 pr-4 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-blue-500 focus:bg-white focus:ring-2 focus:ring-blue-100">
+                </div>
+                <p id="lookup-status" aria-live="polite" class="mt-3 shrink-0 text-sm text-slate-500">Type to search for a product.</p>
+                <div id="lookup-results" class="mt-3 space-y-2 overflow-x-hidden overflow-y-auto overscroll-contain pr-2"
+                     style="flex: 1 1 0%; min-height: 0; height: 0; scrollbar-gutter: stable;"></div>
+            </div>
+
+            <div class="flex shrink-0 justify-end border-t border-slate-100 px-5 py-4 sm:px-6">
+                <button type="button" id="lookup-done"
+                        class="rounded-xl bg-slate-100 px-5 py-2.5 text-sm font-semibold text-slate-700 transition hover:bg-slate-200 focus:outline-none focus:ring-2 focus:ring-slate-400 focus:ring-offset-2">Close</button>
             </div>
         </div>
     </div>
@@ -654,13 +632,9 @@ actionsClose.addEventListener("click", closeActionsModal);
 actionsModal.addEventListener("click", event => { if (event.target === actionsModal) closeActionsModal(); });
 document.addEventListener("keydown", event => { if (event.key === "Escape" && !actionsModal.hidden) closeActionsModal(); });
 
-// Action Handlers
-actionTiles.forEach(tile => {
-    tile.addEventListener("click", async () => {
-        const action = tile.dataset.action;
-        closeActionsModal();
-
-    
+// ---------- Product lookup modal (Price Check / Inventory Lookup) ----------
+// NOTE: this block used to live inside the action click handler, which re-attached
+// every listener on each click. It now runs once.
 const lookupModal = document.getElementById("product-lookup-modal");
 const lookupTitle = document.getElementById("lookup-title");
 const lookupSubtitle = document.getElementById("lookup-subtitle");
@@ -836,11 +810,8 @@ lookupSearch.addEventListener("input", () => {
     }, 250);
 });
 
-document.getElementById("lookup-close")
-    .addEventListener("click", closeLookupModal);
-
-document.getElementById("lookup-done")
-    .addEventListener("click", closeLookupModal);
+document.getElementById("lookup-close").addEventListener("click", closeLookupModal);
+document.getElementById("lookup-done").addEventListener("click", closeLookupModal);
 
 lookupModal.addEventListener("click", event => {
     if (event.target === lookupModal) {
@@ -857,6 +828,11 @@ document.addEventListener("keydown", event => {
     }
 });
 
+// ---------- Action handlers ----------
+actionTiles.forEach(tile => {
+    tile.addEventListener("click", async () => {
+        const action = tile.dataset.action;
+        closeActionsModal();
 
         switch (action) {
             case "z-reading":
@@ -921,7 +897,7 @@ document.addEventListener("keydown", event => {
             case "pricelist":
                 showMessage("Print or view the current price list.", "Pricelist");
                 break;
-            
+
             case "price-check":
                 openLookupModal("price-check");
                 break;
@@ -948,40 +924,40 @@ document.addEventListener("keydown", event => {
                 showMessage("Price overrides require manager approval.", "Price Override");
                 break;
             case "void-line": {
-            if (cart.size === 0) {
-                showMessage("There is no line to void.", "Void Line");
+                if (cart.size === 0) {
+                    showMessage("There is no line to void.", "Void Line");
+                    break;
+                }
+
+                if (
+                    selectedCartItemId === null ||
+                    !cart.has(selectedCartItemId)
+                ) {
+                    showMessage(
+                        "Click the item you want to void in the cart first.",
+                        "Void Line"
+                    );
+                    break;
+                }
+
+                const item = cart.get(selectedCartItemId);
+
+                const confirmed = await showConfirm({
+                    title: "Void Line",
+                    text: `Remove "${item.name}" from the current transaction?`,
+                    confirmLabel: "Void Line",
+                    danger: true
+                });
+
+                if (confirmed) {
+                    cart.delete(selectedCartItemId);
+                    selectedCartItemId = null;
+                    renderCart();
+                    search.focus();
+                }
+
                 break;
             }
-
-            if (
-                selectedCartItemId === null ||
-                !cart.has(selectedCartItemId)
-            ) {
-                showMessage(
-                    "Click the item you want to void in the cart first.",
-                    "Void Line"
-                );
-                break;
-            }
-
-            const item = cart.get(selectedCartItemId);
-
-            const confirmed = await showConfirm({
-                title: "Void Line",
-                text: `Remove "${item.name}" from the current transaction?`,
-                confirmLabel: "Void Line",
-                danger: true
-            });
-
-            if (confirmed) {
-                cart.delete(selectedCartItemId);
-                selectedCartItemId = null;
-                renderCart();
-                search.focus();
-            }
-
-            break;
-        }
             case "reward":
                 showMessage("Scan the customer's loyalty card to apply rewards.", "Reward");
                 break;
@@ -1135,6 +1111,7 @@ function renderCart() {
         const row = document.createElement("li");
 
         row.dataset.productId = item.id;
+        row.tabIndex = -1; // lets the row receive focus for Del / + / - / arrow keys
 
         row.className = [
             "rounded-2xl px-3 py-3 transition cursor-pointer",
@@ -1149,35 +1126,35 @@ function renderCart() {
             selectedCartItemId = item.id;
             renderCart();
         });
-        
+
         const top = document.createElement("div");
         top.className = "flex items-start justify-between gap-3";
-        
+
         const info = document.createElement("div");
         info.className = "min-w-0";
-        
+
         const name = document.createElement("p");
         name.className = "truncate text-sm font-semibold text-ink";
         name.textContent = item.name;
-        
+
         const meta = document.createElement("p");
         meta.className = "tabular text-xs text-slate-500";
         meta.textContent = "₱" + item.price.toFixed(2) + (item.unit ? " / " + item.unit : "");
-        
+
         info.append(name, meta);
-        
+
         const lineTotal = document.createElement("p");
         lineTotal.className = "tabular shrink-0 text-base font-bold text-ink";
         lineTotal.textContent = "₱" + money(item.price * item.quantity).toFixed(2);
-        
+
         top.append(info, lineTotal);
-        
+
         const controls = document.createElement("div");
         controls.className = "mt-2 flex items-center justify-between";
-        
+
         const stepper = document.createElement("div");
         stepper.className = "flex items-center gap-1.5";
-        
+
         const quantityInput = document.createElement("input");
         quantityInput.type = "number";
         quantityInput.min = "0.001";
@@ -1185,7 +1162,7 @@ function renderCart() {
         quantityInput.value = item.quantity;
         quantityInput.className = "tabular h-9 w-20 rounded-xl border border-slate-200 px-2 text-center text-sm font-semibold focus:border-brand focus:outline-none focus:ring-2 focus:ring-brand/30";
         quantityInput.setAttribute("aria-label", "Quantity for " + item.name);
-        
+
         quantityInput.addEventListener("change", () => {
             const value = Number(quantityInput.value);
             if (Number.isFinite(value) && value > 0 && value === Math.round(value * 1000) / 1000) {
@@ -1198,7 +1175,7 @@ function renderCart() {
             }
             renderCart();
         });
-        
+
         const minus = makeStepButton("−", "Decrease quantity of " + item.name, () => {
             if (item.quantity > 1) {
                 item.quantity -= 1;
@@ -1207,14 +1184,14 @@ function renderCart() {
             }
             renderCart();
         });
-        
+
         const plus = makeStepButton("+", "Increase quantity of " + item.name, () => {
             item.quantity += 1;
             renderCart();
         });
-        
+
         stepper.append(minus, quantityInput, plus);
-        
+
         const removeButton = document.createElement("button");
         removeButton.type = "button";
         removeButton.textContent = "Remove";
@@ -1223,7 +1200,7 @@ function renderCart() {
             cart.delete(item.id);
             renderCart();
         });
-        
+
         controls.append(stepper, removeButton);
         row.append(top, controls);
         cartBody.appendChild(row);
@@ -1232,7 +1209,7 @@ function renderCart() {
     itemCount.textContent = count + (count === 1 ? " item" : " items");
     cartEmpty.hidden = cart.size > 0;
     cartBody.hidden = cart.size === 0;
-    
+
     document.getElementById("cart-data").value = JSON.stringify(
         Array.from(cart.values()).map(item => ({
             product_id: item.id,
@@ -1330,95 +1307,338 @@ checkoutForm.addEventListener("submit", event => {
 
 updateDiscountFields();
 renderCart();
+
+// ---------- POS KEYBOARD SHORTCUTS ----------
+
+const paymentMethodInput = document.getElementById("id_payment_method");
+const clearCartButton = document.getElementById("clear-cart");
+const payButton = document.getElementById("pay-button");
+const suspendButton = document.querySelector('[data-action="suspend"]');
+
+// Alt + key shortcuts for every action button (event.code is layout-independent).
+// The same keys are printed on the buttons in the HTML.
+const ALT_SHORTCUTS = {
+    KeyC: "cancel-order",
+    KeyG: "govt-discount",
+    KeyO: "price-override",
+    KeyV: "void-all",
+    KeyR: "refund",
+    Digit1: "change-fund",
+    Digit2: "open-drawer",
+    KeyI: "inventory-lookup",
+    KeyP: "price-check",
+    KeyM: "more",
+    KeyN: "general-note",
+    KeyW: "reward",
+    KeyB: "customer-note",
+    KeyL: "pricelist",
+    Digit3: "cash-takeout",
+    Digit4: "declare-tender",
+    KeyX: "x-reading",
+    KeyZ: "z-reading",
+    Digit5: "item-finder",
+    KeyS: "salesperson",
+    Digit8: "retrieve",
+    KeyY: "sales-history"
+};
+
+function triggerAction(name) {
+    if (name === "more") {
+        openActionsBtn.click();
+        return;
+    }
+    document.querySelector(`[data-action="${name}"]`)?.click();
+}
+
+function isAnyModalOpen() {
+    return (
+        !messageModal.hidden ||
+        !confirmModal.hidden ||
+        !actionsModal.hidden ||
+        !lookupModal.classList.contains("hidden")
+    );
+}
+
+function isTypingTarget(element) {
+    return (
+        element instanceof HTMLInputElement ||
+        element instanceof HTMLTextAreaElement ||
+        element instanceof HTMLSelectElement ||
+        element.isContentEditable
+    );
+}
+
+function focusCart() {
+    if (cart.size === 0) {
+        showMessage("The cart is empty.", "Cart");
+        search.focus();
+        return;
+    }
+
+    const firstItem = cart.values().next().value;
+    selectedCartItemId = String(firstItem.id);
+
+    renderCart();
+
+    const row = Array.from(cartBody.children).find(
+        element => element.dataset.productId === selectedCartItemId
+    );
+
+    row?.focus();
+}
+
+function navigateCart(direction) {
+    const rows = Array.from(cartBody.querySelectorAll("li[data-product-id]"));
+
+    if (!rows.length) return;
+
+    const currentIndex = rows.findIndex(
+        row => row.dataset.productId === String(selectedCartItemId)
+    );
+
+    let nextIndex;
+
+    if (currentIndex === -1) {
+        nextIndex = 0;
+    } else {
+        nextIndex = Math.max(
+            0,
+            Math.min(rows.length - 1, currentIndex + direction)
+        );
+    }
+
+    selectedCartItemId = rows[nextIndex].dataset.productId;
+
+    renderCart();
+
+    const selectedRow = Array.from(cartBody.children).find(
+        row => row.dataset.productId === selectedCartItemId
+    );
+
+    selectedRow?.focus();
+}
+
+function removeSelectedCartItem() {
+    if (
+        selectedCartItemId === null ||
+        !cart.has(selectedCartItemId)
+    ) {
+        showMessage("Select an item in the cart first.", "No item selected");
+        return;
+    }
+
+    const item = cart.get(selectedCartItemId);
+
+    showConfirm({
+        title: "Remove item?",
+        text: `Remove "${item.name}" from this sale?`,
+        confirmLabel: "Remove",
+        danger: true
+    }).then(confirmed => {
+        if (!confirmed) return;
+
+        cart.delete(selectedCartItemId);
+        selectedCartItemId = null;
+        renderCart();
+        search.focus();
+    });
+}
+
+function changeSelectedQuantity(amount) {
+    if (
+        selectedCartItemId === null ||
+        !cart.has(selectedCartItemId)
+    ) {
+        showMessage("Select an item in the cart first.", "No item selected");
+        return;
+    }
+
+    const item = cart.get(selectedCartItemId);
+    const newQuantity = Math.round((item.quantity + amount) * 1000) / 1000;
+
+    if (newQuantity <= 0) {
+        removeSelectedCartItem();
+        return;
+    }
+
+    item.quantity = newQuantity;
+    renderCart();
+
+    const selectedRow = Array.from(cartBody.children).find(
+        row => row.dataset.productId === selectedCartItemId
+    );
+
+    selectedRow?.focus();
+}
+
+document.addEventListener("keydown", function (event) {
+    const key = event.key;
+    const activeElement = document.activeElement;
+    const typing = isTypingTarget(activeElement);
+
+    // Let existing modal handlers process Escape.
+    if (key === "Escape") return;
+
+    // Do not run shortcuts while a modal is open.
+    if (isAnyModalOpen()) return;
+
+    // Alt + key: action buttons (works even while typing in an input)
+    if (event.altKey && !event.ctrlKey && !event.metaKey && !event.shiftKey) {
+        const action = ALT_SHORTCUTS[event.code];
+
+        if (action) {
+            event.preventDefault();
+            triggerAction(action);
+        }
+
+        return;
+    }
+
+    // Ignore function-key shortcuts when modifier keys are pressed.
+    if (event.ctrlKey || event.altKey || event.metaKey) return;
+
+    // Function keys
+    switch (key) {
+        case "F1":
+            event.preventDefault();
+            search.focus();
+            search.select();
+            return;
+
+        case "F2":
+            event.preventDefault();
+            search.focus();
+            search.select();
+            return;
+
+        case "F3":
+            event.preventDefault();
+            focusCart();
+            return;
+
+        case "F4":
+            event.preventDefault();
+            paymentMethodInput?.focus();
+            return;
+
+        case "F5":
+            event.preventDefault();
+            amountInput.focus();
+            amountInput.select();
+            return;
+
+        case "F6":
+            event.preventDefault();
+            discountType.focus();
+            return;
+
+        case "F7":
+            event.preventDefault();
+            clearCartButton.click();
+            return;
+
+        case "F8":
+            event.preventDefault();
+
+            if (suspendButton) {
+                suspendButton.click();
+            }
+
+            return;
+
+        case "F9":
+            event.preventDefault();
+            payButton.click();
+            return;
+
+        case "F10":
+            event.preventDefault();
+
+            showMessage(
+                "Complete the sale first. Receipt printing is handled on the receipt page.",
+                "Print Receipt"
+            );
+
+            return;
+    }
+
+    // Do not interfere with normal typing.
+    if (typing) return;
+
+    // Cart navigation
+    const focusedCartRow = activeElement.closest?.("li[data-product-id]");
+
+    if (focusedCartRow) {
+        if (key === "ArrowDown") {
+            event.preventDefault();
+            navigateCart(1);
+            return;
+        }
+
+        if (key === "ArrowUp") {
+            event.preventDefault();
+            navigateCart(-1);
+            return;
+        }
+
+        if (key === "Delete") {
+            event.preventDefault();
+            removeSelectedCartItem();
+            return;
+        }
+
+        if (key === "+" || key === "=") {
+            event.preventDefault();
+            changeSelectedQuantity(1);
+            return;
+        }
+
+        if (key === "-") {
+            event.preventDefault();
+            changeSelectedQuantity(-1);
+            return;
+        }
+    }
+
+    // Product result navigation
+    const focusedProduct = activeElement.closest?.(".product");
+
+    if (focusedProduct) {
+        const visibleProducts = productButtons.filter(
+            button => !button.hidden
+        );
+
+        const currentIndex = visibleProducts.indexOf(focusedProduct);
+
+        if (key === "ArrowDown" || key === "ArrowRight") {
+            event.preventDefault();
+            visibleProducts[Math.min(currentIndex + 1, visibleProducts.length - 1)]?.focus();
+            return;
+        }
+
+        if (key === "ArrowUp" || key === "ArrowLeft") {
+            event.preventDefault();
+
+            if (currentIndex <= 0) {
+                search.focus();
+            } else {
+                visibleProducts[currentIndex - 1]?.focus();
+            }
+
+            return;
+        }
+    }
+
+    // Search navigation
+    if (activeElement === search && key === "ArrowDown") {
+        const firstProduct = productButtons.find(button => !button.hidden);
+
+        if (firstProduct) {
+            event.preventDefault();
+            firstProduct.focus();
+        }
+    }
+});
 </script>
-
-
-
-<!-- Product Lookup Modal -->
-<div id="product-lookup-modal"
-     class="fixed inset-0 z-[100] hidden items-center justify-center bg-slate-900/50 p-4 backdrop-blur-sm">
-
-    <!-- Modal Card: Fixed Height -->
-    <div class="flex w-full max-w-2xl flex-col overflow-hidden rounded-2xl bg-white shadow-2xl ring-1 ring-slate-900/5"
-         style="height:  min(680px, 85vh); max-height: 85vh;">
-
-        <!-- Header: Fixed -->
-        <div class="flex shrink-0 items-start justify-between border-b border-slate-100 px-5 py-4 sm:px-6">
-            <div class="min-w-0">
-                <h2 id="lookup-title"
-                    class="text-lg font-semibold tracking-tight text-slate-900">
-                    Price Check
-                </h2>
-
-                <p id="lookup-subtitle"
-                   class="mt-0.5 text-sm text-slate-500">
-                    Search by product name, barcode, or SKU.
-                </p>
-            </div>
-
-            <button type="button"
-                    id="lookup-close"
-                    aria-label="Close product lookup"
-                    class="ml-3 flex h-9 w-9 shrink-0 items-center justify-center rounded-lg text-slate-400 transition hover:bg-slate-100 hover:text-slate-700 focus:outline-none focus:ring-2 focus:ring-slate-400">
-                ✕
-            </button>
-        </div>
-
-        <!-- Body -->
-        <div class="flex flex-1 flex-col overflow-hidden p-5 sm:p-6"
-             style="min-height: 0;">
-
-            <!-- Search: Fixed -->
-            <div class="relative shrink-0">
-                <span class="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-slate-400">
-                    <svg width="18"
-                         height="18"
-                         fill="none"
-                         viewBox="0 0 24 24"
-                         stroke="currentColor"
-                         stroke-width="2">
-                        <path stroke-linecap="round"
-                              stroke-linejoin="round"
-                              d="M21 21l-4.3-4.3M17 10a7 7 0 11-14 0 7 7 0 0114 0z"/>
-                    </svg>
-                </span>
-
-                <input id="lookup-search"
-                       type="text"
-                       autocomplete="off"
-                       placeholder="Enter product name, barcode, or SKU..."
-                       class="w-full rounded-xl border border-slate-200 bg-slate-50 py-3 pl-11 pr-4 text-sm text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-blue-500 focus:bg-white focus:ring-2 focus:ring-blue-100">
-            </div>
-
-            <!-- Status: Fixed -->
-            <p id="lookup-status"
-               aria-live="polite"
-               class="mt-3 shrink-0 text-sm text-slate-500">
-                Type to search for a product.
-            </p>
-
-            <!-- Results: Only Scrollable Area -->
-            <div id="lookup-results"
-                 class="mt-3 space-y-2 overflow-x-hidden overflow-y-auto overscroll-contain pr-2"
-                 style="flex: 1 1 0%; min-height: 0; height: 0; scrollbar-gutter: stable;">
-
-                <!-- JavaScript inserts product results here. -->
-
-            </div>
-        </div>
-
-        <!-- Footer: Fixed -->
-        <div class="flex shrink-0 justify-end border-t border-slate-100 px-5 py-4 sm:px-6">
-            <button type="button"
-                    id="lookup-done"
-                    class="rounded-xl bg-slate-100 px-5 py-2.5 text-sm font-semibold text-slate-700 transition hover:bg-slate-200 focus:outline-none focus:ring-2 focus:ring-slate-400 focus:ring-offset-2">
-                Close
-            </button>
-        </div>
-
-    </div>
-</div>
-
-
 </body>
 </html>
