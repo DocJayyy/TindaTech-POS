@@ -402,6 +402,13 @@
                     </div>
 
                     <div class="flex justify-between gap-4 py-3.5">
+                        <dt class="text-slate-500">Additional Change Fund</dt>
+                        <dd class="tabular font-medium text-ink">
+                            ₱{{ report.additional_change_fund|default:"0.00"|floatformat:2 }}
+                        </dd>
+                    </div>
+
+                    <div class="flex justify-between gap-4 py-3.5">
                         <dt class="text-slate-500">Cash sales</dt>
                         <dd class="tabular text-ink">₱{{ report.cash_sales|default:"0.00"|floatformat:2 }}</dd>
                     </div>

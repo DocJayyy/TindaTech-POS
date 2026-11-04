@@ -26,4 +26,5 @@ urlpatterns = [
     path("inventory-lookup/",views.inventory_lookup_view,name="inventory_lookup"),
     path("refund/search/", views.refund_search_view, name="refund_search"),
     path("refund/process/", views.refund_process_view, name="refund_process"),
+    path("change-fund/",views.change_fund_view,name="change_fund"),
 ]

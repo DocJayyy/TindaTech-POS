@@ -427,6 +427,46 @@ class CashierSession(models.Model):
         )
 
 
+class CashFundMovement(models.Model):
+    session = models.ForeignKey(
+        CashierSession,
+        on_delete=models.PROTECT,
+        related_name="cash_fund_movements",
+    )
+
+    amount = models.DecimalField(
+        max_digits=12,
+        decimal_places=2,
+        validators=[MinValueValidator(Decimal("0.01"))],
+    )
+
+    reason = models.CharField(
+        max_length=255,
+    )
+
+    processed_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.PROTECT,
+        related_name="cash_fund_movements",
+    )
+
+    created_at = models.DateTimeField(
+        auto_now_add=True,
+    )
+
+    class Meta:
+        ordering = ["-created_at"]
+        indexes = [
+            models.Index(fields=["session", "created_at"]),
+        ]
+
+    def __str__(self):
+        return (
+            f"Change Fund - ₱{self.amount} "
+            f"({self.session})"
+        )
+
+
 class XReading(models.Model):
     session = models.ForeignKey(
         CashierSession,

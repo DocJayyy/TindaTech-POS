@@ -9,6 +9,8 @@
     href="{% static 'images/weblogo.png' %}">
     <link rel="stylesheet" href="{% static 'css/tailwind.css' %}">
     <script>
+        window.tailwind = window.tailwind || {};
+
         tailwind.config = {
             theme: {
                 extend: {
@@ -310,7 +312,34 @@
         #refund-detail-remaining { font-size: 1rem !important; }
 
 
-
+        /* Change Fund modal */
+        #changeFundModal {
+            background: rgba(15, 23, 42, .6);
+            align-items: center;
+            justify-content: center;
+            padding: 1rem;
+        }
+        .cf-card {
+            max-width: 26rem;
+            box-shadow: 0 25px 60px -12px rgba(0,0,0,.55), 0 0 0 1px rgba(0,0,0,.08);
+        }
+        .cf-input:focus {
+            outline: none !important;
+            border-color: #22c55e !important;
+            box-shadow: 0 0 0 3px rgba(34,197,94,.2) !important;
+        }
+        .cf-btn {
+            background: #16a34a;
+            color: #fff;
+            border: 0;
+            cursor: pointer;
+            transition: background .15s, transform .1s;
+        }
+        .cf-btn:hover { background: #15803d; }
+        .cf-btn:active { transform: scale(.98); }
+        .cf-btn:focus-visible { outline: 2px solid #16a34a; outline-offset: 2px; }
+        .cf-btn:disabled { opacity: .5; cursor: not-allowed; }
+        .cf-btn:disabled:hover { background: #16a34a; }
 
 
 
@@ -1110,6 +1139,89 @@
         </div>
     </div>
 
+
+
+<!-- CHANGE FUND MODAL -->
+<div id="changeFundModal"
+     class="fixed inset-0 z-[100] hidden items-center justify-center bg-black/50 p-4">
+
+    <div class="w-full max-w-md rounded-2xl bg-white shadow-xl">
+
+        <div class="flex items-center justify-between border-b border-gray-200 px-6 py-4">
+            <div>
+                <h2 class="text-lg font-bold text-gray-800">Change Fund</h2>
+                <p class="text-sm text-gray-500">Add cash to the cashier drawer</p>
+            </div>
+
+            <button type="button"
+                    onclick="closeChangeFundModal()"
+                    class="text-2xl text-gray-400 hover:text-gray-700">
+                &times;
+            </button>
+        </div>
+
+        <form id="changeFundForm"
+            method="POST"
+            action="{% url 'change_fund' %}"
+            class="space-y-5 p-6">
+
+            {% csrf_token %}
+
+            <div>
+                <label for="changeFundAmount"
+                       class="mb-2 block text-sm font-semibold text-gray-700">
+                    Amount to Add (₱)
+                </label>
+
+                <input type="number"
+                       id="changeFundAmount"
+                       name="amount"
+                       min="0.01"
+                       step="0.01"
+                       required
+                       placeholder="0.00"
+                       class="w-full rounded-xl border border-gray-300 px-4 py-3 text-lg font-semibold outline-none focus:border-teal-500 focus:ring-2 focus:ring-teal-100">
+            </div>
+
+            <div>
+                <label for="changeFundReason"
+                       class="mb-2 block text-sm font-semibold text-gray-700">
+                    Reason
+                </label>
+
+                <textarea id="changeFundReason"
+                          name="reason"
+                          rows="3"
+                          maxlength="255"
+                          required
+                          placeholder="Enter reason for adding change fund..."
+                          class="w-full resize-none rounded-xl border border-gray-300 px-4 py-3 outline-none focus:border-teal-500 focus:ring-2 focus:ring-teal-100"></textarea>
+            </div>
+
+            <div id="changeFundError"
+                 class="hidden rounded-lg bg-red-50 px-4 py-3 text-sm text-red-600">
+            </div>
+
+            <div class="flex justify-end gap-3 pt-2">
+                <button type="button"
+                        onclick="closeChangeFundModal()"
+                        class="rounded-xl border border-gray-300 px-5 py-2.5 font-semibold text-gray-600 hover:bg-gray-50">
+                    Cancel
+                </button>
+
+                <button type="submit"
+                        id="changeFundSubmit"
+                        class="rounded-xl bg-teal-600 px-5 py-2.5 font-semibold text-white hover:bg-teal-700 disabled:cursor-not-allowed disabled:opacity-50">
+                    Add Change Fund
+                </button>
+            </div>
+
+        </form>
+    </div>
+</div>
+
+
+
     <!-- Message modal -->
     <div id="message-modal" class="msg-modal" role="alertdialog" aria-modal="true"
          aria-labelledby="message-modal-title" aria-describedby="message-modal-body"
@@ -1511,8 +1623,13 @@ document.addEventListener("keydown", event => {
         closeGovtDiscountModal();
     } else if (!refundModal.classList.contains("hidden")) {
         closeRefundModal();
+    } else if (!changeFundModal.classList.contains("hidden")) {
+        closeChangeFundModal();
+    } else if (!lookupModal.classList.contains("hidden")) {
+        closeLookupModal();
     }
 });
+
 document.addEventListener("keydown", event => {
     if (
         event.key === "Escape" &&
@@ -1561,7 +1678,7 @@ actionTiles.forEach(tile => {
                 showMessage("Open-drawer requires a connected cash drawer.", "Cash Drawer");
                 break;
             case "change-fund":
-                showMessage("Change fund lets you add or remove cash from the drawer.", "Change Fund");
+                openChangeFundModal();
                 break;
             case "cash-takeout":
                 showMessage("Cash takeout records cash removed from the drawer.", "Cash Takeout");
@@ -2476,6 +2593,107 @@ async function submitRefund() {
 
 refundProcessBtn.addEventListener("click", submitRefund);
 
+// ---------- Change Fund Modal ----------
+
+const changeFundModal = document.getElementById("changeFundModal");
+const changeFundForm = document.getElementById("changeFundForm");
+const changeFundAmount = document.getElementById("changeFundAmount");
+const changeFundReason = document.getElementById("changeFundReason");
+const changeFundSubmit = document.getElementById("changeFundSubmit");
+const changeFundError = document.getElementById("changeFundError");
+
+function openChangeFundModal() {
+    changeFundForm.reset();
+    changeFundError.classList.add("hidden");
+
+    changeFundModal.classList.remove("hidden");
+    changeFundModal.classList.add("flex");
+
+    setTimeout(() => changeFundAmount.focus(), 100);
+}
+
+function closeChangeFundModal() {
+    changeFundModal.classList.add("hidden");
+    changeFundModal.classList.remove("flex");
+    search.focus();
+}
+
+// ---------- Change Fund Submit ----------
+
+changeFundForm.addEventListener("submit", async event => {
+    event.preventDefault();
+
+    const amount = changeFundAmount.value.trim();
+    const reason = changeFundReason.value.trim();
+
+    changeFundError.classList.add("hidden");
+    changeFundError.textContent = "";
+
+    if (!amount || Number(amount) <= 0) {
+        changeFundError.textContent = "Please enter a valid amount.";
+        changeFundError.classList.remove("hidden");
+        changeFundAmount.focus();
+        return;
+    }
+
+    if (!reason) {
+        changeFundError.textContent = "Please enter a reason.";
+        changeFundError.classList.remove("hidden");
+        changeFundReason.focus();
+        return;
+    }
+
+    const csrfInput = changeFundForm.querySelector(
+        '[name="csrfmiddlewaretoken"]'
+    );
+
+    changeFundSubmit.disabled = true;
+    changeFundSubmit.textContent = "Processing...";
+
+    try {
+        const response = await fetch(
+            "{% url 'change_fund' %}",
+            {
+                method: "POST",
+                credentials: "same-origin",
+                headers: {
+                    "X-CSRFToken": csrfInput.value,
+                    "X-Requested-With": "XMLHttpRequest"
+                },
+                body: new FormData(changeFundForm)
+            }
+        );
+
+        const data = await response.json();
+
+        if (!response.ok || !data.success) {
+            throw new Error(
+                data.message || "Unable to add change fund."
+            );
+        }
+
+        closeChangeFundModal();
+
+        showMessage(
+            `₱${Number(data.amount).toLocaleString("en-PH", {
+                minimumFractionDigits: 2,
+                maximumFractionDigits: 2
+            })} has been added to the cash drawer.`,
+            "Change Fund Successful"
+        );
+
+    } catch (error) {
+        changeFundError.textContent =
+            error.message || "Something went wrong.";
+
+        changeFundError.classList.remove("hidden");
+
+    } finally {
+        changeFundSubmit.disabled = false;
+        changeFundSubmit.textContent = "Add Change Fund";
+    }
+});
+
 
 function addProduct(button) {
     const id = button.dataset.id;
@@ -2752,6 +2970,8 @@ checkoutForm.addEventListener("submit", event => {
 updateDiscountFields();
 renderCart();
 
+
+
 // ---------- POS KEYBOARD SHORTCUTS ----------
 
 const paymentMethodInput = document.getElementById("id_payment_method");
@@ -2807,7 +3027,8 @@ function isAnyModalOpen() {
         !govtModal.hidden ||
         !regularModal.hidden ||
         !refundModal.classList.contains("hidden") ||
-        !lookupModal.classList.contains("hidden")
+        !lookupModal.classList.contains("hidden") ||
+        !changeFundModal.classList.contains("hidden")
     );
 }
 
@@ -2940,7 +3161,9 @@ document.addEventListener("keydown", function (event) {
         !regularModal.hidden ||
         !lookupModal.classList.contains("hidden") ||
         !refundModal.classList.contains("hidden") ||
+        !changeFundModal.classList.contains("hidden") ||
         !priceOverrideModal.classList.contains("hidden");
+        
 
     if (otherModalOpen) return;
 

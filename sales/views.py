@@ -33,6 +33,7 @@ from .models import (
     XReading,
     ReceiptSettings,
     AuditLog,
+    CashFundMovement
 )
 from .services import process_sale
 from .utils import log_activity
@@ -858,8 +859,18 @@ def close_shift_view(request):
             or Decimal("0.00")
         )
 
+        additional_change_fund = (
+            CashFundMovement.objects.filter(
+                session=session
+            ).aggregate(total=Sum("amount"))["total"]
+            or Decimal("0.00")
+        )
+
         expected_cash = (
-            session.opening_cash + cash_sales - cash_refunds
+            session.opening_cash
+            + additional_change_fund
+            + cash_sales
+            - cash_refunds
         ).quantize(Decimal("0.01"))
 
         cash_variance = (
@@ -877,6 +888,7 @@ def close_shift_view(request):
         report_data = {
             "cashier": request.user.username,
             "opening_cash": str(session.opening_cash),
+            "additional_change_fund": str(additional_change_fund),
             "total_sales": str(total_sales),
             "cash_sales": str(cash_sales),
             "non_cash_sales": str(non_cash_sales),
@@ -918,6 +930,7 @@ def close_shift_view(request):
             "cash_variance": str(cash_variance),
             "total_sales": str(total_sales),
             "cash_refunds": str(cash_refunds),
+            "additional_change_fund": str(additional_change_fund),
             "completed_transactions": completed_count,
             "voided_transactions": voided_count,
         },
@@ -1046,8 +1059,20 @@ def z_reading_view(request):
             or Decimal("0.00")
         )
 
+        additional_change_fund = (
+            CashFundMovement.objects.filter(
+                session=session
+            ).aggregate(
+                total=Sum("amount")
+            )["total"]
+            or Decimal("0.00")
+        )
+
         expected_cash = (
-            session.opening_cash + cash_sales - cash_refunds
+            session.opening_cash
+            + additional_change_fund
+            + cash_sales
+            - cash_refunds
         ).quantize(Decimal("0.01"))
 
         context = {
@@ -1057,6 +1082,7 @@ def z_reading_view(request):
             "cash_sales": cash_sales,
             "non_cash_sales": non_cash_sales,
             "cash_refunds": cash_refunds,
+            "additional_change_fund": additional_change_fund,
             "expected_cash": expected_cash,
             "transaction_count": valid_sales.count(),
             "voided_count": sales.filter(
@@ -1496,4 +1522,79 @@ def refund_process_view(request):
         "message": "Refund processed successfully.",
         "adjustment_number": adjustment.adjustment_number,
         "amount": str(adjustment.amount),
+    })
+
+@login_required
+@pos_access_required
+@require_POST
+def change_fund_view(request):
+    try:
+        amount = Decimal(
+            request.POST.get("amount", "").strip()
+        ).quantize(Decimal("0.01"))
+    except (InvalidOperation, ValueError, TypeError):
+        return JsonResponse({
+            "success": False,
+            "message": "Enter a valid change fund amount."
+        }, status=400)
+
+    reason = request.POST.get("reason", "").strip()
+
+    if not amount.is_finite() or amount <= Decimal("0.00"):
+        return JsonResponse({
+            "success": False,
+            "message": "Amount must be greater than zero."
+        }, status=400)
+
+    if not reason:
+        return JsonResponse({
+            "success": False,
+            "message": "Please enter a reason."
+        }, status=400)
+
+    if len(reason) > 255:
+        return JsonResponse({
+            "success": False,
+            "message": "Reason cannot exceed 255 characters."
+        }, status=400)
+
+    with transaction.atomic():
+        session = (
+            CashierSession.objects
+            .select_for_update()
+            .filter(
+                cashier=request.user,
+                status=CashierSession.Status.OPEN,
+            )
+            .first()
+        )
+
+        if not session:
+            return JsonResponse({
+                "success": False,
+                "message": "You don't have an open cashier shift."
+            }, status=400)
+
+        movement = CashFundMovement.objects.create(
+            session=session,
+            amount=amount,
+            reason=reason,
+            processed_by=request.user,
+        )
+
+    log_activity(
+        request.user,
+        "Change Fund Added",
+        {
+            "session_id": session.pk,
+            "movement_id": movement.pk,
+            "amount": str(amount),
+            "reason": reason,
+        },
+    )
+
+    return JsonResponse({
+        "success": True,
+        "message": "Change fund added successfully.",
+        "amount": str(movement.amount),
     })
