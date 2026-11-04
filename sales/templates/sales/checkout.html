@@ -348,7 +348,29 @@
         .pos-body { min-height: 100vh; }
         .pos-top { display: flex; align-items: center; gap: 1rem; background: #fff; padding: .5rem 1rem; box-shadow: 0 1px 2px rgba(0,0,0,.06); flex-shrink: 0; }
         .pos-brand { display: flex; align-items: center; gap: .6rem; }
-        .pos-search { position: relative; flex: 1; max-width: 32rem; margin: 0 auto; }
+        .pos-search {
+            position: relative;
+            flex-shrink: 0;
+            margin-bottom: .75rem;
+        }
+        .pos-products {
+            flex: 1;
+            min-height: 18rem;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            background: #fff;
+            border-radius: 1rem;
+            padding: .75rem;
+            box-shadow: 0 1px 2px rgba(0,0,0,.06);
+        }
+        #product-list {
+            flex: 1;
+            min-height: 0;
+            overflow-y: auto;
+            align-content: start;
+        }
+        .pos-nav { margin-left: auto; }
         .pos-search input { width: 100%; border: 1px solid #e2e8f0; border-radius: 999px; background: #EEF0FA; padding: .55rem 1rem .55rem 2.75rem; font-size: .9rem; color: #16161D; }
         .pos-search input:focus { outline: none; background: #fff; border-color: #4349E8; box-shadow: 0 0 0 3px rgba(67,73,232,.2); }
         .pos-search svg { position: absolute; left: 1rem; top: 50%; transform: translateY(-50%); width: 1.1rem; height: 1.1rem; color: #94a3b8; pointer-events: none; }
@@ -515,12 +537,6 @@
             </div>
         </div>
 
-        <div class="pos-search">
-            <label for="search" class="sr-only">Search product name or barcode</label>
-            <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-4.3-4.3M17 10a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
-            <input id="search" type="text" autocomplete="off" autofocus placeholder="Search products or scan barcode…  (F1)">
-        </div>
-
         <nav class="pos-nav">
             <div class="live-clock mr-2 text-right leading-tight" aria-live="off">
                 <p id="live-time" class="tabular text-base font-semibold text-ink"></p>
@@ -624,6 +640,13 @@
         <!-- ============ RIGHT: PRODUCTS + ACTION BAR ============ -->
         <div class="pos-right">
             <section class="pos-products" aria-label="Products">
+
+                <div class="pos-search">
+                    <label for="search" class="sr-only">Search product name or barcode</label>
+                    <svg fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-4.3-4.3M17 10a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+                    <input id="search" type="text" autocomplete="off" autofocus placeholder="Search products or scan barcode…  (F1)">
+                </div>
+
                 <div id="product-list" class="pos-grid">
                     {% for product in products %}
                     <button type="button" class="product"
@@ -1145,7 +1168,7 @@
 <div id="changeFundModal"
      class="fixed inset-0 z-[100] hidden items-center justify-center bg-black/50 p-4">
 
-    <div class="w-full max-w-md rounded-2xl bg-white shadow-xl">
+    <div class="cf-card w-full max-w-md rounded-2xl bg-white">
 
         <div class="flex items-center justify-between border-b border-gray-200 px-6 py-4">
             <div>
@@ -1161,9 +1184,7 @@
         </div>
 
         <form id="changeFundForm"
-            method="POST"
-            action="{% url 'change_fund' %}"
-            class="space-y-5 p-6">
+              class="space-y-5 p-6">
 
             {% csrf_token %}
 
@@ -1180,7 +1201,7 @@
                        step="0.01"
                        required
                        placeholder="0.00"
-                       class="w-full rounded-xl border border-gray-300 px-4 py-3 text-lg font-semibold outline-none focus:border-teal-500 focus:ring-2 focus:ring-teal-100">
+                       class="cf-input w-full rounded-xl border border-gray-300 px-4 py-3 text-lg font-semibold outline-none">
             </div>
 
             <div>
@@ -1195,7 +1216,7 @@
                           maxlength="255"
                           required
                           placeholder="Enter reason for adding change fund..."
-                          class="w-full resize-none rounded-xl border border-gray-300 px-4 py-3 outline-none focus:border-teal-500 focus:ring-2 focus:ring-teal-100"></textarea>
+                          class="cf-input w-full resize-none rounded-xl border border-gray-300 px-4 py-3 outline-none"></textarea>
             </div>
 
             <div id="changeFundError"
@@ -1211,7 +1232,7 @@
 
                 <button type="submit"
                         id="changeFundSubmit"
-                        class="rounded-xl bg-teal-600 px-5 py-2.5 font-semibold text-white hover:bg-teal-700 disabled:cursor-not-allowed disabled:opacity-50">
+                        class="cf-btn rounded-xl px-5 py-2.5 font-semibold">
                     Add Change Fund
                 </button>
             </div>
