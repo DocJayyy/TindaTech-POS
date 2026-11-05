@@ -492,27 +492,61 @@
                     <span>Subtotal</span>
                     <span>₱{{ sale.subtotal|floatformat:2 }}</span>
                 </div>
+
                 <div class="line">
                     <span>Discount</span>
                     <span>₱{{ sale.discount|floatformat:2 }}</span>
                 </div>
+
+                {% if sale.reward_discount_amount > 0 %}
+                <div class="line">
+                    <span>Reward Discount</span>
+                    <span>-₱{{ sale.reward_discount_amount|floatformat:2 }}</span>
+                </div>
+                {% endif %}
+
                 <div class="line total-row">
                     <span>TOTAL</span>
                     <span>₱{{ sale.total_amount|floatformat:2 }}</span>
                 </div>
+
                 <div class="line">
                     <span>Payment</span>
                     <span>{{ sale.get_payment_method_display }}</span>
                 </div>
+
                 <div class="line">
                     <span>Amount Received</span>
                     <span>₱{{ sale.amount_tendered|floatformat:2 }}</span>
                 </div>
+
                 <div class="line bold">
                     <span>Change</span>
                     <span>₱{{ sale.change_amount|floatformat:2 }}</span>
                 </div>
             </section>
+
+            {% if sale.reward_points_earned or sale.reward_points_redeemed %}
+            <div class="divider"></div>
+
+            <section>
+                <h3>REWARD POINTS</h3>
+
+                {% if sale.reward_points_earned %}
+                <div class="line">
+                    <span>Points Earned</span>
+                    <span class="bold">+{{ sale.reward_points_earned }}</span>
+                </div>
+                {% endif %}
+
+                {% if sale.reward_points_redeemed %}
+                <div class="line">
+                    <span>Points Redeemed</span>
+                    <span class="bold">-{{ sale.reward_points_redeemed }}</span>
+                </div>
+                {% endif %}
+            </section>
+            {% endif %}
 
             <div class="divider"></div>
 

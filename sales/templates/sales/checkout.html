@@ -653,6 +653,106 @@
         .ec-btn:disabled { opacity: .5; cursor: not-allowed; }
         .ec-btn:disabled:hover { background: #16a34a; }
 
+            /* Claim Reward modal (same look as the General Note modal) */
+    #reward-modal {
+        background: rgba(15, 23, 42, .6);
+        align-items: center;
+        justify-content: center;
+        padding: 1rem;
+    }
+    #reward-modal .hidden { display: none !important; }
+ 
+    .rw-card {
+        width: 100%;
+        max-width: 26rem;
+        background: #fff;
+        border-radius: 1rem;
+        padding: 1.5rem;
+        box-shadow: 0 25px 60px -12px rgba(0,0,0,.55), 0 0 0 1px rgba(0,0,0,.08);
+    }
+ 
+    .rw-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 1rem; }
+    .rw-title-wrap { display: flex; align-items: center; gap: .75rem; }
+    .rw-icon {
+        display: flex; align-items: center; justify-content: center; flex: none;
+        width: 2.5rem; height: 2.5rem; border-radius: .75rem;
+        background: #dcfce7; color: #16a34a;
+    }
+    .rw-title { margin: 0; font-size: 1.05rem; font-weight: 700; color: #16161D; line-height: 1.25; }
+    .rw-sub { margin: .15rem 0 0; font-size: .75rem; color: #64748b; }
+    .rw-close {
+        border: 0; background: transparent; cursor: pointer; color: #94a3b8;
+        border-radius: .5rem; padding: .4rem .6rem; font-size: 1rem; line-height: 1;
+        transition: background .15s, color .15s;
+    }
+    .rw-close:hover { background: #f1f5f9; color: #475569; }
+    .rw-close:focus-visible { outline: 2px solid #16a34a; outline-offset: 2px; }
+ 
+    .rw-body { margin-top: 1.25rem; display: grid; gap: 1rem; }
+ 
+    .rw-customer { border-radius: .75rem; background: #f8fafc; border: 1px solid #e2e8f0; padding: 1rem; }
+    .rw-label { margin: 0; font-size: .75rem; font-weight: 500; color: #64748b; }
+    .rw-name { margin: .25rem 0 0; font-size: 1rem; font-weight: 700; color: #16161D; }
+    .rw-points-row {
+        margin-top: .85rem; padding-top: .75rem; border-top: 1px dashed #cbd5e1;
+        display: flex; align-items: center; justify-content: space-between;
+    }
+    .rw-points-row span:first-child { font-size: .875rem; color: #475569; }
+    .rw-points { font-size: 1.35rem; font-weight: 700; color: #16a34a; font-variant-numeric: tabular-nums; }
+ 
+    .rw-field-label { display: block; margin-bottom: .5rem; font-size: .875rem; font-weight: 600; color: #334155; }
+    .rw-input {
+        width: 100%; box-sizing: border-box;
+        border-radius: .75rem; border: 1px solid #d1d5db; background: #fff;
+        padding: .75rem 1rem; font-size: 1.125rem; font-weight: 600; color: #16161D;
+        font-variant-numeric: tabular-nums;
+    }
+    .rw-input:focus {
+        outline: none !important;
+        border-color: #22c55e !important;
+        box-shadow: 0 0 0 3px rgba(34,197,94,.2) !important;
+    }
+    .rw-hint { margin-top: .5rem; display: flex; justify-content: space-between; align-items: center; font-size: .75rem; color: #64748b; }
+    .rw-link {
+        border: 0; background: transparent; cursor: pointer; padding: 0;
+        font-size: .75rem; font-weight: 600; color: #16a34a;
+    }
+    .rw-link:hover { color: #15803d; text-decoration: underline; }
+    .rw-link:focus-visible { outline: 2px solid #16a34a; outline-offset: 2px; border-radius: 2px; }
+ 
+    .rw-discount { border-radius: .75rem; background: #f0fdf4; border: 1px solid #bbf7d0; padding: 1rem; }
+    .rw-discount .rw-label { color: #15803d; }
+    .rw-amount { margin: .25rem 0 0; font-size: 1.75rem; font-weight: 700; color: #15803d; font-variant-numeric: tabular-nums; }
+    .rw-note { margin: .25rem 0 0; font-size: .75rem; color: #16a34a; }
+ 
+    .rw-error { margin: 0; border-radius: .5rem; background: #fef2f2; padding: .75rem 1rem; font-size: .875rem; color: #dc2626; }
+    .rw-applied { border-radius: .5rem; background: #f0fdf4; padding: .75rem 1rem; font-size: .875rem; color: #15803d; }
+ 
+    .rw-actions {
+        margin-top: 1.25rem; padding-top: 1rem; border-top: 1px solid #f1f5f9;
+        display: flex; flex-wrap: wrap; justify-content: flex-end; gap: .5rem;
+    }
+    .rw-btn {
+        border-radius: .75rem; padding: .65rem 1.1rem; font-size: .875rem; font-weight: 600;
+        cursor: pointer; transition: background .15s, transform .1s;
+    }
+    .rw-btn:active { transform: scale(.98); }
+    .rw-btn-primary { background: #16a34a; color: #fff; border: 0; }
+    .rw-btn-primary:hover { background: #15803d; }
+    .rw-btn-primary:focus-visible { outline: 2px solid #16a34a; outline-offset: 2px; }
+    .rw-btn-primary:disabled { opacity: .5; cursor: not-allowed; }
+    .rw-btn-primary:disabled:hover { background: #16a34a; }
+    .rw-btn-ghost { background: #fff; color: #475569; border: 1px solid #d1d5db; }
+    .rw-btn-ghost:hover { background: #f8fafc; }
+    .rw-btn-danger { background: #fff; color: #dc2626; border: 1px solid #fecaca; }
+    .rw-btn-danger:hover { background: #fef2f2; }
+    .rw-btn-ghost:focus-visible, .rw-btn-danger:focus-visible { outline: 2px solid #16a34a; outline-offset: 2px; }
+ 
+    @media (prefers-reduced-motion: reduce) {
+        .rw-btn, .rw-close { transition: none; }
+        .rw-btn:active { transform: none; }
+    }
+
         /* ===== POS layout (plain CSS) ===== */
         .pos-body { min-height: 100vh; }
         .pos-top { display: flex; align-items: center; gap: 1rem; background: #fff; padding: .5rem 1rem; box-shadow: 0 1px 2px rgba(0,0,0,.06); flex-shrink: 0; }
@@ -913,6 +1013,14 @@
 
                             <!-- Cart Data -->
                             <input type="hidden" name="cart" id="cart-data">
+
+                            <!-- Reward Points Redemption -->
+                            <input
+                                type="hidden"
+                                name="reward_points_to_redeem"
+                                id="reward-points-to-redeem"
+                                value="0"
+                            >
 
                             <!-- Retrieved Suspended Transaction ID -->
                             <input
@@ -2097,6 +2205,91 @@
     </div>
 </div>
 
+
+<!-- CLAIM REWARD MODAL -->
+<div id="reward-modal"
+     class="msg-modal"
+     role="dialog"
+     aria-modal="true"
+     aria-labelledby="reward-modal-title"
+     hidden>
+ 
+    <div class="msg-card rw-card">
+ 
+        <!-- Header -->
+        <div class="rw-head">
+            <div class="rw-title-wrap">
+                <span class="rw-icon" aria-hidden="true">
+                    <svg width="22" height="22" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M12 8v13m0-13H7.5a2.5 2.5 0 110-5C11 3 12 8 12 8zm0 0h4.5a2.5 2.5 0 100-5C13 3 12 8 12 8zM4 12h16v9H4v-9zm-1-4h18v4H3V8z"/>
+                    </svg>
+                </span>
+                <div>
+                    <h2 id="reward-modal-title" class="rw-title">Claim reward points</h2>
+                    <p class="rw-sub">Redeem your customer's available points.</p>
+                </div>
+            </div>
+ 
+            <button type="button" id="reward-modal-close" class="rw-close" aria-label="Close">✕</button>
+        </div>
+ 
+        <div class="rw-body">
+ 
+            <!-- Customer -->
+            <div class="rw-customer">
+                <p class="rw-label">Selected customer</p>
+                <p id="reward-customer-name" class="rw-name">No customer selected</p>
+ 
+                <div class="rw-points-row">
+                    <span>Available points</span>
+                    <span id="reward-available-points" class="rw-points">0</span>
+                </div>
+            </div>
+ 
+            <!-- Points input -->
+            <div>
+                <label for="reward-points-input" class="rw-field-label">Points to redeem</label>
+ 
+                <input type="number"
+                       id="reward-points-input"
+                       class="rw-input"
+                       min="0"
+                       step="1"
+                       value="0"
+                       placeholder="Enter points">
+ 
+                <div class="rw-hint">
+                    <span>1 point = ₱1.00 discount</span>
+                    <button type="button" id="reward-use-all" class="rw-link">Use all points</button>
+                </div>
+            </div>
+ 
+            <!-- Discount preview -->
+            <div class="rw-discount">
+                <p class="rw-label">Reward discount</p>
+                <p class="rw-amount">₱<span id="reward-discount-preview">0.00</span></p>
+                <p class="rw-note">This amount will be deducted from the checkout total.</p>
+            </div>
+ 
+            <!-- Error -->
+            <p id="reward-error" class="rw-error hidden" role="alert"></p>
+ 
+            <!-- Applied -->
+            <div id="reward-applied-info" class="rw-applied hidden">
+                Reward points have been applied to this transaction.
+            </div>
+        </div>
+ 
+        <!-- Actions -->
+        <div class="rw-actions">
+            <button type="button" id="reward-remove" class="rw-btn rw-btn-danger hidden">Remove reward</button>
+            <button type="button" id="reward-cancel" class="rw-btn rw-btn-ghost">Cancel</button>
+            <button type="button" id="reward-apply" class="rw-btn rw-btn-primary">Apply reward</button>
+        </div>
+ 
+    </div>
+</div>
+
     <!-- Message modal -->
     <div id="message-modal" class="msg-modal" role="alertdialog" aria-modal="true"
          aria-labelledby="message-modal-title" aria-describedby="message-modal-body"
@@ -2178,11 +2371,32 @@ const amountInput = document.getElementById("id_amount_tendered");
 const changeDisplay = document.getElementById("change");
 const checkoutForm = document.getElementById("checkout-form");
 const discountType = document.getElementById("id_discount_type");
-
 const regularDiscountInput = document.getElementById("id_regular_discount_percent");
 const specialDiscountInput = document.getElementById("id_special_discount_amount");
 const customerNameInput = document.getElementById("id_discount_customer_name");
 const discountReferenceInput = document.getElementById("id_discount_reference");
+// Reward Elements
+const customerSelect = document.getElementById("customer-select");
+
+const rewardModal = document.getElementById("reward-modal");
+const rewardModalClose = document.getElementById("reward-modal-close");
+const rewardCancel = document.getElementById("reward-cancel");
+const rewardApply = document.getElementById("reward-apply");
+const rewardRemove = document.getElementById("reward-remove");
+const rewardUseAll = document.getElementById("reward-use-all");
+
+const rewardCustomerName = document.getElementById("reward-customer-name");
+const rewardAvailablePoints = document.getElementById("reward-available-points");
+const rewardPointsInput = document.getElementById("reward-points-input");
+const rewardDiscountPreview = document.getElementById("reward-discount-preview");
+const rewardError = document.getElementById("reward-error");
+const rewardAppliedInfo = document.getElementById("reward-applied-info");
+
+const rewardPointsHidden = document.getElementById("reward-points-to-redeem");
+
+let availableRewardPoints = 0;
+let rewardPointsToRedeem = 0;
+let rewardBalanceRequest = 0;
 
 const chargeInputs = [
     document.getElementById("id_packaging_charge"),
@@ -2490,7 +2704,9 @@ lookupModal.addEventListener("click", event => {
 document.addEventListener("keydown", event => {
     if (event.key !== "Escape") return;
 
-    if (!priceOverrideModal.classList.contains("hidden")) {
+    if (!rewardModal.hidden) {
+        closeRewardModal();
+    } else if (!priceOverrideModal.classList.contains("hidden")) {
         closePriceOverrideModal();
     } else if (!regularModal.hidden) {
         closeRegularDiscountModal();
@@ -2512,6 +2728,43 @@ document.addEventListener("keydown", event => {
     ) {
         closeLookupModal();
     }
+});
+
+// =====================================
+// REWARD MODAL EVENT LISTENERS
+// =====================================
+
+rewardModalClose.addEventListener("click", closeRewardModal);
+rewardCancel.addEventListener("click", closeRewardModal);
+
+rewardApply.addEventListener("click", applyReward);
+rewardRemove.addEventListener("click", removeReward);
+
+rewardUseAll.addEventListener("click", () => {
+    rewardPointsInput.value = String(availableRewardPoints);
+    updateRewardPreview();
+});
+
+rewardPointsInput.addEventListener("input", updateRewardPreview);
+
+customerSelect.addEventListener("change", () => {
+    // Remove previously applied reward points.
+    rewardPointsToRedeem = 0;
+    rewardPointsHidden.value = "0";
+
+    // Reset displayed reward balance.
+    availableRewardPoints = 0;
+    rewardAvailablePoints.textContent = "0";
+
+    rewardCustomerName.textContent = customerSelect.value
+        ? "Customer changed"
+        : "No customer selected";
+
+    rewardPointsInput.value = "0";
+
+    clearRewardError();
+    updateRewardPreview();
+    updateTotals();
 });
 
 // ---------- Action handlers ----------
@@ -2647,7 +2900,7 @@ actionTiles.forEach(tile => {
                 break;
             }
             case "reward":
-                showMessage("Scan the customer's loyalty card to apply rewards.", "Reward");
+                openRewardModal();
                 break;
             case "suspend":
                 await suspendCurrentSale();
@@ -2691,8 +2944,12 @@ function getCharges() {
 function getTotal() {
     const subtotal = getSubtotal();
     const discount = getDiscount(subtotal);
+    const rewardDiscount = getRewardDiscount();
     const charges = getCharges();
-    return money(Math.max(0, subtotal - discount + charges));
+
+    return money(
+        Math.max(0, subtotal - discount - rewardDiscount + charges)
+    );
 }
 
 function updateChange() {
@@ -4786,42 +5043,96 @@ checkoutForm.addEventListener("submit", event => {
         showMessage("Please add at least one product.", "Cart is empty", search);
         return;
     }
+
     const subtotal = getSubtotal();
     const discount = getDiscount(subtotal);
+    const rewardDiscount = getRewardDiscount();
     const total = getTotal();
 
+    // Standard discount validation
     if (discount > subtotal) {
         event.preventDefault();
         showMessage("Discount cannot exceed the subtotal.", "Invalid discount");
         return;
     }
+
     if (discountType.value === "regular" && numberValue(regularDiscountInput) > 100) {
         event.preventDefault();
         showMessage("Regular discount cannot exceed 100%.", "Invalid discount", regularDiscountInput);
         return;
     }
+
+    // Government discount validation
     if (["senior", "pwd", "naac", "solo_parent"].includes(discountType.value)) {
         if (!customerNameInput.value.trim()) {
             event.preventDefault();
             showMessage("Enter the eligible customer's name.", "Missing details", customerNameInput);
             return;
         }
+
         if (!discountReferenceInput.value.trim()) {
             event.preventDefault();
             showMessage("Enter the applicable ID or reference number.", "Missing details", discountReferenceInput);
             return;
         }
     }
+
+    // Reward redemption validation
+    if (rewardPointsToRedeem > 0) {
+        if (!customerSelect.value) {
+            event.preventDefault();
+            showMessage(
+                "Select a registered customer to redeem reward points.",
+                "Customer required"
+            );
+            return;
+        }
+
+        if (
+            !Number.isInteger(rewardPointsToRedeem) ||
+            rewardPointsToRedeem > availableRewardPoints
+        ) {
+            event.preventDefault();
+            showMessage(
+                "Invalid reward points. Please check the customer's available balance.",
+                "Invalid reward"
+            );
+            return;
+        }
+
+        const eligibleAmount = money(subtotal - discount);
+
+        if (rewardDiscount > eligibleAmount) {
+            event.preventDefault();
+            showMessage(
+                "Reward discount cannot exceed the eligible purchase amount.",
+                "Invalid reward"
+            );
+            return;
+        }
+    }
+
+    // Payment validation
     if (numberValue(amountInput) < total) {
         event.preventDefault();
-        showMessage("Payment is insufficient. Amount due: ₱" + total.toFixed(2), "Insufficient payment", amountInput);
+        showMessage(
+            "Payment is insufficient. Amount due: ₱" + total.toFixed(2),
+            "Insufficient payment",
+            amountInput
+        );
         return;
     }
 
+    // Keep hidden reward field synchronized
+    rewardPointsHidden.value = String(rewardPointsToRedeem);
+
     event.preventDefault();
+
     showConfirm({
         title: "Complete this sale?",
-        text: "Total: ₱" + total.toFixed(2) + " · Change: ₱" + money(Math.max(0, numberValue(amountInput) - total)).toFixed(2),
+        text: "Total: ₱" + total.toFixed(2) +
+            " · Change: ₱" +
+            money(Math.max(0, numberValue(amountInput) - total)).toFixed(2),
         confirmLabel: "Complete sale"
     }).then(ok => {
         if (!ok) return;
@@ -4848,6 +5159,172 @@ checkoutForm.addEventListener("submit", event => {
 updateDiscountFields();
 renderCart();
 
+function getRewardDiscount() {
+    return money(rewardPointsToRedeem);
+}
+
+function showRewardError(message) {
+    rewardError.textContent = message;
+    rewardError.classList.remove("hidden");
+}
+
+function clearRewardError() {
+    rewardError.textContent = "";
+    rewardError.classList.add("hidden");
+}
+
+function updateRewardPreview() {
+    const points = Math.floor(Number(rewardPointsInput.value) || 0);
+
+    rewardDiscountPreview.textContent = money(points).toFixed(2);
+}
+
+async function loadCustomerRewardBalance() {
+    const customerId = customerSelect.value;
+    const requestId = ++rewardBalanceRequest;
+
+    availableRewardPoints = 0;
+    rewardApply.disabled = true;
+
+    clearRewardError();
+
+    if (!customerId) {
+        rewardCustomerName.textContent = "No customer selected";
+        rewardAvailablePoints.textContent = "0";
+        rewardPointsInput.value = "0";
+        updateRewardPreview();
+        return;
+    }
+
+    rewardCustomerName.textContent = "Loading...";
+    rewardAvailablePoints.textContent = "...";
+
+    try {
+        const response = await fetch(
+            `/sales/customers/${customerId}/reward-balance/`,
+            {
+                headers: {
+                    "X-Requested-With": "XMLHttpRequest"
+                }
+            }
+        );
+
+        const data = await response.json();
+
+        if (requestId !== rewardBalanceRequest) return;
+
+        if (!response.ok || !data.success) {
+            throw new Error(
+                data.message || "Unable to load reward balance."
+            );
+        }
+
+        rewardCustomerName.textContent = data.customer_name;
+
+        availableRewardPoints = Number(data.available_points) || 0;
+
+        rewardAvailablePoints.textContent =
+            availableRewardPoints.toLocaleString();
+
+        if (!data.is_enabled) {
+            showRewardError(
+                "The reward system is currently disabled."
+            );
+            rewardApply.disabled = true;
+        } else {
+            rewardApply.disabled = false;
+        }
+
+    } catch (error) {
+        if (requestId !== rewardBalanceRequest) return;
+
+        rewardCustomerName.textContent = "Unable to load customer";
+        rewardAvailablePoints.textContent = "0";
+
+        showRewardError(error.message);
+        rewardApply.disabled = true;
+    }
+}
+
+function openRewardModal() {
+    clearRewardError();
+    rewardAppliedInfo.classList.add("hidden");
+
+    rewardApply.disabled = true;
+
+    rewardPointsInput.value = String(rewardPointsToRedeem);
+    rewardRemove.classList.toggle(
+        "hidden",
+        rewardPointsToRedeem === 0
+    );
+
+    rewardModal.hidden = false;
+
+    updateRewardPreview();
+    loadCustomerRewardBalance();
+}
+
+function closeRewardModal() {
+    rewardModal.hidden = true;
+    clearRewardError();
+}
+
+function applyReward() {
+    clearRewardError();
+
+    const customerId = customerSelect.value;
+    const points = Number(rewardPointsInput.value);
+
+    if (!customerId) {
+        showRewardError("Please select a registered customer first.");
+        return;
+    }
+
+    if (rewardApply.disabled) {
+        showRewardError("Please wait until the reward balance finishes loading.");
+        return;
+    }
+
+    if (!Number.isSafeInteger(points) || points < 0) {
+        showRewardError("Enter a valid whole number of points.");
+        return;
+    }
+
+    if (points > availableRewardPoints) {
+        showRewardError("Insufficient reward points.");
+        return;
+    }
+
+    const eligibleAmount = money(
+        getSubtotal() - getDiscount(getSubtotal())
+    );
+
+    if (points > eligibleAmount) {
+        showRewardError(
+            "Reward discount cannot exceed the eligible amount."
+        );
+        return;
+    }
+
+    rewardPointsToRedeem = points;
+    rewardPointsHidden.value = String(points);
+
+    updateTotals();
+
+    rewardAppliedInfo.classList.remove("hidden");
+    rewardRemove.classList.toggle("hidden", points === 0);
+
+    closeRewardModal();
+}
+
+function removeReward() {
+    rewardPointsToRedeem = 0;
+    rewardPointsHidden.value = "0";
+    rewardPointsInput.value = "0";
+
+    updateTotals();
+    closeRewardModal();
+}
 
 
 // ---------- POS KEYBOARD SHORTCUTS ----------
@@ -4907,7 +5384,8 @@ function isAnyModalOpen() {
         !refundModal.classList.contains("hidden") ||
         !lookupModal.classList.contains("hidden") ||
         !changeFundModal.classList.contains("hidden") ||
-        !customerNoteModal.classList.contains("hidden")
+        !customerNoteModal.classList.contains("hidden") ||
+        !rewardModal.hidden
     );
 }
 

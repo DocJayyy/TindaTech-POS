@@ -396,7 +396,7 @@ def process_sale(
     # Registered customers can earn points even without redemption.
     if customer is not None and reward_settings.is_enabled:
 
-        reward_account, _ = RewardAccount.objects.get_or_create(
+        reward_account, created = RewardAccount.objects.get_or_create(
             customer=customer,
         )
 

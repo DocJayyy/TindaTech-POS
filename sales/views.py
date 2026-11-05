@@ -33,6 +33,7 @@ from .models import (
     XReading,
     ReceiptSettings,
     RewardSettings,
+    RewardAccount,
     AuditLog,
     CashFundMovement,
     SuspendedSale,
@@ -293,6 +294,9 @@ def complete_sale_view(request):
             "payment_method": str(sale.payment_method),
             "discount_type": str(sale.discount_type),
             "discount_amount": str(sale.discount),
+            "reward_points_redeemed": sale.reward_points_redeemed,
+            "reward_discount_amount": str(sale.reward_discount_amount),
+            "reward_points_earned": sale.reward_points_earned,
         },
     )
 
@@ -1469,6 +1473,39 @@ def customer_management_data_view(request):
         "customers": customer_data,
         "count": len(customer_data),
     })
+
+@login_required
+@pos_access_required
+def customer_reward_balance_view(request, customer_id):
+    customer = Customer.objects.filter(
+        pk=customer_id
+    ).first()
+
+    if not customer:
+        return JsonResponse({
+            "success": False,
+            "message": "Customer not found.",
+        }, status=404)
+
+    reward_settings = RewardSettings.get_settings()
+
+    reward_account = RewardAccount.objects.filter(
+        customer=customer
+    ).first()
+
+    available_points = (
+        reward_account.available_points
+        if reward_account else 0
+    )
+
+    return JsonResponse({
+        "success": True,
+        "customer_id": customer.id,
+        "customer_name": customer.name,
+        "available_points": available_points,
+        "is_enabled": reward_settings.is_enabled,
+    })
+
 
 @login_required
 @pos_access_required
