@@ -509,6 +509,14 @@
             overflow-y: auto;
             align-content: start;
         }
+
+        .pos-divider {
+            width: 1px;
+            height: 32px;
+            background: #cbd5e1; /* same color as the other divider */
+            margin: 0 12px;
+            flex-shrink: 0;
+        }
         .pos-nav { margin-left: auto; }
         .pos-search input { width: 100%; border: 1px solid #e2e8f0; border-radius: 999px; background: #EEF0FA; padding: .55rem 1rem .55rem 2.75rem; font-size: .9rem; color: #16161D; }
         .pos-search input:focus { outline: none; background: #fff; border-color: #4349E8; box-shadow: 0 0 0 3px rgba(67,73,232,.2); }
@@ -677,13 +685,12 @@
         </div>
 
         <nav class="pos-nav">
-            <div class="live-clock mr-2 text-right leading-tight" aria-live="off">
+            <div class="live-clock text-right leading-tight" aria-live="off">
                 <p id="live-time" class="tabular text-base font-semibold text-ink"></p>
                 <p id="live-date" class="text-xs text-slate-500">{% now "D, M j, Y" %}</p>
             </div>
-            <button type="button" id="open-actions" class="btn btn-solid">Actions</button>
+            <span class="pos-divider" aria-hidden="true"></span>
             <a href="/dashboard/" class="btn btn-soft">Dashboard</a>
-            <a href="{% url 'sales_history' %}" class="btn btn-line">Sales history</a>
             <span class="pos-user">
                 <span class="flex h-9 w-9 items-center justify-center rounded-full bg-brand text-sm font-semibold uppercase text-white" aria-hidden="true">{{ request.user.username|slice:":1" }}</span>
                 <span class="text-sm font-medium text-ink">{{ request.user.username }}</span>
@@ -1611,7 +1618,7 @@ document.addEventListener("keydown", event => { if (event.key === "Escape" && !c
 
 // ---------- Actions Modal ----------
 const actionsModal = document.getElementById("actions-modal");
-const openActionsBtn = document.getElementById("open-actions");
+const openActionsBtn = document.querySelector('.pos-act.soft');
 const actionsClose = document.getElementById("actions-close");
 const actionTiles = document.querySelectorAll("[data-action]");
 let actionsFocusReturn = null;
@@ -2909,6 +2916,17 @@ changeFundForm.addEventListener("submit", async event => {
 async function suspendCurrentSale() {
     if (cart.size === 0) {
         showMessage("Add items before suspending a sale.", "Suspend");
+        return;
+    }
+
+    const confirmed = await showConfirm({
+    title: "Suspend this transaction?",
+    text: "The current sale will be saved so you can retrieve it later. The cart will be cleared.",
+    confirmLabel: "Suspend"
+    });
+
+    if (!confirmed) {
+        search.focus();
         return;
     }
 
