@@ -692,7 +692,10 @@
             <span class="pos-divider" aria-hidden="true"></span>
             <a href="/dashboard/" class="btn btn-soft">Dashboard</a>
             <span class="pos-user">
-                <span class="flex h-9 w-9 items-center justify-center rounded-full bg-brand text-sm font-semibold uppercase text-white" aria-hidden="true">{{ request.user.username|slice:":1" }}</span>
+                <img src="{% static 'images/pfp.png' %}"
+                    alt=""
+                    class="h-9 w-9 rounded-full object-cover"
+                    aria-hidden="true">
                 <span class="text-sm font-medium text-ink">{{ request.user.username }}</span>
             </span>
         </nav>
