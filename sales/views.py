@@ -165,6 +165,7 @@ def complete_sale_view(request):
 
     try:
         cart_items = json.loads(request.POST.get("cart", "[]"))
+        general_note = request.POST.get("general_note", "").strip()[:500]
 
         if not isinstance(cart_items, list) or not cart_items:
             raise ValidationError(
@@ -193,6 +194,7 @@ def complete_sale_view(request):
             discount_reference=(
                 form.cleaned_data["discount_reference"]
             ),
+            general_note=general_note,
 
             charges=[
                 {

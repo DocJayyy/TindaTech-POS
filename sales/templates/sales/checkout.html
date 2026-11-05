@@ -482,6 +482,35 @@
         }
         #suspendedSalesList button:hover { background: #15803d !important; }
 
+        /* General Note modal */
+        #generalNoteModal {
+            background: rgba(15, 23, 42, .6);
+            align-items: center;
+            justify-content: center;
+            padding: 1rem;
+        }
+        .gn-card {
+            max-width: 26rem;
+            box-shadow: 0 25px 60px -12px rgba(0,0,0,.55), 0 0 0 1px rgba(0,0,0,.08);
+        }
+        .gn-input:focus {
+            outline: none !important;
+            border-color: #22c55e !important;
+            box-shadow: 0 0 0 3px rgba(34,197,94,.2) !important;
+        }
+        .gn-btn {
+            background: #16a34a;
+            color: #fff;
+            border: 0;
+            cursor: pointer;
+            transition: background .15s, transform .1s;
+        }
+        .gn-btn:hover { background: #15803d; }
+        .gn-btn:active { transform: scale(.98); }
+        .gn-btn:focus-visible { outline: 2px solid #16a34a; outline-offset: 2px; }
+        .gn-btn:disabled { opacity: .5; cursor: not-allowed; }
+        .gn-btn:disabled:hover { background: #16a34a; }
+
 
         /* ===== POS layout (plain CSS) ===== */
         .pos-body { min-height: 100vh; }
@@ -1442,6 +1471,67 @@
         </div>
     </div>
 
+    <!-- GENERAL NOTE MODAL -->
+    <div id="generalNoteModal"
+        class="fixed inset-0 z-[100] hidden items-center justify-center bg-black/50 p-4">
+
+        <div class="gn-card w-full max-w-md rounded-2xl bg-white">
+
+            <div class="flex items-center justify-between border-b border-gray-200 px-6 py-4">
+                <div>
+                    <h2 class="text-lg font-bold text-gray-800">General Note</h2>
+                    <p class="text-sm text-gray-500">Add a note for this transaction</p>
+                </div>
+
+                <button type="button"
+                        id="closeGeneralNoteModal"
+                        class="text-2xl text-gray-400 hover:text-gray-700">
+                    &times;
+                </button>
+            </div>
+
+            <div class="space-y-5 p-6">
+
+                <div id="generalNoteStatus"
+                    class="rounded-lg bg-gray-50 px-4 py-3 text-sm text-gray-500">
+                    No note added.
+                </div>
+
+                <div>
+                    <label for="generalNoteInput"
+                        class="mb-2 block text-sm font-semibold text-gray-700">
+                        Transaction Note
+                    </label>
+
+                    <textarea id="generalNoteInput"
+                            rows="4"
+                            maxlength="500"
+                            placeholder="Enter your note here..."
+                            class="gn-input w-full resize-none rounded-xl border border-gray-300 px-4 py-3 outline-none"></textarea>
+
+                    <p class="mt-1 text-right text-xs text-gray-400">
+                        Maximum 500 characters
+                    </p>
+                </div>
+
+                <div class="flex justify-end gap-3 pt-2">
+                    <button type="button"
+                            id="cancelGeneralNote"
+                            class="rounded-xl border border-gray-300 px-5 py-2.5 font-semibold text-gray-600 hover:bg-gray-50">
+                        Cancel
+                    </button>
+
+                    <button type="button"
+                            id="saveGeneralNote"
+                            class="gn-btn rounded-xl px-5 py-2.5 font-semibold">
+                        Save Note
+                    </button>
+                </div>
+
+            </div>
+        </div>
+    </div>
+
     <!-- Message modal -->
     <div id="message-modal" class="msg-modal" role="alertdialog" aria-modal="true"
          aria-labelledby="message-modal-title" aria-describedby="message-modal-body"
@@ -1917,6 +2007,8 @@ actionTiles.forEach(tile => {
                 if (okCancel) { cart.clear(); renderCart(); search.focus(); }
                 break;
             case "general-note":
+                openGeneralNoteModal();
+                break;
             case "customer-note":
                 showMessage("Notes will be attached to the current sale.", action === "general-note" ? "General Note" : "Customer Note");
                 break;
@@ -2938,6 +3030,7 @@ async function suspendCurrentSale() {
     );
 
     const transactionData = {
+        general_note: generalNote,
         cart: Array.from(cart.values()).map(item => ({
             product_id: item.id,
             name: item.name,
@@ -2992,6 +3085,9 @@ async function suspendCurrentSale() {
 
         cart.clear();
         selectedCartItemId = null;
+
+        generalNote = "";
+        generalNoteInput.value = "";
 
         renderCart();
 
@@ -3191,6 +3287,10 @@ async function retrieveSuspendedSale(suspendedSaleId) {
             throw new Error("This suspended transaction has no items.");
         }
 
+        // Restore General Note
+        generalNote = transaction.general_note || "";
+        generalNoteInput.value = generalNote;
+
         // Restore cart items.
         cart.clear();
 
@@ -3306,6 +3406,54 @@ retrieveModal.addEventListener("click", event => {
         closeRetrieveModal();
     }
 });
+
+
+// ---------- GENERAL NOTE MODAL ----------
+
+let generalNote = "";
+
+const generalNoteModal = document.getElementById("generalNoteModal");
+const generalNoteInput = document.getElementById("generalNoteInput");
+
+function openGeneralNoteModal() {
+    generalNoteInput.value = generalNote;
+
+    const status = document.getElementById("generalNoteStatus");
+
+    if (generalNote.trim()) {
+        status.textContent = "✓ Note added to this transaction.";
+        status.className = "mb-3 rounded-lg bg-green-50 px-3 py-2 text-xs text-green-700";
+    } else {
+        status.textContent = "No note added.";
+        status.className = "mb-3 rounded-lg bg-gray-50 px-3 py-2 text-xs text-gray-500";
+    }
+
+    generalNoteModal.classList.remove("hidden");
+    generalNoteModal.classList.add("flex");
+    generalNoteInput.focus();
+}
+
+function closeGeneralNoteModal() {
+    generalNoteModal.classList.add("hidden");
+    generalNoteModal.classList.remove("flex");
+}
+
+document.getElementById("closeGeneralNoteModal").addEventListener("click", closeGeneralNoteModal);
+document.getElementById("cancelGeneralNote").addEventListener("click", closeGeneralNoteModal);
+
+document.getElementById("saveGeneralNote").addEventListener("click", () => {
+    generalNote = generalNoteInput.value.trim();
+
+    closeGeneralNoteModal();
+
+    showMessage(
+        generalNote ? "General note saved." : "General note cleared.",
+        "General Note"
+    );
+});
+
+
+
 
 
 
@@ -3581,6 +3729,21 @@ checkoutForm.addEventListener("submit", event => {
         confirmLabel: "Complete sale"
     }).then(ok => {
         if (!ok) return;
+
+        // Add General Note to checkout form submission.
+        let generalNoteField = checkoutForm.querySelector(
+            '[name="general_note"]'
+        );
+
+        if (!generalNoteField) {
+            generalNoteField = document.createElement("input");
+            generalNoteField.type = "hidden";
+            generalNoteField.name = "general_note";
+            checkoutForm.appendChild(generalNoteField);
+        }
+
+        generalNoteField.value = generalNote;
+
         document.getElementById("pay-button").disabled = true;
         checkoutForm.submit();
     });

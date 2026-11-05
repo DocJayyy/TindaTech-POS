@@ -35,6 +35,7 @@ def process_sale(
     special_discount_amount=ZERO,
     discount_customer_name="",
     discount_reference="",
+    general_note="",
     charges=None,
 ):
     if not cart_items:
@@ -365,6 +366,7 @@ def process_sale(
         discount_customer_name=discount_customer_name.strip(),
         discount_reference=discount_reference.strip(),
         additional_charges=charge_total,
+        general_note=str(general_note or "").strip()[:500],
         total_amount=total_amount,
         amount_tendered=amount_tendered,
         change_amount=change_amount,

@@ -7,6 +7,7 @@ from django.db import models
 from django.db.models import F, Q
 
 
+
 class Sale(models.Model):
     class PaymentMethod(models.TextChoices):
         CASH = "cash", "Cash"
@@ -18,62 +19,6 @@ class Sale(models.Model):
         COMPLETED = "completed", "Completed"
         VOIDED = "voided", "Voided"
 
-    receipt_number = models.CharField(
-        max_length=30,
-        unique=True,
-        blank=True,
-    )
-    cashier = models.ForeignKey(
-        settings.AUTH_USER_MODEL,
-        on_delete=models.PROTECT,
-        related_name="sales",
-    )
-    subtotal = models.DecimalField(
-        max_digits=12,
-        decimal_places=2,
-        default=Decimal("0.00"),
-    )
-    discount = models.DecimalField(
-        max_digits=12,
-        decimal_places=2,
-        default=Decimal("0.00"),
-        validators=[MinValueValidator(Decimal("0.00"))],
-    )
-    total_amount = models.DecimalField(
-        max_digits=12,
-        decimal_places=2,
-        default=Decimal("0.00"),
-    )
-    amount_tendered = models.DecimalField(
-        max_digits=12,
-        decimal_places=2,
-        default=Decimal("0.00"),
-    )
-    change_amount = models.DecimalField(
-        max_digits=12,
-        decimal_places=2,
-        default=Decimal("0.00"),
-    )
-    payment_method = models.CharField(
-        max_length=20,
-        choices=PaymentMethod.choices,
-        default=PaymentMethod.CASH,
-    )
-    cashier_session = models.ForeignKey(
-    "CashierSession",
-    on_delete=models.PROTECT,
-    related_name="sales",
-    null=True,
-    blank=True,
-    )
-    status = models.CharField(
-        max_length=20,
-        choices=Status.choices,
-        default=Status.COMPLETED,
-    )
-    created_at = models.DateTimeField(auto_now_add=True)
-    
-
     class DiscountType(models.TextChoices):
         NONE = "none", "No Discount"
         REGULAR = "regular", "Regular Discount"
@@ -82,28 +27,103 @@ class Sale(models.Model):
         NAAC = "naac", "National Athlete / Coach"
         SOLO_PARENT = "solo_parent", "Solo Parent"
 
+    receipt_number = models.CharField(
+        max_length=30,
+        unique=True,
+        blank=True,
+    )
+
+    cashier = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.PROTECT,
+        related_name="sales",
+    )
+
+    subtotal = models.DecimalField(
+        max_digits=12,
+        decimal_places=2,
+        default=Decimal("0.00"),
+    )
+
+    discount = models.DecimalField(
+        max_digits=12,
+        decimal_places=2,
+        default=Decimal("0.00"),
+        validators=[MinValueValidator(Decimal("0.00"))],
+    )
+
+    total_amount = models.DecimalField(
+        max_digits=12,
+        decimal_places=2,
+        default=Decimal("0.00"),
+    )
+
+    amount_tendered = models.DecimalField(
+        max_digits=12,
+        decimal_places=2,
+        default=Decimal("0.00"),
+    )
+
+    change_amount = models.DecimalField(
+        max_digits=12,
+        decimal_places=2,
+        default=Decimal("0.00"),
+    )
+
+    payment_method = models.CharField(
+        max_length=20,
+        choices=PaymentMethod.choices,
+        default=PaymentMethod.CASH,
+    )
+
+    cashier_session = models.ForeignKey(
+        "CashierSession",
+        on_delete=models.PROTECT,
+        related_name="sales",
+        null=True,
+        blank=True,
+    )
+
+    status = models.CharField(
+        max_length=20,
+        choices=Status.choices,
+        default=Status.COMPLETED,
+    )
+
+    created_at = models.DateTimeField(auto_now_add=True)
+
     discount_type = models.CharField(
-    max_length=20,
-    choices=DiscountType.choices,
-    default=DiscountType.NONE,
+        max_length=20,
+        choices=DiscountType.choices,
+        default=DiscountType.NONE,
     )
+
     discount_rate = models.DecimalField(
-    max_digits=5,
-    decimal_places=2,
-    default=Decimal("0.00"),
+        max_digits=5,
+        decimal_places=2,
+        default=Decimal("0.00"),
     )
+
     discount_reference = models.CharField(
-    max_length=100,
-    blank=True,
+        max_length=100,
+        blank=True,
     )
+
     discount_customer_name = models.CharField(
-    max_length=200,
-    blank=True,
+        max_length=200,
+        blank=True,
     )
+
     additional_charges = models.DecimalField(
-    max_digits=12,
-    decimal_places=2,
-    default=Decimal("0.00"),
+        max_digits=12,
+        decimal_places=2,
+        default=Decimal("0.00"),
+    )
+
+    # General Note for this transaction
+    general_note = models.TextField(
+        blank=True,
+        default="",
     )
 
     class Meta:
@@ -129,6 +149,7 @@ class Sale(models.Model):
 
     def __str__(self):
         return self.receipt_number or f"Sale #{self.pk}"
+
 
 
 class SaleItem(models.Model):
