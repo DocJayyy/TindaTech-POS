@@ -32,6 +32,7 @@ from .models import (
     CashierSession,
     XReading,
     ReceiptSettings,
+    RewardSettings,
     AuditLog,
     CashFundMovement,
     SuspendedSale,
@@ -186,7 +187,9 @@ def complete_sale_view(request):
             cart_items=cart_items,
             cashier=request.user,
             customer=customer,
-
+            reward_points_to_redeem=(
+                form.cleaned_data["reward_points_to_redeem"] or 0
+            ),
             amount_tendered=form.cleaned_data["amount_tendered"],
             payment_method=form.cleaned_data["payment_method"],
 
@@ -1686,6 +1689,77 @@ def customer_note_update_view(request, customer_id):
         "message": "Customer note saved successfully.",
         "note": customer.note,
     })
+
+
+
+# ============================================================
+# REWARD SETTINGS
+# ============================================================
+
+@login_required
+@owner_required
+def reward_settings_view(request):
+    reward_settings = RewardSettings.get_settings()
+
+    if request.method == "POST":
+        amount_per_point = request.POST.get(
+            "amount_per_point", ""
+        ).strip()
+
+        is_enabled = request.POST.get("is_enabled") == "on"
+
+        try:
+            amount_per_point = Decimal(amount_per_point)
+
+            if (
+                not amount_per_point.is_finite()
+                or amount_per_point <= 0
+            ):
+                raise ValueError
+
+        except (ValueError, TypeError, InvalidOperation):
+            messages.error(
+                request,
+                "Enter a valid earning amount greater than zero.",
+            )
+            return redirect("reward_settings")
+
+        reward_settings.amount_per_point = amount_per_point
+        reward_settings.is_enabled = is_enabled
+
+        reward_settings.save(
+            update_fields=[
+                "amount_per_point",
+                "is_enabled",
+                "updated_at",
+            ]
+        )
+
+        log_activity(
+            request.user,
+            "Reward Settings Updated",
+            {
+                "amount_per_point": str(amount_per_point),
+                "is_enabled": is_enabled,
+            },
+        )
+
+        messages.success(
+            request,
+            "Reward settings saved successfully.",
+        )
+
+        return redirect("reward_settings")
+
+    return render(
+        request,
+        "sales/reward_settings.html",
+        {
+            "reward_settings": reward_settings,
+        },
+    )
+
+
 
 @login_required
 @pos_access_required

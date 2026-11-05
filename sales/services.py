@@ -9,7 +9,15 @@ from django.utils import timezone
 
 from products.models import Product
 from inventory.models import StockBatch, StockMovement
-from .models import Sale, SaleItem, SaleCharge, CashierSession
+from .models import (
+    Sale,
+    SaleItem,
+    SaleCharge,
+    CashierSession,
+    RewardSettings,
+    RewardAccount,
+    RewardTransaction,
+)
 
 
 CENT = Decimal("0.01")
@@ -38,6 +46,7 @@ def process_sale(
     discount_reference="",
     general_note="",
     charges=None,
+    reward_points_to_redeem=0,
 ):
     if not cart_items:
         raise ValidationError("Your cart is empty.")
@@ -333,8 +342,104 @@ def process_sale(
         charge_total += amount
 
     charge_total = money(charge_total)
+
+    # ----------------------------------------
+    # REWARD POINTS VALIDATION AND CALCULATION
+    # ----------------------------------------
+
+    try:
+        reward_points_decimal = Decimal(
+            str(reward_points_to_redeem or 0)
+        )
+    except (TypeError, ValueError, ArithmeticError):
+        raise ValidationError(
+            "Invalid reward points entered."
+        )
+
+    if (
+        not reward_points_decimal.is_finite()
+        or reward_points_decimal != reward_points_decimal.to_integral_value()
+    ):
+        raise ValidationError(
+            "Reward points must be a whole number."
+        )
+
+    reward_points_to_redeem = int(reward_points_decimal)
+
+    if reward_points_to_redeem < 0:
+        raise ValidationError(
+            "Reward points cannot be negative."
+        )
+
+    reward_settings = RewardSettings.get_settings()
+
+    if reward_settings.amount_per_point <= ZERO:
+        raise ValidationError(
+            "Reward points earning rate must be greater than zero."
+        )
+
+    reward_account = None
+    reward_discount = ZERO
+    reward_points_earned = 0
+
+    if reward_points_to_redeem > 0:
+        if not reward_settings.is_enabled:
+            raise ValidationError(
+                "The reward system is currently disabled."
+            )
+
+        if customer is None:
+            raise ValidationError(
+                "Select a registered customer to redeem reward points."
+            )
+
+    # Registered customers can earn points even without redemption.
+    if customer is not None and reward_settings.is_enabled:
+
+        reward_account, _ = RewardAccount.objects.get_or_create(
+            customer=customer,
+        )
+
+        reward_account = (
+            RewardAccount.objects
+            .select_for_update()
+            .get(pk=reward_account.pk)
+        )
+
+        if reward_points_to_redeem > reward_account.available_points:
+            raise ValidationError(
+                "Insufficient reward points. "
+                f"Available points: {reward_account.available_points}."
+            )
+
+        # One point is equivalent to ₱1.
+        reward_discount = money(
+            Decimal(reward_points_to_redeem)
+        )
+
+        eligible_amount = money(subtotal - discount)
+
+        if reward_discount > eligible_amount:
+            raise ValidationError(
+                "Reward discount cannot exceed the eligible purchase amount."
+            )
+
+        # Do not earn points on the portion paid using reward points.
+        earning_amount = money(
+            eligible_amount - reward_discount
+        )
+
+        if earning_amount > ZERO:
+            reward_points_earned = int(
+                earning_amount // reward_settings.amount_per_point
+            )
+
+    # Reward discount is separate from standard discounts.
     total_amount = money(
-        subtotal - discount + charge_total
+        subtotal
+        - discount
+        - reward_discount
+        + charge_total
     )
 
     if amount_tendered < total_amount:
@@ -368,6 +473,9 @@ def process_sale(
         discount_customer_name=discount_customer_name.strip(),
         discount_reference=discount_reference.strip(),
         additional_charges=charge_total,
+        reward_discount_amount=reward_discount,
+        reward_points_redeemed=reward_points_to_redeem,
+        reward_points_earned=reward_points_earned,
         general_note=str(general_note or "").strip()[:500],
         total_amount=total_amount,
         amount_tendered=amount_tendered,
@@ -411,6 +519,92 @@ def process_sale(
             reference=receipt_number,
             notes="Stock deducted for completed sale.",
             created_by=cashier,
+        )
+
+    # ----------------------------------------
+    # PROCESS REWARD POINTS
+    # ----------------------------------------
+
+    if reward_account is not None:
+
+        # 1. Deduct redeemed points.
+        if reward_points_to_redeem > 0:
+
+            reward_account.available_points -= (
+                reward_points_to_redeem
+            )
+
+            RewardTransaction.objects.create(
+                customer=customer,
+                transaction_type=(
+                    RewardTransaction.TransactionType.REDEEM
+                ),
+                points=reward_points_to_redeem,
+                balance_after=reward_account.available_points,
+                pending_after=reward_account.pending_deduction,
+                sale=sale,
+                description=(
+                    f"Redeemed {reward_points_to_redeem} points "
+                    f"for receipt {receipt_number}."
+                ),
+            )
+
+        # 2. Apply pending deductions to newly earned points.
+        pending_applied = min(
+            reward_account.pending_deduction,
+            reward_points_earned,
+        )
+
+        if pending_applied > 0:
+
+            reward_account.pending_deduction -= pending_applied
+
+            RewardTransaction.objects.create(
+                customer=customer,
+                transaction_type=(
+                    RewardTransaction.TransactionType.PENDING_DEDUCTION
+                ),
+                points=pending_applied,
+                balance_after=reward_account.available_points,
+                pending_after=reward_account.pending_deduction,
+                sale=sale,
+                description=(
+                    f"Applied {pending_applied} pending point "
+                    f"deductions from receipt {receipt_number}."
+                ),
+            )
+
+        # 3. Credit the remaining earned points.
+        credited_points = (
+            reward_points_earned - pending_applied
+        )
+
+        if credited_points > 0:
+
+            reward_account.available_points += credited_points
+
+            RewardTransaction.objects.create(
+                customer=customer,
+                transaction_type=(
+                    RewardTransaction.TransactionType.EARN
+                ),
+                points=credited_points,
+                balance_after=reward_account.available_points,
+                pending_after=reward_account.pending_deduction,
+                sale=sale,
+                description=(
+                    f"Earned {credited_points} reward points "
+                    f"from receipt {receipt_number}."
+                ),
+            )
+
+        # 4. Save the updated account.
+        reward_account.save(
+            update_fields=[
+                "available_points",
+                "pending_deduction",
+                "updated_at",
+            ]
         )
 
     return sale

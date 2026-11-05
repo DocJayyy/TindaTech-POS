@@ -12,6 +12,8 @@ from .models import (
     SaleItem,
     SaleAdjustment,
     SaleAdjustmentItem,
+    RewardAccount,
+    RewardTransaction,
 )
 from inventory.models import StockBatch, StockMovement
 
@@ -25,6 +27,153 @@ def money(value):
         CENT, rounding=ROUND_HALF_UP
     )
 
+def reverse_sale_reward_points(sale, adjustment):
+    if not sale.customer_id or sale.reward_points_earned <= 0:
+        return
+
+    eligible_amount = money(
+        sale.subtotal
+        - sale.discount
+        - sale.reward_discount_amount
+    )
+
+    if eligible_amount <= ZERO:
+        return
+
+    # Prevent duplicate reversal for the same adjustment.
+    already_processed = RewardTransaction.objects.filter(
+        adjustment=adjustment,
+        transaction_type=RewardTransaction.TransactionType.REVERSAL,
+    ).exists()
+
+    if already_processed:
+        return
+
+    # Get completed adjustments by type.
+    completed_adjustments = SaleAdjustment.objects.filter(
+        sale=sale,
+        status=SaleAdjustment.Status.COMPLETED,
+    )
+
+    # RETURN amounts already represent eligible merchandise amounts.
+    returned_amount = (
+        completed_adjustments.filter(
+            adjustment_type=SaleAdjustment.AdjustmentType.RETURN,
+        ).aggregate(total=Sum("amount"))["total"] or ZERO
+    )
+
+    # Money-only refunds are allocated proportionally.
+    refund_amount_total = (
+        completed_adjustments.filter(
+            adjustment_type=SaleAdjustment.AdjustmentType.REFUND,
+        ).aggregate(total=Sum("amount"))["total"] or ZERO
+    )
+
+    if sale.total_amount > ZERO:
+        eligible_refund_amount = money(
+            refund_amount_total
+            * eligible_amount
+            / sale.total_amount
+        )
+    else:
+        eligible_refund_amount = ZERO
+
+    # A full void reverses all eligible merchandise points.
+    void_exists = completed_adjustments.filter(
+        adjustment_type=SaleAdjustment.AdjustmentType.VOID,
+    ).exists()
+
+    if void_exists:
+        cumulative_adjusted = eligible_amount
+    else:
+        cumulative_adjusted = money(
+            returned_amount + eligible_refund_amount
+        )
+
+    cumulative_adjusted = min(
+        cumulative_adjusted,
+        eligible_amount,
+    )
+
+    # Calculate cumulative points to reverse.
+    if cumulative_adjusted >= eligible_amount:
+        target_reversal = sale.reward_points_earned
+    else:
+        reversal_ratio = (
+            cumulative_adjusted / eligible_amount
+        )
+
+        target_reversal = int(
+            (
+                Decimal(sale.reward_points_earned)
+                * reversal_ratio
+            ).to_integral_value(
+                rounding=ROUND_HALF_UP
+            )
+        )
+
+    # Count all previously reversed points for this sale.
+    already_reversed = (
+        RewardTransaction.objects.filter(
+            sale=sale,
+            transaction_type=(
+                RewardTransaction.TransactionType.REVERSAL
+            ),
+        ).aggregate(total=Sum("points"))["total"] or 0
+    )
+
+    points_to_reverse = max(
+        0,
+        target_reversal - already_reversed,
+    )
+
+    if points_to_reverse <= 0:
+        return
+
+    # Lock the customer's reward account.
+    reward_account = (
+        RewardAccount.objects
+        .select_for_update()
+        .get(customer=sale.customer)
+    )
+
+    # Deduct available points first.
+    deducted_points = min(
+        reward_account.available_points,
+        points_to_reverse,
+    )
+
+    # Any unavailable points become pending deductions.
+    remaining_points = (
+        points_to_reverse - deducted_points
+    )
+
+    reward_account.available_points -= deducted_points
+    reward_account.pending_deduction += remaining_points
+
+    reward_account.save(
+        update_fields=[
+            "available_points",
+            "pending_deduction",
+            "updated_at",
+        ]
+    )
+
+    RewardTransaction.objects.create(
+        customer=sale.customer,
+        transaction_type=(
+            RewardTransaction.TransactionType.REVERSAL
+        ),
+        points=points_to_reverse,
+        balance_after=reward_account.available_points,
+        pending_after=reward_account.pending_deduction,
+        sale=sale,
+        adjustment=adjustment,
+        description=(
+            f"Reversed {points_to_reverse} earned points "
+            f"for adjustment {adjustment.adjustment_number}."
+        ),
+    )
 
 def new_adjustment_number():
     return (
@@ -158,6 +307,8 @@ def process_adjustment(
                 created_by=processed_by,
             )
 
+        reverse_sale_reward_points(sale, adjustment)
+
         sale.status = Sale.Status.VOIDED
         sale.save(update_fields=["status"])
 
@@ -181,7 +332,7 @@ def process_adjustment(
                 f"amount of ₱{remaining_refundable}."
             )
 
-        return SaleAdjustment.objects.create(
+        adjustment = SaleAdjustment.objects.create(
             adjustment_number=new_adjustment_number(),
             sale=sale,
             adjustment_type=adjustment_type,
@@ -190,6 +341,10 @@ def process_adjustment(
             reference_receipt_number=sale.receipt_number,
             processed_by=processed_by,
         )
+
+        reverse_sale_reward_points(sale, adjustment)
+
+        return adjustment
 
     # RETURN: return selected items, optionally restoring stock.
     if adjustment_type == SaleAdjustment.AdjustmentType.RETURN:
@@ -290,7 +445,9 @@ def process_adjustment(
             # Allocate the sale-level discount proportionally.
             if sale.subtotal > ZERO:
                 net_factor = (
-                    sale.subtotal - sale.discount
+                    sale.subtotal
+                    - sale.discount
+                    - sale.reward_discount_amount
                 ) / sale.subtotal
             else:
                 net_factor = Decimal("1")
@@ -383,5 +540,7 @@ def process_adjustment(
                 ),
                 created_by=processed_by,
             )
+
+        reverse_sale_reward_points(sale, adjustment)
 
         return adjustment

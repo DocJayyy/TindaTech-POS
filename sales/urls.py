@@ -34,9 +34,6 @@ urlpatterns = [
     path("customers/add/", views.customer_create_view, name="customer_create"),
     path("customers/<int:customer_id>/edit/", views.customer_update_view, name="customer_update"),
     path("customers/<int:customer_id>/note/",views.customer_note_update_view,name="customer_note_update"),
-    path(
-    "customers/manage-data/",
-    views.customer_management_data_view,
-    name="customer_management_data",
-),
+    path("customers/manage-data/",views.customer_management_data_view,name="customer_management_data"),
+    path("reward-settings/",views.reward_settings_view,name="reward_settings"),
 ]

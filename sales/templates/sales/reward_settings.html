@@ -1,0 +1,456 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Reward Settings | TindaTech POS</title>
+
+    {% load static %}
+    <link rel="icon" type="image/png" href="{% static 'images/weblogo.png' %}">
+    <link rel="stylesheet" href="{% static 'css/tailwind.css' %}">
+
+    <style>
+        @font-face { font-family: 'Poppins'; src: url("{% static 'fonts/Poppins-Regular.ttf' %}") format('truetype'); font-weight: 400; font-style: normal; font-display: swap; }
+        @font-face { font-family: 'Poppins'; src: url("{% static 'fonts/Poppins-Medium.ttf' %}") format('truetype'); font-weight: 500; font-style: normal; font-display: swap; }
+        @font-face { font-family: 'Poppins'; src: url("{% static 'fonts/Poppins-SemiBold.ttf' %}") format('truetype'); font-weight: 600; font-style: normal; font-display: swap; }
+        @font-face { font-family: 'Poppins'; src: url("{% static 'fonts/Poppins-Bold.ttf' %}") format('truetype'); font-weight: 700; font-style: normal; font-display: swap; }
+
+        body { font-family: 'Poppins', ui-sans-serif, system-ui, sans-serif; }
+        .tabular { font-variant-numeric: tabular-nums; }
+
+        .hero-card { background: linear-gradient(135deg, #4F55F0 0%, #3A40DC 55%, #3035C9 100%); }
+
+        /* Inputs */
+        .field {
+            width: 100%; border-radius: .75rem; border: 1px solid #e2e8f0;
+            background: rgb(238 240 250 / .6); padding: .75rem 1rem;
+            font-size: .875rem; color: #16161D; outline: none;
+            transition: border-color .15s, background .15s, box-shadow .15s;
+        }
+        .field:focus { border-color: #4349E8; background: #fff; box-shadow: 0 0 0 3px #4349E833; }
+        .field-prefix { padding-left: 2.25rem; }
+
+        /* Switch */
+        .switch-track {
+            position: relative; flex: none; display: block;
+            width: 48px; height: 28px; border-radius: 999px;
+            background: #CBD5E1; transition: background-color .15s;
+        }
+        .switch-knob {
+            position: absolute; top: 4px; left: 4px;
+            width: 20px; height: 20px; border-radius: 50%;
+            background: #fff; box-shadow: 0 1px 3px rgba(22,22,29,.25);
+            transition: transform .15s;
+        }
+        .switch input:checked ~ .switch-track { background: #4349E8; }
+        .switch input:checked ~ .switch-track .switch-knob { transform: translateX(20px); }
+        .switch input:focus-visible ~ .switch-track { box-shadow: 0 0 0 3px #4349E855; }
+
+        /* Dim earning rules when rewards are off */
+        .rules-off { opacity: .55; }
+        .rules-off .rules-lock { display: inline-flex; }
+        .rules-lock { display: none; }
+
+        @media (prefers-reduced-motion: reduce) {
+            .switch-track, .switch-knob, .field { transition: none; }
+        }
+    </style>
+</head>
+
+<body class="bg-canvas font-sans text-slate-800 antialiased">
+
+    <!-- Mobile top bar -->
+    <header class="sticky top-0 z-30 flex items-center justify-between bg-canvas/90 px-4 py-3 backdrop-blur lg:hidden">
+        <div class="flex items-center gap-2">
+            <img src="{% static 'images/weblogo.png' %}" alt="TindaTech POS logo" class="h-9 w-9 rounded-xl object-cover">
+            <div class="leading-tight">
+                <span class="block font-semibold text-ink">TindaTech POS</span>
+                <span class="block text-xs text-slate-500">Version 1.0.0</span>
+            </div>
+        </div>
+        <button id="menu-open" type="button" aria-label="Open menu"
+                class="rounded-full bg-white p-2.5 text-slate-600 shadow-sm hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-brand">
+            <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75"><path stroke-linecap="round" d="M4 6h16M4 12h16M4 18h16"/></svg>
+        </button>
+    </header>
+
+    <div id="backdrop" class="fixed inset-0 z-40 hidden bg-slate-900/40 lg:hidden"></div>
+
+    <!-- Sidebar -->
+    <aside id="sidebar"
+           class="fixed inset-y-0 left-0 z-50 flex w-72 -translate-x-full flex-col bg-white transition-transform duration-200 lg:inset-y-4 lg:left-4 lg:w-64 lg:translate-x-0 lg:rounded-3xl lg:shadow-sm">
+
+        <div class="flex items-center justify-between px-6 pb-2 pt-6">
+            <div class="flex items-center gap-3">
+                <img src="{% static 'images/weblogo.png' %}" alt="TindaTech POS logo" class="h-10 w-10 rounded-xl object-cover">
+                <div class="leading-tight">
+                    <p class="font-semibold text-ink">TindaTech POS</p>
+                    <p class="mt-1 text-xs text-slate-500">Version 1.0.0</p>
+                </div>
+            </div>
+            <button id="menu-close" type="button" aria-label="Close menu" class="rounded-full p-1.5 text-slate-500 hover:bg-slate-100 lg:hidden">
+                <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75"><path stroke-linecap="round" d="M6 6l12 12M18 6L6 18"/></svg>
+            </button>
+        </div>
+
+        <nav class="flex-1 space-y-5 overflow-y-auto px-4 py-4 text-sm">
+
+            <div>
+                <p class="mb-2 px-3 text-[11px] font-medium uppercase tracking-wider text-slate-400">Menu</p>
+                <a href="/dashboard/" class="flex items-center gap-3 rounded-xl px-3 py-2.5 text-slate-600 transition hover:bg-brand-soft hover:text-brand">
+                    <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75"><path stroke-linecap="round" stroke-linejoin="round" d="M4 13h6V4H4v9zm10 7h6V4h-6v16zM4 20h6v-3H4v3z"/></svg>
+                    Dashboard
+                </a>
+            </div>
+
+            <div>
+                <p class="mb-2 px-3 text-[11px] font-medium uppercase tracking-wider text-slate-400">Sales</p>
+                <div class="space-y-1">
+                    <a href="{% url 'sales_history' %}" class="flex items-center gap-3 rounded-xl px-3 py-2.5 text-slate-600 transition hover:bg-brand-soft hover:text-brand">
+                        <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75"><path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l3 2M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                        Sales History
+                    </a>
+                    <a href="{% url 'sales_report' %}" class="flex items-center gap-3 rounded-xl px-3 py-2.5 text-slate-600 transition hover:bg-brand-soft hover:text-brand">
+                        <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75"><path stroke-linecap="round" stroke-linejoin="round" d="M9 17v-6m4 6V7m4 10v-3M5 21h14a1 1 0 001-1V4a1 1 0 00-1-1H5a1 1 0 00-1 1v16a1 1 0 001 1z"/></svg>
+                        Sales Reports
+                    </a>
+                    <a href="{% url 'sales_analytics' %}" class="flex items-center gap-3 rounded-xl px-3 py-2.5 text-slate-600 transition hover:bg-brand-soft hover:text-brand">
+                        <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75"><path stroke-linecap="round" stroke-linejoin="round" d="M3 3v18h18M7 14l4-4 3 3 5-6"/></svg>
+                        Sales Analytics
+                    </a>
+                    <a href="{% url 'electronic_journal' %}" class="flex items-center gap-3 rounded-xl px-3 py-2.5 text-slate-600 transition hover:bg-brand-soft hover:text-brand">
+                        <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6.25v11.5M5 5.5a2 2 0 012-2h4.5a2.5 2.5 0 01.5.05 2.5 2.5 0 01.5-.05H17a2 2 0 012 2v13a2 2 0 01-2 2h-4.5a.5.5 0 00-.5.5.5.5 0 00-.5-.5H7a2 2 0 01-2-2v-13z"/></svg>
+                        Electronic Journal
+                    </a>
+                </div>
+            </div>
+
+            <div>
+                <p class="mb-2 px-3 text-[11px] font-medium uppercase tracking-wider text-slate-400">Catalog</p>
+                <div class="space-y-1">
+                    <a href="/products/" class="flex items-center gap-3 rounded-xl px-3 py-2.5 text-slate-600 transition hover:bg-brand-soft hover:text-brand">
+                        <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75"><path stroke-linecap="round" stroke-linejoin="round" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/></svg>
+                        Products
+                    </a>
+                    <a href="/products/categories/" class="flex items-center gap-3 rounded-xl px-3 py-2.5 text-slate-600 transition hover:bg-brand-soft hover:text-brand">
+                        <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75"><path stroke-linecap="round" stroke-linejoin="round" d="M7 7h.01M7 3h5a2 2 0 011.4.6l7 7a2 2 0 010 2.8l-5 5a2 2 0 01-2.8 0l-7-7A2 2 0 015 10V5a2 2 0 012-2z"/></svg>
+                        Categories
+                    </a>
+                </div>
+            </div>
+
+            <div>
+                <p class="mb-2 px-3 text-[11px] font-medium uppercase tracking-wider text-slate-400">Inventory</p>
+                <div class="space-y-1">
+                    <a href="/inventory/stock/" class="flex items-center gap-3 rounded-xl px-3 py-2.5 text-slate-600 transition hover:bg-brand-soft hover:text-brand">
+                        <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75"><path stroke-linecap="round" stroke-linejoin="round" d="M4 7h16M4 12h16M4 17h16"/></svg>
+                        Stock Levels
+                    </a>
+                    <a href="/inventory/receive/" class="flex items-center gap-3 rounded-xl px-3 py-2.5 text-slate-600 transition hover:bg-brand-soft hover:text-brand">
+                        <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4v12m0 0l-4-4m4 4l4-4M4 20h16"/></svg>
+                        Receive Stock
+                    </a>
+                    <a href="{% url 'damaged_stock' %}" class="flex items-center gap-3 rounded-xl px-3 py-2.5 text-slate-600 transition hover:bg-brand-soft hover:text-brand">
+                        <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v4m0 4h.01M10.3 3.9L1.8 18a2 2 0 001.7 3h17a2 2 0 001.7-3L13.7 3.9a2 2 0 00-3.4 0z"/></svg>
+                        Damaged Stock
+                    </a>
+                    <a href="{% url 'expiration_monitoring' %}" class="flex items-center gap-3 rounded-xl px-3 py-2.5 text-slate-600 transition hover:bg-brand-soft hover:text-brand">
+                        <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75"><path stroke-linecap="round" stroke-linejoin="round" d="M8 7V3m8 4V3M5 11h14M6 21h12a1 1 0 001-1V7a1 1 0 00-1-1H6a1 1 0 00-1 1v13a1 1 0 001 1z"/></svg>
+                        Expiration Monitoring
+                    </a>
+                </div>
+            </div>
+
+            <div>
+                <p class="mb-2 px-3 text-[11px] font-medium uppercase tracking-wider text-slate-400">Reading</p>
+                <div class="space-y-1">
+                    <a href="{% url 'x_reading' %}" class="flex items-center gap-3 rounded-xl px-3 py-2.5 text-slate-600 transition hover:bg-brand-soft hover:text-brand">
+                        <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75"><path stroke-linecap="round" stroke-linejoin="round" d="M9 17v-2m3 2v-4m3 4V9m2 12H7a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h7l5 5v11a2 2 0 0 1-2 2Z"/></svg>
+                        X Reading
+                    </a>
+                    <a href="{% url 'z_reading' %}" class="flex items-center gap-3 rounded-xl px-3 py-2.5 text-slate-600 transition hover:bg-brand-soft hover:text-brand">
+                        <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75"><path stroke-linecap="round" stroke-linejoin="round" d="M9 14h6m-6-4h6m2 11H7a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h7l5 5v16Z"/></svg>
+                        Z Reading
+                    </a>
+                </div>
+            </div>
+
+            <div>
+                <p class="mb-2 px-3 text-[11px] font-medium uppercase tracking-wider text-slate-400">Audit Logs</p>
+                <a href="{% url 'activity_log' %}" class="flex items-center gap-3 rounded-xl px-3 py-2.5 text-slate-600 transition hover:bg-brand-soft hover:text-brand">
+                    <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75"><path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l3 2m6-2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                    Activity Log
+                </a>
+            </div>
+
+            <div>
+                <p class="mb-2 px-3 text-[11px] font-medium uppercase tracking-wider text-slate-400">User Management</p>
+                <div class="space-y-1">
+                    <a href="{% url 'account_settings' %}" class="flex items-center gap-3 rounded-xl px-3 py-2.5 text-slate-600 transition hover:bg-brand-soft hover:text-brand">
+                        <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75"><path stroke-linecap="round" stroke-linejoin="round" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 001.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/><path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+                        Account Settings
+                    </a>
+                    <a href="{% url 'manage_accounts' %}" class="flex items-center gap-3 rounded-xl px-3 py-2.5 text-slate-600 transition hover:bg-brand-soft hover:text-brand">
+                        <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75"><path stroke-linecap="round" stroke-linejoin="round" d="M16 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2m16 0v-2a4 4 0 00-3-3.87M14 3.13a4 4 0 010 7.75M14 7a4 4 0 11-8 0 4 4 0 018 0z"/></svg>
+                        Manage Accounts
+                    </a>
+                    <a href="{% url 'receipt_settings' %}" class="flex items-center gap-3 rounded-xl px-3 py-2.5 text-slate-600 transition hover:bg-brand-soft hover:text-brand">
+                        <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75"><path stroke-linecap="round" stroke-linejoin="round" d="M9 7h6m-6 4h6m-6 4h3M6 3h12a1 1 0 011 1v17l-3-2-2 2-2-2-2 2-2-2-3 2V4a1 1 0 011-1z"/></svg>
+                        Receipt Settings
+                    </a>
+                    <a href="{% url 'reward_settings' %}" aria-current="page"
+                       class="flex items-center gap-3 rounded-xl bg-brand px-3 py-2.5 font-medium text-white shadow-lg shadow-brand/30">
+                        <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75"><path stroke-linecap="round" stroke-linejoin="round" d="M12 8v13m0-13H7.5a2.5 2.5 0 110-5C11 3 12 8 12 8zm0 0h4.5a2.5 2.5 0 100-5C13 3 12 8 12 8zM4 12h16v9H4v-9zm-1-4h18v4H3V8z"/></svg>
+                        Reward Settings
+                    </a>
+                </div>
+            </div>
+        </nav>
+
+        <div class="space-y-3 p-4">
+            <form id="logout-form" method="post" action="{% url 'logout' %}">
+                {% csrf_token %}
+                <button type="button" id="signout-btn"
+                        class="flex w-full items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-600 transition hover:border-red-600 hover:bg-red-600 hover:text-white focus:outline-none focus:ring-2 focus:ring-red-500">
+                    <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75"><path stroke-linecap="round" stroke-linejoin="round" d="M15 16l4-4m0 0l-4-4m4 4H9m4 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/></svg>
+                    Sign out
+                </button>
+            </form>
+        </div>
+    </aside>
+
+    <!-- Sign out confirmation modal -->
+    <div id="signout-modal" class="fixed inset-0 z-[60] hidden items-center justify-center bg-slate-900/50 p-4"
+         role="dialog" aria-modal="true" aria-labelledby="signout-title">
+        <div class="w-full max-w-sm rounded-3xl bg-white p-6 shadow-xl">
+            <div class="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-red-100">
+                <svg class="h-6 w-6 text-red-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75"><path stroke-linecap="round" stroke-linejoin="round" d="M15 16l4-4m0 0l-4-4m4 4H9m4 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/></svg>
+            </div>
+            <h3 id="signout-title" class="text-center text-lg font-semibold text-ink">Are you sure you want to sign out?</h3>
+            <div class="mt-6 flex gap-3">
+                <button type="button" id="signout-cancel" class="flex-1 rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-medium text-slate-700 transition hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-slate-300">Cancel</button>
+                <button type="button" id="signout-confirm" class="flex-1 rounded-xl bg-red-600 px-4 py-2.5 text-sm font-medium text-white transition hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2">Yes, sign out</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main content -->
+    <main class="min-h-screen px-4 pb-8 pt-4 sm:px-8 lg:ml-72 lg:py-8 lg:pr-8">
+        <div class="mx-auto max-w-6xl">
+
+            <!-- Page header -->
+            <div class="mb-7 flex flex-wrap items-center justify-between gap-4">
+                <div>
+                    <h1 class="text-3xl font-semibold tracking-tight text-ink">Reward Settings</h1>
+                    <p class="mt-1 text-sm text-slate-500">Set how registered customers earn and redeem loyalty points.</p>
+                </div>
+                <span id="status-pill" class="rounded-full px-3 py-1 text-xs font-medium"></span>
+            </div>
+
+            {% if messages %}
+                <div class="mb-5 space-y-3">
+                    {% for message in messages %}
+                        <div class="flex items-center gap-3 rounded-2xl px-4 py-3 text-sm shadow-sm {% if message.tags == 'error' %}bg-red-50 text-red-800{% else %}bg-emerald-50 text-emerald-800{% endif %}" role="status">
+                            {{ message }}
+                        </div>
+                    {% endfor %}
+                </div>
+            {% endif %}
+
+            <form method="post" class="grid grid-cols-1 gap-5 lg:grid-cols-5">
+                {% csrf_token %}
+
+                <div class="space-y-5 lg:col-span-3">
+
+                    <!-- Program switch -->
+                    <section class="rounded-3xl bg-white p-6 shadow-sm">
+                        <label class="switch flex cursor-pointer items-center justify-between gap-4">
+                            <span class="flex items-start gap-4">
+                                <span class="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-brand-soft text-brand">
+                                    <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75"><path stroke-linecap="round" stroke-linejoin="round" d="M12 8v13m0-13H7.5a2.5 2.5 0 110-5C11 3 12 8 12 8zm0 0h4.5a2.5 2.5 0 100-5C13 3 12 8 12 8zM4 12h16v9H4v-9zm-1-4h18v4H3V8z"/></svg>
+                                </span>
+                                <span>
+                                    <span class="block text-xl font-semibold text-ink">Reward points</span>
+                                    <span class="mt-1 block text-sm text-slate-500">Let registered customers earn and redeem points at checkout.</span>
+                                </span>
+                            </span>
+
+                            <input type="checkbox" name="is_enabled" id="is_enabled" class="sr-only" {% if reward_settings.is_enabled %}checked{% endif %}>
+                            <span class="switch-track" aria-hidden="true">
+                                <span class="switch-knob"></span>
+                            </span>
+                        </label>
+                    </section>
+
+                    <!-- Earning rate -->
+                    <section id="rules" class="rounded-3xl bg-white p-6 shadow-sm transition-opacity">
+                        <div class="mb-5 flex items-start justify-between gap-3">
+                            <div>
+                                <h2 class="text-xl font-semibold text-ink">Earning rate</h2>
+                                <p class="mt-1 text-sm text-slate-500">How much a customer spends to earn 1 point.</p>
+                            </div>
+                            <span class="rules-lock items-center rounded-full bg-slate-100 px-2.5 py-0.5 text-xs font-medium text-slate-500">Rewards off</span>
+                        </div>
+
+                        <label for="amount_per_point" class="mb-2 block text-sm font-medium text-ink">Spend per point</label>
+                        <div class="relative">
+                            <span class="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-sm font-medium text-slate-400">₱</span>
+                            <input type="number" id="amount_per_point" name="amount_per_point"
+                                   class="field field-prefix tabular" min="0.01" step="0.01" required
+                                   value="{{ reward_settings.amount_per_point }}">
+                        </div>
+                        <p id="rate-error" class="mt-2 hidden text-xs font-medium text-red-600">Enter an amount greater than ₱0.00.</p>
+
+                        <div class="mt-3 flex flex-wrap gap-2" role="group" aria-label="Quick amounts">
+                            <button type="button" data-rate="50"  class="preset rounded-full bg-brand-soft px-3.5 py-1.5 text-xs font-medium text-brand transition hover:bg-brand hover:text-white focus:outline-none focus:ring-2 focus:ring-brand">₱50</button>
+                            <button type="button" data-rate="100" class="preset rounded-full bg-brand-soft px-3.5 py-1.5 text-xs font-medium text-brand transition hover:bg-brand hover:text-white focus:outline-none focus:ring-2 focus:ring-brand">₱100</button>
+                            <button type="button" data-rate="200" class="preset rounded-full bg-brand-soft px-3.5 py-1.5 text-xs font-medium text-brand transition hover:bg-brand hover:text-white focus:outline-none focus:ring-2 focus:ring-brand">₱200</button>
+                            <button type="button" data-rate="500" class="preset rounded-full bg-brand-soft px-3.5 py-1.5 text-xs font-medium text-brand transition hover:bg-brand hover:text-white focus:outline-none focus:ring-2 focus:ring-brand">₱500</button>
+                        </div>
+                    </section>
+
+                    <!-- Redemption rules -->
+                    <section class="rounded-3xl bg-white p-6 shadow-sm">
+                        <div class="mb-5">
+                            <h2 class="text-xl font-semibold text-ink">Redemption rules</h2>
+                            <p class="mt-1 text-sm text-slate-500">These values are fixed in the reward system and can't be changed here.</p>
+                        </div>
+
+                        <dl class="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                            <div class="rounded-2xl bg-canvas p-4">
+                                <dt class="text-xs font-medium text-slate-500">Point value</dt>
+                                <dd class="tabular mt-1 text-2xl font-semibold text-ink">₱1.00</dd>
+                                <p class="mt-1 text-xs text-slate-500">1 point = ₱1 discount</p>
+                            </div>
+                            <div class="rounded-2xl bg-canvas p-4">
+                                <dt class="text-xs font-medium text-slate-500">Minimum redemption</dt>
+                                <dd class="tabular mt-1 text-2xl font-semibold text-ink">0 points</dd>
+                                <p class="mt-1 text-xs text-slate-500">No minimum required</p>
+                            </div>
+                        </dl>
+                    </section>
+
+                    <button type="submit"
+                            class="inline-flex w-full items-center justify-center gap-2 rounded-full bg-brand px-5 py-3 text-sm font-semibold text-white shadow-lg shadow-brand/30 transition hover:bg-brand-dark focus:outline-none focus:ring-2 focus:ring-brand focus:ring-offset-2">
+                        <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
+                        Save reward settings
+                    </button>
+                </div>
+
+                <!-- Live preview -->
+                <aside class="space-y-5 lg:col-span-2">
+                    <div class="lg:sticky lg:top-8 space-y-5">
+                        <div class="hero-card rounded-3xl p-6 text-white shadow-xl shadow-brand/25">
+                            <div class="flex items-start justify-between">
+                                <span class="flex h-12 w-12 items-center justify-center rounded-2xl bg-white text-brand">
+                                    <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.75"><path stroke-linecap="round" stroke-linejoin="round" d="M11.05 2.93a1 1 0 011.9 0l1.5 3.9 4.1.3a1 1 0 01.57 1.75l-3.15 2.65 1 4a1 1 0 01-1.5 1.1L12 14.4l-3.47 2.23a1 1 0 01-1.5-1.1l1-4L5.88 8.88a1 1 0 01.57-1.75l4.1-.3 1.5-3.9z"/></svg>
+                                </span>
+                                <span class="rounded-full bg-white/20 px-2.5 py-0.5 text-xs font-medium">Live preview</span>
+                            </div>
+
+                            <label for="sample" class="mt-6 block text-sm text-indigo-100">If a customer spends</label>
+                            <div class="relative mt-1">
+                                <span class="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-lg font-semibold text-indigo-200">₱</span>
+                                <input type="number" id="sample" min="0" step="1" value="1000"
+                                       class="tabular w-full rounded-2xl border border-white/20 bg-white/10 py-2.5 pl-9 pr-4 text-2xl font-semibold tracking-tight text-white outline-none placeholder:text-indigo-200 focus:border-white/60 focus:bg-white/15">
+                            </div>
+
+                            <p class="mt-6 text-sm text-indigo-100">they earn</p>
+                            <p id="preview-points" class="tabular mt-1 text-3xl font-semibold tracking-tight">10 points</p>
+                            <p id="preview-note" class="mt-1 text-xs text-indigo-100">Worth ₱10.00 in discounts</p>
+                        </div>
+
+                        <div class="rounded-3xl bg-white p-5 shadow-sm">
+                            <h2 class="text-sm font-semibold text-ink">How points are counted</h2>
+                            <ul class="mt-3 space-y-2.5 text-xs leading-5 text-slate-500">
+                                <li class="flex gap-2.5"><span class="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-brand"></span>Based on eligible merchandise after standard discounts. Additional charges are excluded.</li>
+                                <li class="flex gap-2.5"><span class="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-brand"></span>Points are rounded down to whole numbers.</li>
+                                <li class="flex gap-2.5"><span class="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-brand"></span>Only registered customers earn or redeem points. Guest purchases earn none.</li>
+                            </ul>
+                        </div>
+                    </div>
+                </aside>
+            </form>
+        </div>
+    </main>
+
+    <script>
+        // Mobile sidebar
+        (function () {
+            const sidebar = document.getElementById('sidebar');
+            const backdrop = document.getElementById('backdrop');
+            const openMenu = () => { sidebar.classList.remove('-translate-x-full'); backdrop.classList.remove('hidden'); };
+            const closeMenu = () => { sidebar.classList.add('-translate-x-full'); backdrop.classList.add('hidden'); };
+            document.getElementById('menu-open').addEventListener('click', openMenu);
+            document.getElementById('menu-close').addEventListener('click', closeMenu);
+            backdrop.addEventListener('click', closeMenu);
+            document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeMenu(); });
+        })();
+
+        // Sign out modal
+        (function () {
+            const modal = document.getElementById('signout-modal');
+            const openBtn = document.getElementById('signout-btn');
+            const cancelBtn = document.getElementById('signout-cancel');
+            const confirmBtn = document.getElementById('signout-confirm');
+            const form = document.getElementById('logout-form');
+            const open = () => { modal.classList.remove('hidden'); modal.classList.add('flex'); cancelBtn.focus(); };
+            const close = () => { modal.classList.add('hidden'); modal.classList.remove('flex'); openBtn.focus(); };
+            openBtn.addEventListener('click', open);
+            cancelBtn.addEventListener('click', close);
+            confirmBtn.addEventListener('click', () => form.submit());
+            modal.addEventListener('click', (e) => { if (e.target === modal) close(); });
+            document.addEventListener('keydown', (e) => {
+                if (e.key === 'Escape' && !modal.classList.contains('hidden')) close();
+            });
+        })();
+
+        // Reward settings: toggle state, presets and live preview
+        (function () {
+            const toggle = document.getElementById('is_enabled');
+            const rateInput = document.getElementById('amount_per_point');
+            const sample = document.getElementById('sample');
+            const rules = document.getElementById('rules');
+            const pill = document.getElementById('status-pill');
+            const rateError = document.getElementById('rate-error');
+            const points = document.getElementById('preview-points');
+            const note = document.getElementById('preview-note');
+            const peso = (n) => '₱' + n.toLocaleString('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+
+            function render() {
+                const on = toggle.checked;
+                rules.classList.toggle('rules-off', !on);
+                pill.textContent = on ? 'Rewards on' : 'Rewards off';
+                pill.className = 'rounded-full px-3 py-1 text-xs font-medium ' +
+                    (on ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-200 text-slate-600');
+
+                const rate = parseFloat(rateInput.value);
+                const spend = Math.max(parseFloat(sample.value) || 0, 0);
+                const validRate = Number.isFinite(rate) && rate > 0;
+                rateError.classList.toggle('hidden', validRate);
+
+                if (!on) {
+                    points.textContent = 'No points';
+                    note.textContent = 'Reward points are turned off.';
+                } else if (!validRate) {
+                    points.textContent = '—';
+                    note.textContent = 'Enter a valid earning rate to see the result.';
+                } else {
+                    const earned = Math.floor(spend / rate);
+                    points.textContent = earned.toLocaleString('en-PH') + (earned === 1 ? ' point' : ' points');
+                    note.textContent = 'Worth ' + peso(earned) + ' in discounts';
+                }
+            }
+
+            document.querySelectorAll('.preset').forEach((btn) => {
+                btn.addEventListener('click', () => { rateInput.value = btn.dataset.rate + '.00'; render(); });
+            });
+            toggle.addEventListener('change', render);
+            rateInput.addEventListener('input', render);
+            sample.addEventListener('input', render);
+            render();
+        })();
+    </script>
+
+</body>
+</html>

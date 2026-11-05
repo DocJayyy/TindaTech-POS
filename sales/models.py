@@ -127,6 +127,20 @@ class Sale(models.Model):
         decimal_places=2,
         default=Decimal("0.00"),
     )
+    reward_points_earned = models.PositiveBigIntegerField(
+        default=0,
+    )
+
+    reward_points_redeemed = models.PositiveBigIntegerField(
+        default=0,
+    )
+
+    reward_discount_amount = models.DecimalField(
+        max_digits=12,
+        decimal_places=2,
+        default=Decimal("0.00"),
+        validators=[MinValueValidator(Decimal("0.00"))],
+    )
 
     # General Note for this transaction
     general_note = models.TextField(
@@ -660,3 +674,122 @@ class Customer(models.Model):
 
     def __str__(self):
         return self.name
+
+class RewardSettings(models.Model):
+    amount_per_point = models.DecimalField(
+        max_digits=12,
+        decimal_places=2,
+        default=Decimal("100.00"),
+        validators=[MinValueValidator(Decimal("0.01"))],
+    )
+
+    is_enabled = models.BooleanField(default=True)
+
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return "Reward Settings"
+
+    @classmethod
+    def get_settings(cls):
+        settings, _ = cls.objects.get_or_create(pk=1)
+        return settings
+
+
+class RewardAccount(models.Model):
+    customer = models.OneToOneField(
+        Customer,
+        on_delete=models.PROTECT,
+        related_name="reward_account",
+    )
+
+    available_points = models.PositiveBigIntegerField(
+        default=0,
+    )
+
+    pending_deduction = models.PositiveBigIntegerField(
+        default=0,
+    )
+
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return (
+            f"{self.customer.name} - "
+            f"{self.available_points} points"
+        )
+
+
+class RewardTransaction(models.Model):
+
+    class TransactionType(models.TextChoices):
+        EARN = "earn", "Points Earned"
+        REDEEM = "redeem", "Points Redeemed"
+        REVERSAL = "reversal", "Points Reversed"
+        PENDING_DEDUCTION = (
+            "pending_deduction",
+            "Pending Deduction",
+        )
+        ADJUSTMENT = "adjustment", "Manual Adjustment"
+
+    customer = models.ForeignKey(
+        Customer,
+        on_delete=models.PROTECT,
+        related_name="reward_transactions",
+    )
+
+    transaction_type = models.CharField(
+        max_length=30,
+        choices=TransactionType.choices,
+    )
+
+    points = models.PositiveBigIntegerField()
+
+    balance_after = models.PositiveBigIntegerField(
+        default=0,
+    )
+
+    pending_after = models.PositiveBigIntegerField(
+        default=0,
+    )
+
+    sale = models.ForeignKey(
+        Sale,
+        on_delete=models.PROTECT,
+        null=True,
+        blank=True,
+        related_name="reward_transactions",
+    )
+
+    adjustment = models.ForeignKey(
+        SaleAdjustment,
+        on_delete=models.PROTECT,
+        null=True,
+        blank=True,
+        related_name="reward_transactions",
+    )
+
+    description = models.CharField(
+        max_length=255,
+        blank=True,
+    )
+
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["-created_at"]
+        indexes = [
+            models.Index(
+                fields=["customer", "created_at"]
+            ),
+            models.Index(
+                fields=["transaction_type", "created_at"]
+            ),
+        ]
+
+    def __str__(self):
+        return (
+            f"{self.customer.name} - "
+            f"{self.get_transaction_type_display()} - "
+            f"{self.points} points"
+        )

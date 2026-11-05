@@ -54,6 +54,17 @@ class CheckoutForm(forms.Form):
         required=False,
         max_length=100,
     )
+    
+    reward_points_to_redeem = forms.IntegerField(
+        required=False,
+        initial=0,
+        min_value=0,
+        label="Reward Points to Redeem",
+        widget=forms.NumberInput(attrs={
+            "min": "0",
+            "step": "1",
+        }),
+    )    
 
     packaging_charge = forms.DecimalField(
         required=False, initial=Decimal("0"),
