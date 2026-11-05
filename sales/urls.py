@@ -30,4 +30,13 @@ urlpatterns = [
     path("suspend/",views.suspend_sale_view,name="suspend_sale"),
     path("suspended/",views.suspended_sales_list_view,name="suspended_sales_list"),
     path("suspended/<int:suspended_sale_id>/retrieve/",views.retrieve_suspended_sale_view,name="retrieve_suspended_sale"),
+    path("customers/", views.customer_list_view, name="customer_list"),
+    path("customers/add/", views.customer_create_view, name="customer_create"),
+    path("customers/<int:customer_id>/edit/", views.customer_update_view, name="customer_update"),
+    path("customers/<int:customer_id>/note/",views.customer_note_update_view,name="customer_note_update"),
+    path(
+    "customers/manage-data/",
+    views.customer_management_data_view,
+    name="customer_management_data",
+),
 ]

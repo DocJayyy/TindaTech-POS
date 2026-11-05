@@ -512,6 +512,119 @@
         .gn-btn:disabled:hover { background: #16a34a; }
 
 
+        /* Customer Management modal */
+        #customerManagementModal {
+            background: rgba(15, 23, 42, .6);
+            align-items: center;
+            justify-content: center;
+            padding: 1rem;
+        }
+        .cm-card {
+            display: flex;
+            flex-direction: column;
+            max-height: 90vh;
+            overflow: hidden;
+            box-shadow: 0 25px 60px -12px rgba(0,0,0,.55), 0 0 0 1px rgba(0,0,0,.08);
+        }
+        /* Body takes the remaining height */
+        .cm-body {
+            display: flex;
+            flex-direction: column;
+            flex: 1 1 auto;
+            min-height: 0;
+        }
+
+        /* Only this area scrolls */
+        .cm-scroll {
+            flex: 1 1 auto;
+            min-height: 0;
+            overflow: auto;
+        }
+
+        /* Keep column names visible while scrolling */
+        .cm-scroll thead th {
+            position: sticky;
+            top: 0;
+            z-index: 1;
+            background: #f9fafb;
+            box-shadow: 0 1px 0 #e5e7eb;
+        }
+        .cm-input:focus {
+            outline: none !important;
+            border-color: #22c55e !important;
+            box-shadow: 0 0 0 3px rgba(34,197,94,.2) !important;
+        }
+        .cm-btn {
+            background: #16a34a;
+            color: #fff;
+            border: 0;
+            cursor: pointer;
+            transition: background .15s, transform .1s;
+        }
+        .cm-btn:hover { background: #15803d; }
+        .cm-btn:active { transform: scale(.98); }
+        .cm-btn:focus-visible { outline: 2px solid #16a34a; outline-offset: 2px; }
+        .cm-btn:disabled { opacity: .5; cursor: not-allowed; }
+        .cm-btn:disabled:hover { background: #16a34a; }
+
+        /* Add Customer modal */
+        #addCustomerModal {
+            background: rgba(15, 23, 42, .6);
+            align-items: center;
+            justify-content: center;
+            padding: 1rem;
+        }
+        .ac-card {
+            max-width: 28rem;
+            box-shadow: 0 25px 60px -12px rgba(0,0,0,.55), 0 0 0 1px rgba(0,0,0,.08);
+        }
+        .ac-input:focus {
+            outline: none !important;
+            border-color: #22c55e !important;
+            box-shadow: 0 0 0 3px rgba(34,197,94,.2) !important;
+        }
+        .ac-btn {
+            background: #16a34a;
+            color: #fff;
+            border: 0;
+            cursor: pointer;
+            transition: background .15s, transform .1s;
+        }
+        .ac-btn:hover { background: #15803d; }
+        .ac-btn:active { transform: scale(.98); }
+        .ac-btn:focus-visible { outline: 2px solid #16a34a; outline-offset: 2px; }
+        .ac-btn:disabled { opacity: .5; cursor: not-allowed; }
+        .ac-btn:disabled:hover { background: #16a34a; }
+
+        /* Edit Customer modal */
+        #editCustomerModal {
+            background: rgba(15, 23, 42, .6);
+            align-items: center;
+            justify-content: center;
+            padding: 1rem;
+        }
+        .ec-card {
+            max-width: 28rem;
+            box-shadow: 0 25px 60px -12px rgba(0,0,0,.55), 0 0 0 1px rgba(0,0,0,.08);
+        }
+        .ec-input:focus {
+            outline: none !important;
+            border-color: #22c55e !important;
+            box-shadow: 0 0 0 3px rgba(34,197,94,.2) !important;
+        }
+        .ec-btn {
+            background: #16a34a;
+            color: #fff;
+            border: 0;
+            cursor: pointer;
+            transition: background .15s, transform .1s;
+        }
+        .ec-btn:hover { background: #15803d; }
+        .ec-btn:active { transform: scale(.98); }
+        .ec-btn:focus-visible { outline: 2px solid #16a34a; outline-offset: 2px; }
+        .ec-btn:disabled { opacity: .5; cursor: not-allowed; }
+        .ec-btn:disabled:hover { background: #16a34a; }
+
         /* ===== POS layout (plain CSS) ===== */
         .pos-body { min-height: 100vh; }
         .pos-top { display: flex; align-items: center; gap: 1rem; background: #fff; padding: .5rem 1rem; box-shadow: 0 1px 2px rgba(0,0,0,.06); flex-shrink: 0; }
@@ -784,6 +897,41 @@
                             {# Discount type is set by keyboard shortcuts / actions #}
                             {{ form.discount_type.as_hidden }}
 
+                            <!-- CUSTOMER SELECTION -->
+                            <div class="group" style="margin-top:.25rem">
+                                <p class="group-title">Customer</p>
+
+                                <div class="flex items-end gap-2">
+
+                                    <div class="min-w-0 flex-1">
+                                        <label for="customer-select">Select Customer</label>
+
+                                        <select name="customer_id" id="customer-select">
+                                            <option value="">Walk-in Customer</option>
+
+                                            {% for customer in customers %}
+                                                <option
+                                                    value="{{ customer.id }}"
+                                                    data-note="{{ customer.note|escape }}">
+                                                    {{ customer.name }}
+                                                    {% if customer.contact_number %}
+                                                        — {{ customer.contact_number }}
+                                                    {% endif %}
+                                                </option>
+                                            {% endfor %}
+                                        </select>
+                                    </div>
+
+                                    <button
+                                        type="button"
+                                        id="openAddCustomerModal"
+                                        class="shrink-0 rounded-xl bg-blue-600 px-4 py-3 text-sm font-semibold text-white transition hover:bg-blue-700">
+                                        + Add
+                                    </button>
+
+                                </div>
+                            </div>
+
                             <div class="group" style="margin-top:.25rem">
                                 <p class="group-title">Payment</p>
 
@@ -924,7 +1072,14 @@
                 <button type="button" class="action-tile c-green" data-action="general-note"><span>General Note</span><span class="hint">Alt+N</span></button>
                 <button type="button" class="action-tile c-amber" data-action="reward"><span class="tile-icon">★</span><span>Reward</span><span class="hint">Alt+W</span></button>
                 <button type="button" class="action-tile c-blue" data-action="customer-note"><span class="tile-icon">■</span><span>Customer Note</span><span class="hint">Alt+B</span></button>
-
+                <button
+                    type="button"
+                    data-action="customer-management"
+                    class="action-tile c-indigo"
+                >
+                    <span class="tile-icon">👥</span>
+                    <span>Customer Management</span>
+                </button>
                 <button type="button" class="action-tile c-indigo" data-action="pricelist"><span class="tile-icon">☰</span><span>Pricelist</span><span class="hint">Alt+L</span></button>
 
                 <button type="button" class="action-tile c-teal" data-action="cash-takeout"><span class="tile-icon">₱</span><span>Cash Takeout</span><span class="hint">Alt+3</span></button>
@@ -1532,6 +1687,395 @@
         </div>
     </div>
 
+        <!-- CUSTOMER NOTE MODAL -->
+    <div id="customerNoteModal"
+        class="fixed inset-0 z-[100] hidden items-center justify-center bg-black/50 p-4">
+
+        <div class="w-full max-w-md rounded-2xl bg-white shadow-xl">
+
+            <!-- Header -->
+            <div class="flex items-center justify-between border-b border-gray-200 px-6 py-4">
+                <div>
+                    <h2 class="text-lg font-bold text-gray-800">
+                        Customer Note
+                    </h2>
+                    <p class="mt-1 text-xs text-gray-500">
+                        Save a permanent note for this customer.
+                    </p>
+                </div>
+
+                <button type="button"
+                    id="closeCustomerNoteModal"
+                    class="rounded-lg p-2 text-gray-400 hover:bg-gray-100 hover:text-gray-700">
+                    ✕
+                </button>
+            </div>
+
+            <!-- Body -->
+            <div class="p-6">
+
+                <div class="mb-4 rounded-xl bg-gray-50 p-3">
+                    <p class="text-xs text-gray-500">
+                        Customer
+                    </p>
+
+                    <p id="customerNoteName"
+                        class="mt-1 font-semibold text-gray-800">
+                        No customer selected
+                    </p>
+                </div>
+
+                <label for="customerNoteInput"
+                    class="mb-2 block text-sm font-semibold text-gray-700">
+                    Customer Note
+                </label>
+
+                <textarea
+                    id="customerNoteInput"
+                    rows="5"
+                    maxlength="2000"
+                    placeholder="Enter important information about this customer..."
+                    class="w-full resize-none rounded-xl border border-gray-300 px-4 py-3 text-sm text-gray-700 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-100"></textarea>
+
+                <p id="customerNoteStatus"
+                    class="mt-2 rounded-lg bg-gray-50 px-3 py-2 text-xs text-gray-500">
+                    This note will be saved to the selected customer.
+                </p>
+
+            </div>
+
+            <!-- Footer -->
+            <div class="flex justify-end gap-3 border-t border-gray-200 px-6 py-4">
+
+                <button type="button"
+                    id="cancelCustomerNote"
+                    class="rounded-xl border border-gray-300 px-4 py-2 text-sm font-semibold text-gray-600 hover:bg-gray-50">
+                    Cancel
+                </button>
+
+                <button type="button"
+                    id="saveCustomerNote"
+                    class="rounded-xl bg-blue-600 px-5 py-2 text-sm font-semibold text-white hover:bg-blue-700">
+                    Save Note
+                </button>
+
+            </div>
+
+        </div>
+    </div>
+
+
+<!-- CUSTOMER MANAGEMENT MODAL -->
+<div id="customerManagementModal"
+     class="fixed inset-0 z-[105] hidden items-center justify-center bg-black/50 p-4">
+
+    <div class="cm-card w-full max-w-6xl rounded-2xl bg-white">
+
+        <!-- Header -->
+        <div class="flex shrink-0 items-center justify-between border-b border-gray-200 px-6 py-4">
+            <div>
+                <h2 class="text-lg font-bold text-gray-800">Customer Management</h2>
+                <p class="text-sm text-gray-500">Manage customer information and permanent notes</p>
+            </div>
+
+            <button type="button"
+                    id="closeCustomerManagementModal"
+                    class="text-2xl text-gray-400 hover:text-gray-700">
+                &times;
+            </button>
+        </div>
+
+        <!-- Toolbar -->
+        <div class="flex shrink-0 flex-wrap items-center justify-between gap-3 border-b border-gray-200 px-6 py-4">
+
+            <div>
+                <h3 class="font-semibold text-gray-800">Customer List</h3>
+                <p class="text-sm text-gray-500">
+                    <span id="customerManagementCount">0</span> customer(s)
+                </p>
+            </div>
+
+            <div class="flex flex-wrap gap-3">
+                <input type="search"
+                       id="customerManagementSearch"
+                       placeholder="Search customer..."
+                       class="cm-input w-56 rounded-xl border border-gray-300 px-4 py-2.5 text-sm outline-none">
+
+                <button type="button"
+                        id="refreshCustomerManagement"
+                        class="rounded-xl border border-gray-300 px-5 py-2.5 text-sm font-semibold text-gray-600 hover:bg-gray-50">
+                    Refresh
+                </button>
+
+                <button type="button"
+                        id="addCustomerFromManagement"
+                        class="cm-btn rounded-xl px-5 py-2.5 text-sm font-semibold">
+                    + Add Customer
+                </button>
+            </div>
+        </div>
+
+        <!-- Customer Table -->
+        <div class="cm-body p-6">
+
+            <div id="customerManagementLoading"
+                 class="hidden py-10 text-center text-sm text-gray-500">
+                Loading customers...
+            </div>
+
+            <div id="customerManagementEmpty"
+                 class="hidden py-12 text-center text-sm text-gray-500">
+                No customers found.
+            </div>
+
+            <!-- Scrollable area -->
+            <div class="cm-scroll rounded-xl border border-gray-200">
+                <table class="w-full min-w-[750px] text-left text-sm">
+
+                    <thead class="text-xs uppercase tracking-wide text-gray-500">
+                        <tr>
+                            <th class="px-4 py-3 font-semibold">Customer</th>
+                            <th class="px-4 py-3 font-semibold">Contact Number</th>
+                            <th class="px-4 py-3 font-semibold">Address</th>
+                            <th class="px-4 py-3 font-semibold">Customer Note</th>
+                            <th class="px-4 py-3 text-right font-semibold">Action</th>
+                        </tr>
+                    </thead>
+
+                    <tbody id="customerManagementTableBody"
+                           class="divide-y divide-gray-100">
+                        <tr>
+                            <td colspan="5"
+                                class="px-4 py-10 text-center text-gray-400">
+                                Open Customer Management to load customers.
+                            </td>
+                        </tr>
+                    </tbody>
+
+                </table>
+            </div>
+
+        </div>
+
+        <!-- Footer -->
+        <div class="flex shrink-0 justify-end border-t border-gray-200 px-6 py-4">
+            <button type="button"
+                    id="doneCustomerManagement"
+                    class="rounded-xl border border-gray-300 px-5 py-2.5 font-semibold text-gray-600 hover:bg-gray-50">
+                Done
+            </button>
+        </div>
+
+    </div>
+</div>
+
+
+<!-- ADD CUSTOMER MODAL -->
+<div id="addCustomerModal"
+     class="fixed inset-0 z-[120] hidden items-center justify-center bg-black/50 p-4">
+
+    <div class="ac-card flex max-h-[90vh] w-full max-w-md flex-col overflow-hidden rounded-2xl bg-white">
+
+        <!-- Header -->
+        <div class="flex items-center justify-between border-b border-gray-200 px-5 py-3">
+            <div>
+                <h2 class="text-base font-bold text-gray-800">Add Customer</h2>
+                <p class="text-xs text-gray-500">Enter the customer's information</p>
+            </div>
+
+            <button type="button"
+                    id="closeAddCustomerModal"
+                    class="text-2xl leading-none text-gray-400 hover:text-gray-700">
+                &times;
+            </button>
+        </div>
+
+        <!-- Form -->
+        <form id="addCustomerForm"
+              method="POST"
+              action="{% url 'customer_create' %}"
+              class="flex min-h-0 flex-1 flex-col">
+
+            {% csrf_token %}
+
+            <div class="min-h-0 flex-1 space-y-3.5 overflow-y-auto p-5">
+
+                <div>
+                    <label for="newCustomerName"
+                           class="mb-1.5 block text-sm font-semibold text-gray-700">
+                        Customer Name *
+                    </label>
+                    <input type="text"
+                           name="name"
+                           id="newCustomerName"
+                           maxlength="200"
+                           required
+                           placeholder="Enter customer name"
+                           class="ac-input w-full rounded-xl border border-gray-300 px-3 py-2 text-sm outline-none">
+                </div>
+
+                <div>
+                    <label for="newCustomerContact"
+                           class="mb-1.5 block text-sm font-semibold text-gray-700">
+                        Contact Number
+                    </label>
+                    <input type="text"
+                           name="contact_number"
+                           id="newCustomerContact"
+                           maxlength="30"
+                           placeholder="e.g. 09XX XXX XXXX"
+                           class="ac-input w-full rounded-xl border border-gray-300 px-3 py-2 text-sm outline-none">
+                </div>
+
+                <div>
+                    <label for="newCustomerAddress"
+                           class="mb-1.5 block text-sm font-semibold text-gray-700">
+                        Address
+                    </label>
+                    <textarea name="address"
+                              id="newCustomerAddress"
+                              rows="2"
+                              placeholder="Enter address"
+                              class="ac-input w-full resize-none rounded-xl border border-gray-300 px-3 py-2 text-sm outline-none"></textarea>
+                </div>
+
+                <div>
+                    <label for="newCustomerNote"
+                           class="mb-1.5 block text-sm font-semibold text-gray-700">
+                        Customer Note
+                    </label>
+                    <textarea name="note"
+                              id="newCustomerNote"
+                              rows="2"
+                              placeholder="Optional customer information..."
+                              class="ac-input w-full resize-none rounded-xl border border-gray-300 px-3 py-2 text-sm outline-none"></textarea>
+                </div>
+
+            </div>
+
+            <!-- Buttons -->
+            <div class="flex justify-end gap-2.5 border-t border-gray-200 px-5 py-3">
+                <button type="button"
+                        id="cancelAddCustomer"
+                        class="rounded-xl border border-gray-300 px-4 py-2 text-sm font-semibold text-gray-600 hover:bg-gray-50">
+                    Cancel
+                </button>
+
+                <button type="submit"
+                        id="saveNewCustomer"
+                        class="ac-btn rounded-xl px-4 py-2 text-sm font-semibold">
+                    Save Customer
+                </button>
+            </div>
+
+        </form>
+    </div>
+</div>
+
+
+<!-- EDIT CUSTOMER MODAL -->
+<div id="editCustomerModal"
+     class="fixed inset-0 z-[130] hidden items-center justify-center bg-black/50 p-4">
+
+    <div class="ec-card flex max-h-[90vh] w-full max-w-md flex-col overflow-hidden rounded-2xl bg-white">
+
+        <!-- Header -->
+        <div class="flex items-center justify-between border-b border-gray-200 px-5 py-3">
+            <div>
+                <h2 class="text-base font-bold text-gray-800">Edit Customer</h2>
+                <p class="text-xs text-gray-500">Update customer information</p>
+            </div>
+
+            <button type="button"
+                    id="closeEditCustomerModal"
+                    class="text-2xl leading-none text-gray-400 hover:text-gray-700">
+                &times;
+            </button>
+        </div>
+
+        <!-- Form -->
+        <form id="editCustomerForm"
+              method="POST"
+              class="flex min-h-0 flex-1 flex-col">
+
+            {% csrf_token %}
+
+            <input type="hidden" id="editCustomerId">
+
+            <div class="min-h-0 flex-1 space-y-3.5 overflow-y-auto p-5">
+
+                <div>
+                    <label for="editCustomerName"
+                           class="mb-1.5 block text-sm font-semibold text-gray-700">
+                        Customer Name *
+                    </label>
+                    <input type="text"
+                           name="name"
+                           id="editCustomerName"
+                           maxlength="200"
+                           required
+                           placeholder="Enter customer name"
+                           class="ec-input w-full rounded-xl border border-gray-300 px-3 py-2 text-sm outline-none">
+                </div>
+
+                <div>
+                    <label for="editCustomerContact"
+                           class="mb-1.5 block text-sm font-semibold text-gray-700">
+                        Contact Number
+                    </label>
+                    <input type="text"
+                           name="contact_number"
+                           id="editCustomerContact"
+                           maxlength="30"
+                           placeholder="e.g. 09XX XXX XXXX"
+                           class="ec-input w-full rounded-xl border border-gray-300 px-3 py-2 text-sm outline-none">
+                </div>
+
+                <div>
+                    <label for="editCustomerAddress"
+                           class="mb-1.5 block text-sm font-semibold text-gray-700">
+                        Address
+                    </label>
+                    <textarea name="address"
+                              id="editCustomerAddress"
+                              rows="2"
+                              placeholder="Enter address"
+                              class="ec-input w-full resize-none rounded-xl border border-gray-300 px-3 py-2 text-sm outline-none"></textarea>
+                </div>
+
+                <div>
+                    <label for="editCustomerNote"
+                           class="mb-1.5 block text-sm font-semibold text-gray-700">
+                        Customer Note
+                    </label>
+                    <textarea name="note"
+                              id="editCustomerNote"
+                              rows="2"
+                              placeholder="Optional customer information..."
+                              class="ec-input w-full resize-none rounded-xl border border-gray-300 px-3 py-2 text-sm outline-none"></textarea>
+                </div>
+
+            </div>
+
+            <!-- Buttons -->
+            <div class="flex justify-end gap-2.5 border-t border-gray-200 px-5 py-3">
+                <button type="button"
+                        id="cancelEditCustomer"
+                        class="rounded-xl border border-gray-300 px-4 py-2 text-sm font-semibold text-gray-600 hover:bg-gray-50">
+                    Cancel
+                </button>
+
+                <button type="submit"
+                        id="saveEditCustomer"
+                        class="ec-btn rounded-xl px-4 py-2 text-sm font-semibold">
+                    Save Changes
+                </button>
+            </div>
+
+        </form>
+    </div>
+</div>
+
     <!-- Message modal -->
     <div id="message-modal" class="msg-modal" role="alertdialog" aria-modal="true"
          aria-labelledby="message-modal-title" aria-describedby="message-modal-body"
@@ -1984,6 +2528,9 @@ actionTiles.forEach(tile => {
             case "sales-history":
                 window.location.href = "{% url 'sales_history' %}";
                 break;
+            case "customer-management":
+                openCustomerManagement();
+                break;
             case "open-drawer":
                 showMessage("Open-drawer requires a connected cash drawer.", "Cash Drawer");
                 break;
@@ -2010,7 +2557,7 @@ actionTiles.forEach(tile => {
                 openGeneralNoteModal();
                 break;
             case "customer-note":
-                showMessage("Notes will be attached to the current sale.", action === "general-note" ? "General Note" : "Customer Note");
+                openCustomerNoteModal();
                 break;
             case "pricelist":
                 showMessage("Print or view the current price list.", "Pricelist");
@@ -3029,8 +3576,12 @@ async function suspendCurrentSale() {
         '[name="other_charge_description"]'
     );
 
+    const customerSelect = document.getElementById("customer-select");
+
     const transactionData = {
         general_note: generalNote,
+        customer_id: customerSelect ? customerSelect.value : "",
+
         cart: Array.from(cart.values()).map(item => ({
             product_id: item.id,
             name: item.name,
@@ -3088,6 +3639,10 @@ async function suspendCurrentSale() {
 
         generalNote = "";
         generalNoteInput.value = "";
+
+        if (customerSelect) {
+            customerSelect.value = "";
+        }
 
         renderCart();
 
@@ -3291,6 +3846,20 @@ async function retrieveSuspendedSale(suspendedSaleId) {
         generalNote = transaction.general_note || "";
         generalNoteInput.value = generalNote;
 
+        // Restore selected customer
+        const customerSelect = document.getElementById("customer-select");
+
+        if (customerSelect) {
+            const savedCustomerId = String(transaction.customer_id || "");
+
+            // Restore only if the customer still exists in the dropdown.
+            const customerExists = Array.from(customerSelect.options).some(
+                option => option.value === savedCustomerId
+            );
+
+            customerSelect.value = customerExists ? savedCustomerId : "";
+        }
+
         // Restore cart items.
         cart.clear();
 
@@ -3453,13 +4022,519 @@ document.getElementById("saveGeneralNote").addEventListener("click", () => {
 });
 
 
+// ---------- CUSTOMER NOTE MODAL ----------
+
+const customerNoteModal = document.getElementById("customerNoteModal");
+const customerNoteName = document.getElementById("customerNoteName");
+const customerNoteInput = document.getElementById("customerNoteInput");
+const customerNoteStatus = document.getElementById("customerNoteStatus");
+const saveCustomerNoteButton = document.getElementById("saveCustomerNote");
+
+function openCustomerNoteModal() {
+    const customerSelect = document.getElementById("customer-select");
+
+    if (!customerSelect || !customerSelect.value) {
+        showMessage("Please select a customer first.", "Customer Note");
+        return;
+    }
+
+    const selectedOption =
+        customerSelect.options[customerSelect.selectedIndex];
+
+    customerNoteName.textContent = selectedOption.textContent.trim();
+    customerNoteInput.value = selectedOption.dataset.note || "";
+
+    customerNoteStatus.textContent =
+        "This note will be saved to the selected customer.";
+
+    customerNoteModal.classList.remove("hidden");
+    customerNoteModal.classList.add("flex");
+
+    customerNoteInput.focus();
+}
+
+function closeCustomerNoteModal() {
+    customerNoteModal.classList.add("hidden");
+    customerNoteModal.classList.remove("flex");
+}
+
+document.getElementById("closeCustomerNoteModal")
+    .addEventListener("click", closeCustomerNoteModal);
+
+document.getElementById("cancelCustomerNote")
+    .addEventListener("click", closeCustomerNoteModal);
 
 
+// SAVE CUSTOMER NOTE
+saveCustomerNoteButton.addEventListener("click", async function () {
+    const customerSelect = document.getElementById("customer-select");
+    const customerId = customerSelect ? customerSelect.value : "";
+
+    if (!customerId) {
+        showMessage("Please select a customer first.", "Customer Note");
+        return;
+    }
+
+    const csrfToken = checkoutForm.querySelector(
+        '[name="csrfmiddlewaretoken"]'
+    ).value;
+
+    saveCustomerNoteButton.disabled = true;
+    saveCustomerNoteButton.textContent = "Saving...";
+
+    try {
+        const response = await fetch(
+            `/sales/customers/${customerId}/note/`,
+            {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/x-www-form-urlencoded",
+                    "X-CSRFToken": csrfToken
+                },
+                body: new URLSearchParams({
+                    note: customerNoteInput.value
+                })
+            }
+        );
+
+        const data = await response.json();
+
+        if (!response.ok || !data.success) {
+            throw new Error(data.message || "Unable to save customer note.");
+        }
+
+        const selectedOption =
+            customerSelect.options[customerSelect.selectedIndex];
+
+        selectedOption.dataset.note = data.note;
+
+        customerNoteStatus.textContent = "Customer note saved successfully.";
+
+        showMessage("Customer note saved successfully.", "Customer Note");
+
+        closeCustomerNoteModal();
+
+    } catch (error) {
+        showMessage(error.message, "Customer Note");
+    } finally {
+        saveCustomerNoteButton.disabled = false;
+        saveCustomerNoteButton.textContent = "Save Note";
+    }
+});
 
 
+// ---------- CUSTOMER MANAGEMENT MODAL ----------
+
+const customerManagementModal = document.getElementById(
+    "customerManagementModal"
+);
+
+const openCustomerManagementModalBtn = document.getElementById(
+    "openCustomerManagementModal"
+);
+
+const closeCustomerManagementModalBtn = document.getElementById(
+    "closeCustomerManagementModal"
+);
+
+const doneCustomerManagementBtn = document.getElementById(
+    "doneCustomerManagement"
+);
+
+const customerManagementSearch = document.getElementById(
+    "customerManagementSearch"
+);
+
+const customerManagementTableBody = document.getElementById(
+    "customerManagementTableBody"
+);
+
+const customerManagementCount = document.getElementById(
+    "customerManagementCount"
+);
+
+const customerManagementLoading = document.getElementById(
+    "customerManagementLoading"
+);
+
+const customerManagementEmpty = document.getElementById(
+    "customerManagementEmpty"
+);
+
+const refreshCustomerManagementBtn = document.getElementById(
+    "refreshCustomerManagement"
+);
+
+const addCustomerFromManagementBtn = document.getElementById(
+    "addCustomerFromManagement"
+);
 
 
+function openCustomerManagement() {
 
+    // Close More Actions Modal
+    if (actionsModal) {
+        actionsModal.classList.add("hidden");
+        actionsModal.classList.remove("flex");
+    }
+
+    // Open Customer Management Modal
+    customerManagementModal.classList.remove("hidden");
+    customerManagementModal.classList.add("flex");
+
+    loadCustomerManagement();
+}
+
+
+function closeCustomerManagement() {
+    customerManagementModal.classList.add("hidden");
+    customerManagementModal.classList.remove("flex");
+}
+
+
+async function loadCustomerManagement() {
+    const search = customerManagementSearch.value.trim();
+
+    customerManagementLoading.classList.remove("hidden");
+    customerManagementEmpty.classList.add("hidden");
+    customerManagementTableBody.innerHTML = "";
+
+    try {
+        const response = await fetch(
+            "{% url 'customer_management_data' %}?q=" +
+            encodeURIComponent(search)
+        );
+
+        const data = await response.json();
+
+        if (!response.ok || !data.success) {
+            throw new Error(data.message || "Unable to load customers.");
+        }
+
+        customerManagementCount.textContent = data.count;
+
+        if (data.customers.length === 0) {
+            customerManagementEmpty.classList.remove("hidden");
+            return;
+        }
+
+        data.customers.forEach(customer => {
+            const row = document.createElement("tr");
+            row.className = "border-b border-gray-100 hover:bg-gray-50";
+
+            const values = [
+                customer.name,
+                customer.contact_number || "—",
+                customer.address || "—",
+                customer.note || "No note"
+            ];
+
+            values.forEach((value, index) => {
+                const cell = document.createElement("td");
+
+                cell.className = "px-4 py-4";
+                cell.textContent = value;
+
+                if (index === 0) {
+                    cell.classList.add("font-semibold");
+                }
+
+                if (index === 2 || index === 3) {
+                    cell.classList.add("max-w-[220px]");
+                }
+
+                row.appendChild(cell);
+            });
+
+            const actionCell = document.createElement("td");
+            actionCell.className = "px-4 py-4 text-right";
+
+            const editButton = document.createElement("button");
+
+            editButton.type = "button";
+            editButton.textContent = "Edit";
+
+            editButton.className =
+                "rounded-lg border border-blue-200 px-4 py-2 font-semibold text-blue-600 hover:bg-blue-50";
+
+            editButton.dataset.customerId = customer.id;
+
+            // Open Edit Customer Modal
+            editButton.addEventListener("click", function() {
+                openEditCustomerModal(customer);
+            });
+
+            actionCell.appendChild(editButton);
+            row.appendChild(actionCell);
+
+            customerManagementTableBody.appendChild(row);
+        });
+
+    } catch (error) {
+        console.error("Customer Management Error:", error);
+
+        customerManagementTableBody.innerHTML = `
+            <tr>
+                <td colspan="5" class="px-4 py-10 text-center text-red-500">
+                    Unable to load customers. Please try again.
+                </td>
+            </tr>
+        `;
+
+    } finally {
+        customerManagementLoading.classList.add("hidden");
+    }
+}
+
+
+closeCustomerManagementModalBtn.addEventListener(
+    "click",
+    closeCustomerManagement
+);
+
+doneCustomerManagementBtn.addEventListener(
+    "click",
+    closeCustomerManagement
+);
+
+
+// CLOSE WHEN CLICKING BACKGROUND
+customerManagementModal.addEventListener("click", function(event) {
+    if (event.target === customerManagementModal) {
+        closeCustomerManagement();
+    }
+});
+
+
+// SEARCH
+customerManagementSearch.addEventListener("input", function() {
+    loadCustomerManagement();
+});
+
+
+// REFRESH
+refreshCustomerManagementBtn.addEventListener(
+    "click",
+    loadCustomerManagement
+);
+
+
+// ADD CUSTOMER FROM CUSTOMER MANAGEMENT
+addCustomerFromManagementBtn.addEventListener("click", function() {
+    closeCustomerManagement();
+    openAddCustomerModal();
+});
+
+// ---------- EDIT CUSTOMER MODAL ----------
+
+const editCustomerModal = document.getElementById("editCustomerModal");
+const editCustomerForm = document.getElementById("editCustomerForm");
+
+const closeEditCustomerModalBtn = document.getElementById("closeEditCustomerModal");
+const cancelEditCustomerBtn = document.getElementById("cancelEditCustomer");
+
+const saveEditCustomerBtn = document.getElementById("saveEditCustomer");
+
+
+function openEditCustomerModal(customer) {
+
+    document.getElementById("editCustomerId").value = customer.id;
+    document.getElementById("editCustomerName").value = customer.name;
+    document.getElementById("editCustomerContact").value = customer.contact_number || "";
+    document.getElementById("editCustomerAddress").value = customer.address || "";
+    document.getElementById("editCustomerNote").value = customer.note || "";
+
+    editCustomerForm.dataset.customerId = customer.id;
+
+    customerManagementModal.classList.add("hidden");
+    customerManagementModal.classList.remove("flex");
+
+    editCustomerModal.classList.remove("hidden");
+    editCustomerModal.classList.add("flex");
+
+    document.getElementById("editCustomerName").focus();
+}
+
+
+function closeEditCustomerModal() {
+    editCustomerModal.classList.add("hidden");
+    editCustomerModal.classList.remove("flex");
+}
+
+
+closeEditCustomerModalBtn.addEventListener("click", closeEditCustomerModal);
+cancelEditCustomerBtn.addEventListener("click", closeEditCustomerModal);
+
+
+editCustomerModal.addEventListener("click", function(event) {
+    if (event.target === editCustomerModal) {
+        closeEditCustomerModal();
+    }
+});
+
+// ---------- SAVE EDITED CUSTOMER ----------
+
+editCustomerForm.addEventListener("submit", async function(event) {
+    event.preventDefault();
+
+    const customerId = editCustomerForm.dataset.customerId;
+
+    if (!customerId) {
+        showMessage("Customer ID is missing.", "Edit Customer");
+        return;
+    }
+
+    const csrfToken = editCustomerForm.querySelector(
+        '[name="csrfmiddlewaretoken"]'
+    ).value;
+
+    const formData = new FormData(editCustomerForm);
+
+    saveEditCustomerBtn.disabled = true;
+    saveEditCustomerBtn.textContent = "Saving...";
+
+    try {
+        const response = await fetch(
+            `/sales/customers/${customerId}/edit/`,
+            {
+                method: "POST",
+                headers: {
+                    "X-Requested-With": "XMLHttpRequest",
+                    "X-CSRFToken": csrfToken
+                },
+                body: formData
+            }
+        );
+
+        const data = await response.json();
+
+        if (!response.ok || !data.success) {
+            throw new Error(data.message || "Unable to update customer.");
+        }
+
+        closeEditCustomerModal();
+
+        // Reopen Customer Management
+        customerManagementModal.classList.remove("hidden");
+        customerManagementModal.classList.add("flex");
+
+        // Refresh updated customer list
+        await loadCustomerManagement();
+
+        showMessage(
+            "Customer information updated successfully.",
+            "Edit Customer"
+        );
+
+    } catch (error) {
+        console.error("Edit Customer Error:", error);
+
+        showMessage(
+            error.message || "Something went wrong.",
+            "Edit Customer"
+        );
+
+    } finally {
+        saveEditCustomerBtn.disabled = false;
+        saveEditCustomerBtn.textContent = "Save Changes";
+    }
+});
+
+// ---------- ADD CUSTOMER MODAL ----------
+
+const addCustomerModal = document.getElementById("addCustomerModal");
+
+const addCustomerForm = document.getElementById("addCustomerForm");
+
+const closeAddCustomerModalBtn = document.getElementById("closeAddCustomerModal");
+
+const cancelAddCustomerBtn = document.getElementById("cancelAddCustomer");
+
+
+function openAddCustomerModal() {
+    addCustomerModal.classList.remove("hidden");
+    addCustomerModal.classList.add("flex");
+
+    document.getElementById("newCustomerName").focus();
+}
+
+
+function closeAddCustomerModal() {
+    addCustomerModal.classList.add("hidden");
+    addCustomerModal.classList.remove("flex");
+}
+
+
+closeAddCustomerModalBtn.addEventListener("click", closeAddCustomerModal);
+
+cancelAddCustomerBtn.addEventListener("click", closeAddCustomerModal);
+
+
+// Close when clicking outside the modal
+addCustomerModal.addEventListener("click", function (event) {
+    if (event.target === addCustomerModal) {
+        closeAddCustomerModal();
+    }
+});
+
+// ---------- SAVE NEW CUSTOMER USING AJAX ----------
+
+addCustomerForm.addEventListener("submit", async function(event) {
+    event.preventDefault();
+
+    const saveButton = document.getElementById("saveNewCustomer");
+
+    const formData = new FormData(addCustomerForm);
+
+    saveButton.disabled = true;
+    saveButton.textContent = "Saving...";
+
+    try {
+        const response = await fetch(addCustomerForm.action, {
+            method: "POST",
+            headers: {
+                "X-Requested-With": "XMLHttpRequest"
+            },
+            body: formData
+        });
+
+        const data = await response.json();
+
+        if (!response.ok || !data.success) {
+            throw new Error(data.message || "Unable to save customer.");
+        }
+
+        // Clear form
+        addCustomerForm.reset();
+
+        // Close Add Customer Modal
+        closeAddCustomerModal();
+
+        // Reopen Customer Management
+        customerManagementModal.classList.remove("hidden");
+        customerManagementModal.classList.add("flex");
+
+        // Refresh customer list
+        await loadCustomerManagement();
+
+        showMessage(
+            "Customer added successfully.",
+            "Customer Management"
+        );
+
+    } catch (error) {
+        console.error("Add Customer Error:", error);
+
+        showMessage(
+            error.message || "Something went wrong.",
+            "Add Customer"
+        );
+
+    } finally {
+        saveButton.disabled = false;
+        saveButton.textContent = "Save Customer";
+    }
+});
 
 
 function addProduct(button) {
@@ -3810,7 +4885,8 @@ function isAnyModalOpen() {
         !regularModal.hidden ||
         !refundModal.classList.contains("hidden") ||
         !lookupModal.classList.contains("hidden") ||
-        !changeFundModal.classList.contains("hidden")
+        !changeFundModal.classList.contains("hidden") ||
+        !customerNoteModal.classList.contains("hidden")
     );
 }
 

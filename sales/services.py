@@ -28,6 +28,7 @@ def process_sale(
     *,
     cart_items,
     cashier,
+    customer=None,
     amount_tendered,
     payment_method,
     discount_type="none",
@@ -354,6 +355,7 @@ def process_sale(
     sale = Sale.objects.create(
         receipt_number=receipt_number,
         cashier=cashier,
+        customer=customer,
         cashier_session=cashier_session,
         subtotal=subtotal,
         discount=discount,

@@ -39,6 +39,14 @@ class Sale(models.Model):
         related_name="sales",
     )
 
+    customer = models.ForeignKey(
+        "Customer",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="sales",
+    )
+
     subtotal = models.DecimalField(
         max_digits=12,
         decimal_places=2,
@@ -629,3 +637,26 @@ class SuspendedSale(models.Model):
             f"Suspended Sale #{self.pk} - "
             f"{self.cashier.username}"
         )
+
+class Customer(models.Model):
+    name = models.CharField(max_length=200)
+    contact_number = models.CharField(
+        max_length=30,
+        blank=True,
+    )
+    address = models.TextField(
+        blank=True,
+        default="",
+    )
+    note = models.TextField(
+        blank=True,
+        default="",
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ["name"]
+
+    def __str__(self):
+        return self.name

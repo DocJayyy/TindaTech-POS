@@ -35,6 +35,7 @@ from .models import (
     AuditLog,
     CashFundMovement,
     SuspendedSale,
+    Customer,
 )
 from .services import process_sale
 from .utils import log_activity
@@ -67,6 +68,7 @@ def checkout_view(request):
         "products": products,
         "form": CheckoutForm(),
         "session": session,
+        "customers": Customer.objects.all().order_by("name"),
     }
 
     is_owner = (
@@ -166,6 +168,14 @@ def complete_sale_view(request):
     try:
         cart_items = json.loads(request.POST.get("cart", "[]"))
         general_note = request.POST.get("general_note", "").strip()[:500]
+        customer_id = request.POST.get("customer_id", "").strip()
+        customer = None
+
+        if customer_id:
+            try:
+                customer = Customer.objects.get(pk=int(customer_id))
+            except (ValueError, Customer.DoesNotExist):
+                raise ValidationError("Selected customer is invalid.")
 
         if not isinstance(cart_items, list) or not cart_items:
             raise ValidationError(
@@ -175,6 +185,7 @@ def complete_sale_view(request):
         sale = process_sale(
             cart_items=cart_items,
             cashier=request.user,
+            customer=customer,
 
             amount_tendered=form.cleaned_data["amount_tendered"],
             payment_method=form.cleaned_data["payment_method"],
@@ -1409,6 +1420,289 @@ def is_owner_user(user):
         or user.groups.filter(name="Owner").exists()
     )
 
+# ---------- CUSTOMER MANAGEMENT ----------
+
+@login_required
+@pos_access_required
+def customer_list_view(request):
+    if not is_owner_user(request.user):
+        raise PermissionDenied(
+            "Only the owner can manage customers."
+        )
+
+    search = request.GET.get("q", "").strip()
+
+    customers = Customer.objects.all().order_by("name")
+
+    if search:
+        customers = customers.filter(
+            Q(name__icontains=search)
+            | Q(contact_number__icontains=search)
+        )
+
+    return render(
+        request,
+        "sales/customers.html",
+        {
+            "customers": customers,
+            "search": search,
+        },
+    )
+
+@login_required
+@pos_access_required
+def customer_management_data_view(request):
+    if not is_owner_user(request.user):
+        raise PermissionDenied(
+            "Only the owner can manage customers."
+        )
+
+    search = request.GET.get("q", "").strip()
+
+    customers = Customer.objects.all().order_by("name")
+
+    if search:
+        customers = customers.filter(
+            Q(name__icontains=search)
+            | Q(contact_number__icontains=search)
+        )
+
+    customer_data = [
+        {
+            "id": customer.id,
+            "name": customer.name,
+            "contact_number": customer.contact_number,
+            "address": customer.address,
+            "note": customer.note,
+        }
+        for customer in customers
+    ]
+
+    return JsonResponse({
+        "success": True,
+        "customers": customer_data,
+        "count": len(customer_data),
+    })
+
+@login_required
+@pos_access_required
+@require_POST
+def customer_create_view(request):
+    if not is_owner_user(request.user):
+        raise PermissionDenied(
+            "Only the owner can add customers."
+        )
+
+    name = request.POST.get("name", "").strip()
+    contact_number = request.POST.get(
+        "contact_number", ""
+    ).strip()
+    address = request.POST.get("address", "").strip()
+    note = request.POST.get("note", "").strip()
+
+    # Validation
+    if not name:
+        error_message = "Customer name is required."
+
+        if request.headers.get("X-Requested-With") == "XMLHttpRequest":
+            return JsonResponse({
+                "success": False,
+                "message": error_message,
+            }, status=400)
+
+        messages.error(request, error_message)
+        return redirect("customer_list")
+
+    if len(name) > 200:
+        error_message = "Customer name cannot exceed 200 characters."
+
+        if request.headers.get("X-Requested-With") == "XMLHttpRequest":
+            return JsonResponse({
+                "success": False,
+                "message": error_message,
+            }, status=400)
+
+        messages.error(request, error_message)
+        return redirect("customer_list")
+
+    if len(contact_number) > 30:
+        error_message = "Contact number cannot exceed 30 characters."
+
+        if request.headers.get("X-Requested-With") == "XMLHttpRequest":
+            return JsonResponse({
+                "success": False,
+                "message": error_message,
+            }, status=400)
+
+        messages.error(request, error_message)
+        return redirect("customer_list")
+
+    # Create customer
+    customer = Customer.objects.create(
+        name=name,
+        contact_number=contact_number,
+        address=address,
+        note=note,
+    )
+
+    # Activity log
+    log_activity(
+        request.user,
+        "Customer Added",
+        {
+            "customer_id": customer.pk,
+            "customer_name": customer.name,
+        },
+    )
+
+    # AJAX response
+    if request.headers.get("X-Requested-With") == "XMLHttpRequest":
+        return JsonResponse({
+            "success": True,
+            "message": "Customer added successfully.",
+            "customer": {
+                "id": customer.pk,
+                "name": customer.name,
+                "contact_number": customer.contact_number,
+                "address": customer.address,
+                "note": customer.note,
+            },
+        })
+
+    messages.success(
+        request,
+        "Customer added successfully."
+    )
+
+    return redirect("customer_list")
+
+
+@login_required
+@pos_access_required
+@require_POST
+def customer_update_view(request, customer_id):
+    if not is_owner_user(request.user):
+        raise PermissionDenied(
+            "Only the owner can edit customers."
+        )
+
+    customer = get_object_or_404(
+        Customer,
+        pk=customer_id,
+    )
+
+    name = request.POST.get("name", "").strip()
+    contact_number = request.POST.get(
+        "contact_number", ""
+    ).strip()
+    address = request.POST.get("address", "").strip()
+    note = request.POST.get("note", "").strip()
+
+    is_ajax = (
+        request.headers.get("X-Requested-With")
+        == "XMLHttpRequest"
+    )
+
+    # Validation
+    if not name:
+        error_message = "Customer name is required."
+
+        if is_ajax:
+            return JsonResponse({
+                "success": False,
+                "message": error_message,
+            }, status=400)
+
+        messages.error(request, error_message)
+        return redirect("customer_list")
+
+    if len(name) > 200 or len(contact_number) > 30:
+        error_message = "Please check the customer information."
+
+        if is_ajax:
+            return JsonResponse({
+                "success": False,
+                "message": error_message,
+            }, status=400)
+
+        messages.error(request, error_message)
+        return redirect("customer_list")
+
+    # Update customer
+    customer.name = name
+    customer.contact_number = contact_number
+    customer.address = address
+    customer.note = note
+
+    customer.save()
+
+    # Activity log
+    log_activity(
+        request.user,
+        "Customer Updated",
+        {
+            "customer_id": customer.pk,
+            "customer_name": customer.name,
+        },
+    )
+
+    # AJAX response
+    if is_ajax:
+        return JsonResponse({
+            "success": True,
+            "message": "Customer information updated successfully.",
+            "customer": {
+                "id": customer.pk,
+                "name": customer.name,
+                "contact_number": customer.contact_number,
+                "address": customer.address,
+                "note": customer.note,
+            },
+        })
+
+    messages.success(
+        request,
+        "Customer information updated successfully."
+    )
+
+    return redirect("customer_list")
+
+# ---------- SAVE CUSTOMER NOTE ----------
+
+@login_required
+@pos_access_required
+@require_POST
+def customer_note_update_view(request, customer_id):
+    customer = get_object_or_404(
+        Customer,
+        pk=customer_id,
+    )
+
+    note = request.POST.get("note", "").strip()
+
+    if len(note) > 2000:
+        return JsonResponse({
+            "success": False,
+            "message": "Customer note cannot exceed 2000 characters.",
+        }, status=400)
+
+    customer.note = note
+    customer.save(update_fields=["note", "updated_at"])
+
+    log_activity(
+        request.user,
+        "Customer Note Updated",
+        {
+            "customer_id": customer.pk,
+            "customer_name": customer.name,
+        },
+    )
+
+    return JsonResponse({
+        "success": True,
+        "message": "Customer note saved successfully.",
+        "note": customer.note,
+    })
 
 @login_required
 @pos_access_required
