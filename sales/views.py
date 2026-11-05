@@ -1430,24 +1430,7 @@ def customer_list_view(request):
             "Only the owner can manage customers."
         )
 
-    search = request.GET.get("q", "").strip()
-
-    customers = Customer.objects.all().order_by("name")
-
-    if search:
-        customers = customers.filter(
-            Q(name__icontains=search)
-            | Q(contact_number__icontains=search)
-        )
-
-    return render(
-        request,
-        "sales/customers.html",
-        {
-            "customers": customers,
-            "search": search,
-        },
-    )
+    return redirect("checkout")
 
 @login_required
 @pos_access_required

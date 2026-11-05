@@ -511,6 +511,34 @@
         .gn-btn:disabled { opacity: .5; cursor: not-allowed; }
         .gn-btn:disabled:hover { background: #16a34a; }
 
+        /* Customer Note modal */
+        #customerNoteModal {
+            background: rgba(15, 23, 42, .6);
+            align-items: center;
+            justify-content: center;
+            padding: 1rem;
+        }
+        .cn-card {
+            max-width: 28rem;
+            box-shadow: 0 25px 60px -12px rgba(0,0,0,.55), 0 0 0 1px rgba(0,0,0,.08);
+        }
+        .cn-input:focus {
+            outline: none !important;
+            border-color: #22c55e !important;
+            box-shadow: 0 0 0 3px rgba(34,197,94,.2) !important;
+        }
+        .cn-btn {
+            background: #16a34a;
+            color: #fff;
+            border: 0;
+            cursor: pointer;
+            transition: background .15s, transform .1s;
+        }
+        .cn-btn:hover { background: #15803d; }
+        .cn-btn:active { transform: scale(.98); }
+        .cn-btn:focus-visible { outline: 2px solid #16a34a; outline-offset: 2px; }
+        .cn-btn:disabled { opacity: .5; cursor: not-allowed; }
+        .cn-btn:disabled:hover { background: #16a34a; }
 
         /* Customer Management modal */
         #customerManagementModal {
@@ -1687,82 +1715,74 @@
         </div>
     </div>
 
-        <!-- CUSTOMER NOTE MODAL -->
-    <div id="customerNoteModal"
-        class="fixed inset-0 z-[100] hidden items-center justify-center bg-black/50 p-4">
+<!-- CUSTOMER NOTE MODAL -->
+<div id="customerNoteModal"
+     class="fixed inset-0 z-[100] hidden items-center justify-center bg-black/50 p-4">
 
-        <div class="w-full max-w-md rounded-2xl bg-white shadow-xl">
+    <div class="cn-card flex max-h-[90vh] w-full max-w-md flex-col overflow-hidden rounded-2xl bg-white">
 
-            <!-- Header -->
-            <div class="flex items-center justify-between border-b border-gray-200 px-6 py-4">
-                <div>
-                    <h2 class="text-lg font-bold text-gray-800">
-                        Customer Note
-                    </h2>
-                    <p class="mt-1 text-xs text-gray-500">
-                        Save a permanent note for this customer.
-                    </p>
-                </div>
-
-                <button type="button"
-                    id="closeCustomerNoteModal"
-                    class="rounded-lg p-2 text-gray-400 hover:bg-gray-100 hover:text-gray-700">
-                    ✕
-                </button>
+        <!-- Header -->
+        <div class="flex shrink-0 items-center justify-between border-b border-gray-200 px-5 py-3">
+            <div>
+                <h2 class="text-base font-bold text-gray-800">Customer Note</h2>
+                <p class="text-xs text-gray-500">Save a permanent note for this customer</p>
             </div>
 
-            <!-- Body -->
-            <div class="p-6">
+            <button type="button"
+                    id="closeCustomerNoteModal"
+                    class="text-2xl leading-none text-gray-400 hover:text-gray-700">
+                &times;
+            </button>
+        </div>
 
-                <div class="mb-4 rounded-xl bg-gray-50 p-3">
-                    <p class="text-xs text-gray-500">
-                        Customer
-                    </p>
+        <!-- Body -->
+        <div class="min-h-0 flex-1 space-y-3.5 overflow-y-auto p-5">
 
-                    <p id="customerNoteName"
-                        class="mt-1 font-semibold text-gray-800">
-                        No customer selected
-                    </p>
-                </div>
+            <div class="rounded-xl bg-gray-50 px-3 py-2.5">
+                <p class="text-xs text-gray-500">Customer</p>
+                <p id="customerNoteName"
+                   class="mt-0.5 text-sm font-semibold text-gray-800">
+                    No customer selected
+                </p>
+            </div>
 
+            <div>
                 <label for="customerNoteInput"
-                    class="mb-2 block text-sm font-semibold text-gray-700">
+                       class="mb-1.5 block text-sm font-semibold text-gray-700">
                     Customer Note
                 </label>
 
-                <textarea
-                    id="customerNoteInput"
-                    rows="5"
-                    maxlength="2000"
-                    placeholder="Enter important information about this customer..."
-                    class="w-full resize-none rounded-xl border border-gray-300 px-4 py-3 text-sm text-gray-700 outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-100"></textarea>
+                <textarea id="customerNoteInput"
+                          rows="4"
+                          maxlength="2000"
+                          placeholder="Enter important information about this customer..."
+                          class="cn-input w-full resize-none rounded-xl border border-gray-300 px-3 py-2 text-sm outline-none"></textarea>
 
                 <p id="customerNoteStatus"
-                    class="mt-2 rounded-lg bg-gray-50 px-3 py-2 text-xs text-gray-500">
+                   class="mt-2 rounded-lg bg-gray-50 px-3 py-2 text-xs text-gray-500">
                     This note will be saved to the selected customer.
                 </p>
-
-            </div>
-
-            <!-- Footer -->
-            <div class="flex justify-end gap-3 border-t border-gray-200 px-6 py-4">
-
-                <button type="button"
-                    id="cancelCustomerNote"
-                    class="rounded-xl border border-gray-300 px-4 py-2 text-sm font-semibold text-gray-600 hover:bg-gray-50">
-                    Cancel
-                </button>
-
-                <button type="button"
-                    id="saveCustomerNote"
-                    class="rounded-xl bg-blue-600 px-5 py-2 text-sm font-semibold text-white hover:bg-blue-700">
-                    Save Note
-                </button>
-
             </div>
 
         </div>
+
+        <!-- Footer -->
+        <div class="flex shrink-0 justify-end gap-2.5 border-t border-gray-200 px-5 py-3">
+            <button type="button"
+                    id="cancelCustomerNote"
+                    class="rounded-xl border border-gray-300 px-4 py-2 text-sm font-semibold text-gray-600 hover:bg-gray-50">
+                Cancel
+            </button>
+
+            <button type="button"
+                    id="saveCustomerNote"
+                    class="cn-btn rounded-xl px-4 py-2 text-sm font-semibold">
+                Save Note
+            </button>
+        </div>
+
     </div>
+</div>
 
 
 <!-- CUSTOMER MANAGEMENT MODAL -->
