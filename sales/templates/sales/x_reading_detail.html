@@ -674,6 +674,16 @@
                             <dd class="tabular text-ink">₱{{ reading.report_data.additional_change_fund|floatformat:2 }}</dd>
                         </div>
                     {% endif %}
+                    
+                    <!-- Only shown for readings saved after the cash-takeout update -->
+                    {% if reading.report_data.cash_takeout %}
+                        <div class="flex justify-between gap-4 py-3.5">
+                            <dt class="text-slate-500">Cash Takeout</dt>
+                            <dd class="tabular text-red-600">
+                                ₱{{ reading.report_data.cash_takeout|floatformat:2 }}
+                            </dd>
+                        </div>
+                    {% endif %}
 
                     <div class="flex justify-between gap-4 py-3.5">
                         <dt class="text-slate-500">Cash sales</dt>

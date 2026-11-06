@@ -1835,6 +1835,84 @@
 </div>
 
 
+<!-- CASH TAKEOUT MODAL -->
+<div id="cashTakeoutModal"
+     class="fixed inset-0 z-[100] hidden items-center justify-center bg-black/50 p-4">
+
+    <div class="cf-card w-full max-w-md rounded-2xl bg-white">
+
+        <div class="flex items-center justify-between border-b border-gray-200 px-6 py-4">
+            <div>
+                <h2 class="text-lg font-bold text-gray-800">Cash Takeout</h2>
+                <p class="text-sm text-gray-500">Remove cash from the cashier drawer</p>
+            </div>
+
+            <button type="button"
+                    onclick="closeCashTakeoutModal()"
+                    class="text-2xl text-gray-400 hover:text-gray-700">
+                &times;
+            </button>
+        </div>
+
+        <form id="cashTakeoutForm"
+              class="space-y-5 p-6">
+
+            {% csrf_token %}
+
+            <div>
+                <label for="cashTakeoutAmount"
+                       class="mb-2 block text-sm font-semibold text-gray-700">
+                    Amount to Take Out (₱)
+                </label>
+
+                <input type="number"
+                       id="cashTakeoutAmount"
+                       name="amount"
+                       min="0.01"
+                       step="0.01"
+                       required
+                       placeholder="0.00"
+                       class="cf-input w-full rounded-xl border border-gray-300 px-4 py-3 text-lg font-semibold outline-none">
+            </div>
+
+            <div>
+                <label for="cashTakeoutReason"
+                       class="mb-2 block text-sm font-semibold text-gray-700">
+                    Reason
+                </label>
+
+                <textarea id="cashTakeoutReason"
+                          name="reason"
+                          rows="3"
+                          maxlength="255"
+                          required
+                          placeholder="Enter reason for taking out cash..."
+                          class="cf-input w-full resize-none rounded-xl border border-gray-300 px-4 py-3 outline-none"></textarea>
+            </div>
+
+            <div id="cashTakeoutError"
+                 class="hidden rounded-lg bg-red-50 px-4 py-3 text-sm text-red-600">
+            </div>
+
+            <div class="flex justify-end gap-3 pt-2">
+                <button type="button"
+                        onclick="closeCashTakeoutModal()"
+                        class="rounded-xl border border-gray-300 px-5 py-2.5 font-semibold text-gray-600 hover:bg-gray-50">
+                    Cancel
+                </button>
+
+                <button type="submit"
+                        id="cashTakeoutSubmit"
+                        class="cf-btn rounded-xl px-5 py-2.5 font-semibold">
+                    Confirm Takeout
+                </button>
+            </div>
+
+        </form>
+    </div>
+</div>
+
+
     <!-- RETRIEVE TRANSACTION MODAL -->
     <div id="retrieveModal"
         class="fixed inset-0 z-[100] hidden items-center justify-center bg-black/50 p-4">
@@ -2586,6 +2664,7 @@
    20. Customer management / Edit customer / Add customer
    21. Reward points modal
    22. Pricelist modal
+   23. Cash Checkout
    22. Checkout (form submit) validation
    23. Keyboard: Escape handlers
    24. Keyboard: POS shortcuts (Alt + key, F-keys, cart navigation)
@@ -3147,7 +3226,7 @@ actionTiles.forEach(tile => {
                 openChangeFundModal();
                 break;
             case "cash-takeout":
-                showMessage("Cash takeout records cash removed from the drawer.", "Cash Takeout");
+                openCashTakeoutModal();
                 break;
             case "declare-tender":
                 showMessage("Declare the tender you received to reconcile the drawer.", "Declare Tender");
@@ -5984,6 +6063,111 @@ document.addEventListener("keydown", event => {
 });
 
 
+
+/* =====================================================================
+   23. CASH TAKEOUT MODAL (remove cash from the drawer)
+   ===================================================================== */
+
+const cashTakeoutModal = document.getElementById("cashTakeoutModal");
+const cashTakeoutForm = document.getElementById("cashTakeoutForm");
+const cashTakeoutAmount = document.getElementById("cashTakeoutAmount");
+const cashTakeoutReason = document.getElementById("cashTakeoutReason");
+const cashTakeoutSubmit = document.getElementById("cashTakeoutSubmit");
+const cashTakeoutError = document.getElementById("cashTakeoutError");
+
+function openCashTakeoutModal() {
+    cashTakeoutForm.reset();
+    cashTakeoutError.classList.add("hidden");
+
+    cashTakeoutModal.classList.remove("hidden");
+    cashTakeoutModal.classList.add("flex");
+
+    setTimeout(() => cashTakeoutAmount.focus(), 100);
+}
+
+function closeCashTakeoutModal() {
+    cashTakeoutModal.classList.add("hidden");
+    cashTakeoutModal.classList.remove("flex");
+    search.focus();
+}
+
+// Submit cash takeout to the server
+cashTakeoutForm.addEventListener("submit", async event => {
+    event.preventDefault();
+
+    const amount = cashTakeoutAmount.value.trim();
+    const reason = cashTakeoutReason.value.trim();
+
+    cashTakeoutError.classList.add("hidden");
+    cashTakeoutError.textContent = "";
+
+    if (!amount || !Number.isFinite(Number(amount)) || Number(amount) <= 0) {
+        cashTakeoutError.textContent = "Please enter a valid amount.";
+        cashTakeoutError.classList.remove("hidden");
+        cashTakeoutAmount.focus();
+        return;
+    }
+
+    if (!reason) {
+        cashTakeoutError.textContent = "Please enter a reason.";
+        cashTakeoutError.classList.remove("hidden");
+        cashTakeoutReason.focus();
+        return;
+    }
+
+    const csrfInput = cashTakeoutForm.querySelector(
+        '[name="csrfmiddlewaretoken"]'
+    );
+
+    cashTakeoutSubmit.disabled = true;
+    cashTakeoutSubmit.textContent = "Processing...";
+
+    try {
+        const response = await fetch(
+            "{% url 'cash_takeout' %}",
+            {
+                method: "POST",
+                credentials: "same-origin",
+                headers: {
+                    "X-CSRFToken": csrfInput.value,
+                    "X-Requested-With": "XMLHttpRequest"
+                },
+                body: new FormData(cashTakeoutForm)
+            }
+        );
+
+        const data = await response.json();
+
+        if (!response.ok || !data.success) {
+            throw new Error(
+                data.message || "Unable to process cash takeout."
+            );
+        }
+
+        closeCashTakeoutModal();
+
+        showMessage(
+            `₱${Number(data.amount).toLocaleString("en-PH", {
+                minimumFractionDigits: 2,
+                maximumFractionDigits: 2
+            })} has been taken out of the cash drawer.`,
+            "Cash Takeout Successful"
+        );
+
+    } catch (error) {
+        cashTakeoutError.textContent =
+            error.message || "Something went wrong.";
+
+        cashTakeoutError.classList.remove("hidden");
+
+    } finally {
+        cashTakeoutSubmit.disabled = false;
+        cashTakeoutSubmit.textContent = "Confirm Takeout";
+    }
+});
+
+
+
 /* =====================================================================
    24. KEYBOARD: POS SHORTCUTS
    ===================================================================== */
@@ -6047,6 +6231,7 @@ function isAnyModalOpen() {
         !lookupModal.classList.contains("hidden") ||
         !changeFundModal.classList.contains("hidden") ||
         !customerNoteModal.classList.contains("hidden") ||
+        !cashTakeoutModal.classList.contains("hidden") ||
         !rewardModal.hidden
     );
 }
@@ -6187,6 +6372,7 @@ document.addEventListener("keydown", function (event) {
         !lookupModal.classList.contains("hidden") ||
         !refundModal.classList.contains("hidden") ||
         !changeFundModal.classList.contains("hidden") ||
+        !cashTakeoutModal.classList.contains("hidden") ||
         !priceOverrideModal.classList.contains("hidden");
         
 

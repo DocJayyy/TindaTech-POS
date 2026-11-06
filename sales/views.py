@@ -696,6 +696,7 @@ def x_reading_view(request):
         "non_cash_sales": Decimal("0.00"),
         "cash_refunds": Decimal("0.00"),
         "additional_change_fund": Decimal("0.00"),
+        "cash_takeout": Decimal("0.00"),
         "expected_cash": Decimal("0.00"),
     }
 
@@ -775,10 +776,22 @@ def x_reading_view(request):
         or Decimal("0.00")
     )
 
-    # Extra change fund added to the drawer during this shift.
+    # Cash added to the drawer during this shift.
     additional_change_fund = (
         CashFundMovement.objects.filter(
-            session=session
+            session=session,
+            movement_type=CashFundMovement.MovementType.CASH_IN,
+        ).aggregate(
+            total=Sum("amount")
+        )["total"]
+        or Decimal("0.00")
+    )
+
+    # Cash removed from the drawer during this shift.
+    cash_takeout = (
+        CashFundMovement.objects.filter(
+            session=session,
+            movement_type=CashFundMovement.MovementType.CASH_OUT,
         ).aggregate(
             total=Sum("amount")
         )["total"]
@@ -790,12 +803,13 @@ def x_reading_view(request):
         status=Sale.Status.VOIDED,
     ).count()
 
-    # Opening cash + change fund + cash sales - cash refunds
+    # Opening cash + cash in + cash sales - refunds - cash takeout
     expected_cash = (
         session.opening_cash
         + additional_change_fund
         + cash_sales
         - cash_refunds
+        - cash_takeout
     ).quantize(Decimal("0.01"))
 
     # ------------------------------------------------------------------
@@ -825,6 +839,7 @@ def x_reading_view(request):
                     "non_cash_sales": str(non_cash_sales),
                     "cash_refunds": str(cash_refunds),
                     "additional_change_fund": str(additional_change_fund),
+                    "cash_takeout": str(cash_takeout),
                     "transaction_count": transaction_count,
                     "voided_count": voided_count,
                     "expected_cash": str(expected_cash),
@@ -849,6 +864,7 @@ def x_reading_view(request):
                         "non_cash_sales": str(non_cash_sales),
                         "cash_refunds": str(cash_refunds),
                         "additional_change_fund": str(additional_change_fund),
+                        "cash_takeout": str(cash_takeout),
                         "transaction_count": transaction_count,
                         "voided_count": voided_count,
                         "expected_cash": str(expected_cash),
@@ -884,6 +900,7 @@ def x_reading_view(request):
         "non_cash_sales": non_cash_sales,
         "cash_refunds": cash_refunds,
         "additional_change_fund": additional_change_fund,
+        "cash_takeout": cash_takeout,
         "expected_cash": expected_cash,
     })
 
@@ -976,10 +993,25 @@ def close_shift_view(request):
             or Decimal("0.00")
         )
 
+        # Cash added to the drawer during this shift.
         additional_change_fund = (
             CashFundMovement.objects.filter(
-                session=session
-            ).aggregate(total=Sum("amount"))["total"]
+                session=session,
+                movement_type=CashFundMovement.MovementType.CASH_IN,
+            ).aggregate(
+                total=Sum("amount")
+            )["total"]
+            or Decimal("0.00")
+        )
+
+        # Cash removed from the drawer during this shift.
+        cash_takeout = (
+            CashFundMovement.objects.filter(
+                session=session,
+                movement_type=CashFundMovement.MovementType.CASH_OUT,
+            ).aggregate(
+                total=Sum("amount")
+            )["total"]
             or Decimal("0.00")
         )
 
@@ -988,6 +1020,7 @@ def close_shift_view(request):
             + additional_change_fund
             + cash_sales
             - cash_refunds
+            - cash_takeout
         ).quantize(Decimal("0.01"))
 
         cash_variance = (
@@ -1006,6 +1039,7 @@ def close_shift_view(request):
             "cashier": request.user.username,
             "opening_cash": str(session.opening_cash),
             "additional_change_fund": str(additional_change_fund),
+            "cash_takeout": str(cash_takeout),
             "total_sales": str(total_sales),
             "cash_sales": str(cash_sales),
             "non_cash_sales": str(non_cash_sales),
@@ -1176,9 +1210,22 @@ def z_reading_view(request):
             or Decimal("0.00")
         )
 
+        # Cash added to the drawer during this shift.
         additional_change_fund = (
             CashFundMovement.objects.filter(
-                session=session
+                session=session,
+                movement_type=CashFundMovement.MovementType.CASH_IN,
+            ).aggregate(
+                total=Sum("amount")
+            )["total"]
+            or Decimal("0.00")
+        )
+
+        # Cash removed from the drawer during this shift.
+        cash_takeout = (
+            CashFundMovement.objects.filter(
+                session=session,
+                movement_type=CashFundMovement.MovementType.CASH_OUT,
             ).aggregate(
                 total=Sum("amount")
             )["total"]
@@ -1190,6 +1237,7 @@ def z_reading_view(request):
             + additional_change_fund
             + cash_sales
             - cash_refunds
+            - cash_takeout
         ).quantize(Decimal("0.01"))
 
         context = {
@@ -1200,6 +1248,7 @@ def z_reading_view(request):
             "non_cash_sales": non_cash_sales,
             "cash_refunds": cash_refunds,
             "additional_change_fund": additional_change_fund,
+            "cash_takeout": cash_takeout,
             "expected_cash": expected_cash,
             "transaction_count": valid_sales.count(),
             "voided_count": sales.filter(
@@ -2062,12 +2111,13 @@ def change_fund_view(request):
                 "message": "You don't have an open cashier shift."
             }, status=400)
 
-        movement = CashFundMovement.objects.create(
-            session=session,
-            amount=amount,
-            reason=reason,
-            processed_by=request.user,
-        )
+            movement = CashFundMovement.objects.create(
+                session=session,
+                movement_type=CashFundMovement.MovementType.CASH_IN,
+                amount=amount,
+                reason=reason,
+                processed_by=request.user,
+            )
 
     log_activity(
         request.user,
@@ -2085,6 +2135,174 @@ def change_fund_view(request):
         "message": "Change fund added successfully.",
         "amount": str(movement.amount),
     })
+
+
+
+@login_required
+@pos_access_required
+@require_POST
+def cash_takeout_view(request):
+    try:
+        amount = Decimal(
+            request.POST.get("amount", "").strip()
+        ).quantize(Decimal("0.01"))
+
+    except (InvalidOperation, ValueError, TypeError):
+        return JsonResponse({
+            "success": False,
+            "message": "Enter a valid cash takeout amount."
+        }, status=400)
+
+    reason = request.POST.get("reason", "").strip()
+
+    if not amount.is_finite() or amount <= Decimal("0.00"):
+        return JsonResponse({
+            "success": False,
+            "message": "Amount must be greater than zero."
+        }, status=400)
+
+    if not reason:
+        return JsonResponse({
+            "success": False,
+            "message": "Please enter a reason."
+        }, status=400)
+
+    if len(reason) > 255:
+        return JsonResponse({
+            "success": False,
+            "message": "Reason cannot exceed 255 characters."
+        }, status=400)
+
+    with transaction.atomic():
+        session = (
+            CashierSession.objects
+            .select_for_update()
+            .filter(
+                cashier=request.user,
+                status=CashierSession.Status.OPEN,
+            )
+            .order_by("-opened_at")
+            .first()
+        )
+
+        if not session:
+            return JsonResponse({
+                "success": False,
+                "message": "You don't have an open cashier shift."
+            }, status=400)
+
+        sales = Sale.objects.filter(
+            cashier_session=session
+        )
+
+        completed_sales = sales.filter(
+            status=Sale.Status.COMPLETED
+        )
+
+        voided_by_adjustment = SaleAdjustment.objects.filter(
+            sale__cashier_session=session,
+            status=SaleAdjustment.Status.COMPLETED,
+            adjustment_type=SaleAdjustment.AdjustmentType.VOID,
+        ).values_list("sale_id", flat=True)
+
+        valid_sales = completed_sales.exclude(
+            pk__in=voided_by_adjustment
+        )
+
+        cash_sales = (
+            valid_sales.filter(
+                payment_method=Sale.PaymentMethod.CASH
+            ).aggregate(
+                total=Sum("total_amount")
+            )["total"]
+            or Decimal("0.00")
+        )
+
+        cash_refunds = (
+            SaleAdjustment.objects.filter(
+                sale__cashier_session=session,
+                sale__status=Sale.Status.COMPLETED,
+                sale__payment_method=Sale.PaymentMethod.CASH,
+                status=SaleAdjustment.Status.COMPLETED,
+                adjustment_type__in=[
+                    SaleAdjustment.AdjustmentType.RETURN,
+                    SaleAdjustment.AdjustmentType.REFUND,
+                ],
+            )
+            .exclude(
+                sale_id__in=voided_by_adjustment
+            )
+            .aggregate(
+                total=Sum("amount")
+            )["total"]
+            or Decimal("0.00")
+        )
+
+        cash_in = (
+            CashFundMovement.objects.filter(
+                session=session,
+                movement_type=CashFundMovement.MovementType.CASH_IN,
+            ).aggregate(
+                total=Sum("amount")
+            )["total"]
+            or Decimal("0.00")
+        )
+
+        cash_out = (
+            CashFundMovement.objects.filter(
+                session=session,
+                movement_type=CashFundMovement.MovementType.CASH_OUT,
+            ).aggregate(
+                total=Sum("amount")
+            )["total"]
+            or Decimal("0.00")
+        )
+
+        available_cash = (
+            session.opening_cash
+            + cash_in
+            + cash_sales
+            - cash_refunds
+            - cash_out
+        ).quantize(Decimal("0.01"))
+
+        if amount > available_cash:
+            return JsonResponse({
+                "success": False,
+                "message": (
+                    f"Insufficient cash in drawer. "
+                    f"Available cash: ₱{available_cash:,.2f}"
+                )
+            }, status=400)
+
+        movement = CashFundMovement.objects.create(
+            session=session,
+            movement_type=CashFundMovement.MovementType.CASH_OUT,
+            amount=amount,
+            reason=reason,
+            processed_by=request.user,
+        )
+
+    log_activity(
+        request.user,
+        "Cash Takeout Processed",
+        {
+            "session_id": session.pk,
+            "movement_id": movement.pk,
+            "amount": str(amount),
+            "reason": reason,
+        },
+    )
+
+    return JsonResponse({
+        "success": True,
+        "message": "Cash takeout processed successfully.",
+        "amount": str(movement.amount),
+        "available_cash": str(
+            available_cash - movement.amount
+        ),
+    })
+
 
 
 @login_required

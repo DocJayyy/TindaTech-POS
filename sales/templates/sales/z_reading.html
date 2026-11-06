@@ -593,6 +593,28 @@
                         </dd>
                     </div>
 
+                    <!-- Additional Change Fund -->
+                    <div class="rounded-3xl bg-white p-5 shadow-sm">
+                        <dt class="text-sm text-slate-500">
+                            Additional Change Fund
+                        </dt>
+
+                        <dd class="tabular mt-3 text-3xl font-semibold tracking-tight text-emerald-600">
+                            ₱{{ report.additional_change_fund|default:"0.00"|floatformat:2 }}
+                        </dd>
+                    </div>
+
+                    <!-- Cash Takeout -->
+                    <div class="rounded-3xl bg-white p-5 shadow-sm">
+                        <dt class="text-sm text-slate-500">
+                            Cash Takeout
+                        </dt>
+
+                        <dd class="tabular mt-3 text-3xl font-semibold tracking-tight text-red-600">
+                            ₱{{ report.cash_takeout|default:"0.00"|floatformat:2 }}
+                        </dd>
+                    </div>
+
                     <div class="rounded-3xl bg-white p-5 shadow-sm">
                         <dt class="text-sm text-slate-500">
                             Expected cash
@@ -682,6 +704,17 @@
                             </dd>
                         </div>
 
+                        <!-- Cash Takeout -->
+                        <div class="rounded-3xl bg-white p-5 shadow-sm">
+                            <dt class="text-sm text-slate-500">
+                                Cash Takeout
+                            </dt>
+
+                            <dd class="tabular mt-3 text-3xl font-semibold tracking-tight text-red-600">
+                                ₱{{ cash_takeout|default:"0.00"|floatformat:2 }}
+                            </dd>
+                        </div>
+
                         <!-- Total sales -->
                         <div class="rounded-3xl bg-white p-5 shadow-sm">
                             <dt class="text-sm text-slate-500">
@@ -738,7 +771,7 @@
                             </dd>
 
                             <p class="mt-1 text-xs text-indigo-200">
-                                Opening cash + additional change fund + cash sales − cash refunds
+                                Opening cash + additional change fund + cash sales − cash refunds − cash takeout
                             </p>
 
                         </div>

@@ -38,4 +38,5 @@ urlpatterns = [
     path("reward-settings/",views.reward_settings_view,name="reward_settings"),
     path("customers/<int:customer_id>/reward-balance/",views.customer_reward_balance_view,name="customer_reward_balance"),
     path("pricelist/data/",views.pricelist_data_view,name="pricelist_data"),
+    path("cash-takeout/", views.cash_takeout_view, name="cash_takeout"),
 ]

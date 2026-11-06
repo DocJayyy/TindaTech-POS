@@ -353,6 +353,9 @@
                         </div>
                         <dt class="mt-6 text-sm text-slate-500">Expected cash in drawer</dt>
                         <dd class="tabular mt-1 text-3xl font-semibold tracking-tight text-ink">₱{{ report.expected_cash|default:"0.00"|floatformat:2 }}</dd>
+                        <p class="mt-1 text-xs text-slate-400">
+                            Opening cash + change fund + cash sales − cash refunds − cash takeout
+                        </p>
                     </div>
 
                     <!-- Actual cash -->
@@ -412,6 +415,14 @@
                         <dt class="text-slate-500">Additional Change Fund</dt>
                         <dd class="tabular font-medium text-ink">
                             ₱{{ report.additional_change_fund|default:"0.00"|floatformat:2 }}  
+                        </dd>
+                    </div>
+
+                    <!-- Cash Takeout -->
+                    <div class="flex justify-between gap-4 py-3.5">
+                        <dt class="text-slate-500">Cash Takeout</dt>
+                        <dd class="tabular font-medium text-red-600">
+                            ₱{{ report.cash_takeout|default:"0.00"|floatformat:2 }}
                         </dd>
                     </div>
 

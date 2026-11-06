@@ -470,11 +470,23 @@ class CashierSession(models.Model):
         )
 
 
+
 class CashFundMovement(models.Model):
+
+    class MovementType(models.TextChoices):
+        CASH_IN = "cash_in", "Cash In"
+        CASH_OUT = "cash_out", "Cash Out"
+
     session = models.ForeignKey(
         CashierSession,
         on_delete=models.PROTECT,
         related_name="cash_fund_movements",
+    )
+
+    movement_type = models.CharField(
+        max_length=10,
+        choices=MovementType.choices,
+        default=MovementType.CASH_IN,
     )
 
     amount = models.DecimalField(
@@ -505,9 +517,10 @@ class CashFundMovement(models.Model):
 
     def __str__(self):
         return (
-            f"Change Fund - ₱{self.amount} "
-            f"({self.session})"
+            f"{self.get_movement_type_display()} - "
+            f"₱{self.amount} ({self.session})"
         )
+
 
 
 class XReading(models.Model):
