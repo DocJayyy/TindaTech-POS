@@ -68,6 +68,10 @@
             <td>Opening cash</td>
             <td>PHP {{ reading.report_data.opening_cash|default:"0.00" }}</td>
         </tr>
+        <tr>
+            <td>Additonal Cash Fund</td>
+            <td>PHP {{ reading.report_data.additional_change_fund|default:"0.00" }}</td>
+        </tr>
         <tr class="total">
             <td>Total sales</td>
             <td>PHP {{ reading.report_data.total_sales|default:"0.00" }}</td>
