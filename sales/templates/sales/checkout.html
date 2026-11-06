@@ -1339,8 +1339,6 @@
 
                 <button type="button" class="action-tile action-tile--danger" data-action="z-reading"><span class="tile-icon">📄</span><span>Z-Reading</span><span class="hint">Alt+Z</span></button>
 
-                <button type="button" class="action-tile c-cyan" data-action="item-finder"><span class="tile-icon">☰</span><span>Item Finder</span><span class="hint">Alt+5</span></button>
-
                 <button type="button" class="action-tile c-violet" data-action="salesperson"><span class="tile-icon">👤</span><span>Salesperson</span><span class="hint">Alt+S</span></button>
 
                 <button type="button" class="action-tile c-yellow" data-action="retrieve"><span class="tile-icon">▶</span><span>Retrieve</span><span class="hint">Alt+8</span></button>
@@ -3179,7 +3177,6 @@ actionTiles.forEach(tile => {
                 break;
 
             case "inventory-lookup":
-            case "item-finder":
                 openLookupModal("inventory-lookup");
                 break;
 
@@ -6017,7 +6014,6 @@ const ALT_SHORTCUTS = {
     Digit4: "declare-tender",
     KeyX: "x-reading",
     KeyZ: "z-reading",
-    Digit5: "item-finder",
     KeyS: "salesperson",
     Digit8: "retrieve",
     KeyY: "sales-history",
