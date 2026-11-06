@@ -25,20 +25,62 @@
         }
     </script>
     <style>
+        /* =====================================================================
+        POS STYLESHEET – TABLE OF CONTENTS
+        ---------------------------------------------------------------------
+            1. Fonts & base styles
+            2. Form fields & payment panel layout
+            3. POS main layout (top bar, cart, products, action buttons)
+            3a. Base POS layout
+            3b. Compact cart + payment
+            3c. Action tiles with shortcut hint
+            3d. Action button colors
+            4. MODALS
+            4a. Message modal
+            4b. Confirm modal
+            4c. More-actions modal (+ tile colors)
+            4d. Government discount modal
+            4e. Price override modal
+            4f. Refund modal
+            4g. Change fund modal
+            4h. Retrieve modal
+            4i. General note modal
+            4j. Customer note modal
+            4k. Customer management modal
+            4l. Add customer modal
+            4m. Edit customer modal
+            4n. Claim reward modal
+
+        IMPORTANT: in CSS, the ORDER of rules matters (the later rule wins
+        when specificity is equal). The relative order of all rules that
+        affect each other was kept exactly as in your original file.
+        ===================================================================== */
+
+
+        /* =====================================================================
+        1. FONTS & BASE STYLES
+        ===================================================================== */
+
+        /* Poppins font files (Regular / Medium / SemiBold / Bold) */
         @font-face { font-family: 'Poppins'; src: url("{% static 'fonts/Poppins-Regular.ttf' %}") format('truetype'); font-weight: 400; font-style: normal; font-display: swap; }
         @font-face { font-family: 'Poppins'; src: url("{% static 'fonts/Poppins-Medium.ttf' %}") format('truetype'); font-weight: 500; font-style: normal; font-display: swap; }
         @font-face { font-family: 'Poppins'; src: url("{% static 'fonts/Poppins-SemiBold.ttf' %}") format('truetype'); font-weight: 600; font-style: normal; font-display: swap; }
         @font-face { font-family: 'Poppins'; src: url("{% static 'fonts/Poppins-Bold.ttf' %}") format('truetype'); font-weight: 700; font-style: normal; font-display: swap; }
 
         body { font-family: 'Poppins', sans-serif; }
-        html { font-size: 112.5%; }
-        .tabular { font-variant-numeric: tabular-nums; }
-        [hidden] { display: none !important; }
+        html { font-size: 112.5%; }                              /* base font size (1rem = 18px) */
+        .tabular { font-variant-numeric: tabular-nums; }         /* numbers line up evenly */
+        [hidden] { display: none !important; }                   /* the "hidden" attribute always hides */
         .hero-card { background: linear-gradient(135deg, #4F55F0 0%, #3A40DC 55%, #3035C9 100%); }
 
-        /* Live clock */
+        /* Live clock (hidden on small phones) */
         .live-clock { display: block; }
         @media (max-width: 480px) { .live-clock { display: none; } }
+
+
+        /* =====================================================================
+        2. FORM FIELDS & PAYMENT PANEL LAYOUT
+        ===================================================================== */
 
         /* Form fields (payment panel) */
         .field label { display: block; margin-bottom: .25rem; font-size: .75rem; font-weight: 500; color: #64748b; }
@@ -60,7 +102,7 @@
         .row-4 { grid-template-columns: repeat(4, minmax(0, 1fr)); }
         .row-5 { grid-template-columns: repeat(5, minmax(0, 1fr)); gap: .4rem; }
         .field .stack-sm > * + * { margin-top: .35rem; }
-        .field input, .field select { padding: .45rem .65rem; }
+        .field input, .field select { padding: .45rem .65rem; }   /* tighter padding (overrides the one above) */
         @media (min-width: 1024px) {
             .pay-panel { max-height: 40vh; overflow-y: auto; }
             .pay-form { grid-template-columns: minmax(0, 1fr) minmax(0, 1.5fr); }
@@ -71,7 +113,212 @@
         /* Section titles inside payment panel */
         .group-title { margin-bottom: .5rem; font-size: .8125rem; font-weight: 600; color: #16161D; }
 
-        /* Message modal */
+
+        /* =====================================================================
+        3. POS MAIN LAYOUT
+        ===================================================================== */
+
+        /* ---------- 3a. Base POS layout (top bar, search, cart, products, actions) ---------- */
+
+        .pos-body { min-height: 100vh; }
+
+        /* Top bar */
+        .pos-top { display: flex; align-items: center; gap: 1rem; background: #fff; padding: .5rem 1rem; box-shadow: 0 1px 2px rgba(0,0,0,.06); flex-shrink: 0; }
+        .pos-brand { display: flex; align-items: center; gap: .6rem; }
+
+        /* Product search box */
+        .pos-search {
+            position: relative;
+            flex-shrink: 0;
+            margin-bottom: .75rem;
+        }
+
+        /* Products panel (first definition – flex column, no scroll) */
+        .pos-products {
+            flex: 1;
+            min-height: 18rem;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            background: #fff;
+            border-radius: 1rem;
+            padding: .75rem;
+            box-shadow: 0 1px 2px rgba(0,0,0,.06);
+        }
+        #product-list {
+            flex: 1;
+            min-height: 0;
+            overflow-y: auto;
+            align-content: start;
+        }
+
+        /* Vertical divider in the top bar */
+        .pos-divider {
+            width: 1px;
+            height: 32px;
+            background: #cbd5e1; /* same color as the other divider */
+            margin: 0 12px;
+            flex-shrink: 0;
+        }
+        .pos-nav { margin-left: auto; }
+        .pos-search input { width: 100%; border: 1px solid #e2e8f0; border-radius: 999px; background: #EEF0FA; padding: .55rem 1rem .55rem 2.75rem; font-size: .9rem; color: #16161D; }
+        .pos-search input:focus { outline: none; background: #fff; border-color: #4349E8; box-shadow: 0 0 0 3px rgba(67,73,232,.2); }
+        .pos-search svg { position: absolute; left: 1rem; top: 50%; transform: translateY(-50%); width: 1.1rem; height: 1.1rem; color: #94a3b8; pointer-events: none; }
+
+        /* Top navigation buttons + user info */
+        .pos-nav { display: flex; align-items: center; gap: .5rem; font-size: .875rem; }
+        .pos-nav .btn { border-radius: 999px; padding: .45rem .9rem; font-weight: 500; text-decoration: none; transition: background .15s, color .15s; }
+        .pos-nav .btn-solid { background: #4349E8; color: #fff; border: 0; cursor: pointer; font: inherit; font-weight: 500; }
+        .pos-nav .btn-solid:hover { background: #3338D0; }
+        .pos-nav .btn-soft { background: #EEEFFD; color: #4349E8; }
+        .pos-nav .btn-soft:hover { background: #4349E8; color: #fff; }
+        .pos-nav .btn-line { border: 1px solid #e2e8f0; color: #475569; }
+        .pos-nav .btn-line:hover { background: #EEEFFD; color: #4349E8; }
+        .pos-user { display: none; align-items: center; gap: .5rem; border-left: 1px solid #e2e8f0; padding-left: 1rem; margin-left: .25rem; }
+        @media (min-width: 640px) { .pos-user { display: flex; } }
+        @media (max-width: 900px) { .pos-brand .pos-brand-text, .pos-nav .btn-line { display: none; } }
+
+        /* Main area: cart on one side, products + actions on the other */
+        .pos-main { display: flex; flex-direction: column; gap: .75rem; padding: .75rem; flex: 1; min-height: 0; }
+
+        /* Cart panel */
+        .pos-cart { display: flex; flex-direction: column; min-height: 0; background: #fff; border-radius: 1rem; box-shadow: 0 1px 2px rgba(0,0,0,.06); overflow: hidden; }
+        .pos-cart-head { display: flex; align-items: center; justify-content: space-between; padding: .85rem 1rem .5rem; }
+        .pos-cart-list { flex: 1; min-height: 14rem; overflow-y: auto; padding: 0 .75rem .5rem; }
+        .pos-cart-foot { flex-shrink: 0; border-top: 1px solid #eef0f5; background: #f8f9fc; padding: .75rem; }
+
+        /* Total / change boxes */
+        .pos-totals { display: grid; grid-template-columns: 1fr 1fr; gap: .5rem; }
+        .pos-total-box { grid-column: 1 / -1; border-radius: .9rem; padding: .7rem 1rem; color: #fff; display: flex; align-items: flex-end; justify-content: space-between; }
+        .pos-change-box { grid-column: 1 / -1; display: flex; align-items: baseline; justify-content: space-between; border-radius: .9rem; background: #ecfdf5; padding: .45rem 1rem; color: #047857; }
+
+        /* Collapsible details (discounts, charges, payment) */
+        .pos-details { margin-top: .6rem; border-radius: .9rem; background: #fff; border: 1px solid #e5e7eb; }
+        .pos-details summary { cursor: pointer; list-style: none; padding: .6rem .9rem; font-size: .85rem; font-weight: 600; color: #16161D; display: flex; justify-content: space-between; align-items: center; }
+        .pos-details summary::-webkit-details-marker { display: none; }
+        .pos-details summary::after { content: "▾"; color: #94a3b8; transition: transform .15s; }
+        .pos-details[open] summary::after { transform: rotate(180deg); }
+        .pos-details-body { max-height: 34vh; overflow-y: auto; padding: 0 .9rem .9rem; }
+        .pos-details-body .group { margin-top: .85rem; }
+
+        /* Pay + Clear buttons */
+        .pos-buttons { display: flex; gap: .6rem; margin-top: .6rem; }
+        .pos-pay { flex: 1; border: 0; border-radius: 999px; background: #4349E8; color: #fff; padding: .8rem 1rem; font: inherit; font-size: 1.1rem; font-weight: 700; cursor: pointer; box-shadow: 0 8px 16px -6px rgba(67,73,232,.5); transition: background .15s, transform .1s; }
+        .pos-pay:hover { background: #3338D0; }
+        .pos-pay:active { transform: scale(.98); }
+        .pos-clear { display: flex; align-items: center; gap: .4rem; border: 0; border-radius: 999px; background: #fef2f2; color: #dc2626; padding: .8rem 1.1rem; font: inherit; font-size: .9rem; font-weight: 600; cursor: pointer; box-shadow: inset 0 0 0 1px #fecaca; transition: background .15s, color .15s; }
+        .pos-clear:hover { background: #dc2626; color: #fff; }
+
+        /* Right side: products + action buttons */
+        .pos-right { display: flex; flex-direction: column; gap: .75rem; flex: 1; min-width: 0; min-height: 0; }
+
+        /* Products panel (second definition – scrollable, overrides the first one above) */
+        .pos-products { flex: 1; min-height: 18rem; overflow-y: auto; background: #fff; border-radius: 1rem; padding: .75rem; box-shadow: 0 1px 2px rgba(0,0,0,.06); }
+        .pos-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(8.25rem, 1fr)); gap: .5rem; }
+
+        /* Product button */
+        .product { display: flex; flex-direction: column; height: 6.75rem; padding: .5rem .65rem; background: #fff; border: 1px solid #e5e7eb; border-radius: .5rem; text-align: left; cursor: pointer; font: inherit; transition: border-color .15s, background .15s, transform .1s; }
+        .product:hover { border-color: #4349E8; background: #EEEFFD; }
+        .product:active { transform: scale(.97); }
+        .product:focus-visible { outline: 2px solid #4349E8; outline-offset: 1px; }
+        .product .p-name { flex: 1; display: flex; align-items: center; justify-content: center; text-align: center; overflow: hidden; font-size: .8rem; font-weight: 500; line-height: 1.25; color: #16161D; }
+        .product .p-foot { display: flex; justify-content: space-between; align-items: baseline; gap: .25rem; }
+        .product .p-price { font-size: .8rem; font-weight: 700; color: #4349E8; font-variant-numeric: tabular-nums; }
+        .product .p-unit { font-size: .65rem; color: #94a3b8; }
+
+        /* Action buttons under the products (Cancel, Discount, Refund, etc.) */
+        .pos-actions { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: .4rem; flex-shrink: 0; }
+        .pos-act { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: .2rem; min-height: 3.5rem; border: 0; border-radius: .5rem; background: #e5e7eb; color: #374151; font: inherit; font-size: .7rem; font-weight: 500; text-align: center; cursor: pointer; transition: background .15s, transform .1s; }
+        .pos-act:hover { background: #d1d5db; }
+        .pos-act:active { transform: scale(.97); }
+        .pos-act:focus-visible { outline: 2px solid #4349E8; outline-offset: 2px; }
+        .pos-act .ic { font-size: 1.05rem; line-height: 1; }
+        .pos-act.soft { background: #EEEFFD; color: #4349E8; }
+        .pos-act.soft:hover { background: #dcdefb; }
+        .pos-act.danger { background: #ef4444; color: #fff; }
+        .pos-act.danger:hover { background: #dc2626; }
+        .pos-act.purple { background: #6b5baf; color: #fff; }
+        .pos-act.purple:hover { background: #5a4b9a; }
+
+        /* Desktop layout: cart on the left (30%), fixed full-height screen */
+        @media (min-width: 1024px) {
+            .pos-body { height: 100vh; overflow: hidden; display: flex; flex-direction: column; }
+            .pos-main { flex-direction: row; }
+            .pos-cart { width: 30%; flex-shrink: 0; }
+            .pos-cart-list { min-height: 0; }
+            .pos-products { min-height: 0; }
+            .pos-actions { grid-template-columns: repeat(7, minmax(0, 1fr)); }
+        }
+
+
+        /* ---------- 3b. Compact cart + payment (more rows visible) ---------- */
+
+        .pos-cart-head { padding: .6rem .85rem .35rem; }
+        .pos-cart-head h1 { font-size: 1rem; }
+        .pos-cart-list { padding: 0 .5rem .35rem; }
+        #cart-items { zoom: .82; }
+        #cart-items > li { padding-top: .3rem !important; padding-bottom: .3rem !important; margin: 0 !important; }
+        .pos-cart-foot { padding: .5rem; }
+        .pos-total-box { padding: .45rem .85rem; }
+        .pos-total-box .text-4xl { font-size: 1.75rem; }
+        .pos-change-box { padding: .3rem .85rem; }
+        .pos-change-box .text-xl { font-size: 1.05rem; }
+        .pos-details { margin-top: .4rem; border-radius: .75rem; }
+        .pos-details summary { padding: .4rem .75rem; font-size: .8rem; }
+        .pos-details-body { padding: 0 .75rem .6rem; max-height: 28vh; }
+        .pos-details-body .group-title { margin-bottom: .3rem; font-size: .75rem; }
+        .pos-details-body .field label, .pos-details-body label { font-size: .68rem; margin-bottom: .1rem; }
+        .pos-details-body input, .pos-details-body select { padding: .3rem .55rem; font-size: .8rem; border-radius: .6rem; }
+        .pos-details-body .row { gap: .45rem; }
+        .pos-details-body .row-5 button { padding-top: .35rem; padding-bottom: .35rem; font-size: .68rem; }
+        .pos-buttons { margin-top: .4rem; gap: .45rem; }
+        .pos-pay { padding: .55rem 1rem; font-size: 1rem; }
+        .pos-clear { padding: .55rem .9rem; font-size: .8rem; }
+
+
+        /* ---------- 3c. Action tiles with shortcut hint (e.g. "Alt+L") ---------- */
+
+        .pos-act { gap: .1rem; min-height: 3.75rem; padding: .35rem .25rem; }
+        .pos-act .lbl { font-size: .85rem; font-weight: 700; font-style: normal; line-height: 1.1; }
+        .pos-act .key { min-height: .8rem; font-size: .68rem; font-weight: 600; letter-spacing: .02em; opacity: .7; }
+        .pos-act.danger .key, .pos-act.purple .key { opacity: .85; }
+        .hint { margin-left: .3rem; border-radius: .3rem; background: rgba(0,0,0,.08); padding: 0 .3rem; font-size: .65rem; font-weight: 600; vertical-align: middle; }
+        .pos-pay .hint { background: rgba(255,255,255,.22); }
+        .pos-clear:hover .hint { background: rgba(255,255,255,.25); }
+
+
+        /* ---------- 3d. Action button colors (POS screen) ---------- */
+
+        .pos-act.c-green  { background: #dcfce7; color: #166534; }
+        .pos-act.c-green:hover  { background: #bbf7d0; }
+        .pos-act.c-blue   { background: #dbeafe; color: #1e40af; }
+        .pos-act.c-blue:hover   { background: #bfdbfe; }
+        .pos-act.c-amber  { background: #fef3c7; color: #92400e; }
+        .pos-act.c-amber:hover  { background: #fde68a; }
+        .pos-act.c-orange { background: #ffedd5; color: #9a3412; }
+        .pos-act.c-orange:hover { background: #fed7aa; }
+        .pos-act.c-rose   { background: #ffe4e6; color: #9f1239; }
+        .pos-act.c-rose:hover   { background: #fecdd3; }
+        .pos-act.c-violet { background: #ede9fe; color: #5b21b6; }
+        .pos-act.c-violet:hover { background: #ddd6fe; }
+        .pos-act.c-teal   { background: #ccfbf1; color: #115e59; }
+        .pos-act.c-teal:hover   { background: #99f6e4; }
+        .pos-act.c-sky    { background: #e0f2fe; color: #075985; }
+        .pos-act.c-sky:hover    { background: #bae6fd; }
+        .pos-act.c-yellow { background: #fef08a; color: #854d0e; }
+        .pos-act.c-yellow:hover { background: #fde047; }
+        .pos-act.c-indigo { background: #e0e7ff; color: #3730a3; }
+        .pos-act.c-indigo:hover { background: #c7d2fe; }
+        .pos-act.c-cyan   { background: #cffafe; color: #155e75; }
+        .pos-act.c-cyan:hover   { background: #a5f3fc; }
+
+
+        /* =====================================================================
+        4. MODALS
+        ===================================================================== */
+
+        /* ---------- 4a. Message modal (simple popup with OK button) ---------- */
+
         .msg-modal { position: fixed; inset: 0; z-index: 60; display: flex; align-items: center; justify-content: center; padding: 1rem; background: rgba(15, 23, 42, .5); }
         .msg-card { width: 100%; max-width: 26rem; background: #fff; border-radius: 1.5rem; padding: 1.5rem; text-align: center; box-shadow: 0 20px 25px -5px rgba(0,0,0,.1), 0 8px 10px -6px rgba(0,0,0,.1); }
         .msg-icon { display: flex; width: 3rem; height: 3rem; margin: 0 auto 1rem; align-items: center; justify-content: center; border-radius: 999px; background: #fee2e2; color: #dc2626; }
@@ -83,7 +330,9 @@
         .msg-ok:hover { background: #3338D0; }
         .msg-ok:focus-visible { outline: 2px solid #4349E8; outline-offset: 2px; }
 
-        /* Confirm modal */
+
+        /* ---------- 4b. Confirm modal (Yes / Cancel popup) ---------- */
+
         .msg-icon.info { background: #EEEFFD; color: #4349E8; }
         .msg-actions { display: flex; gap: .75rem; margin-top: 1.5rem; }
         .msg-actions .msg-ok, .msg-cancel { margin-top: 0; flex: 1; }
@@ -93,7 +342,9 @@
         .msg-ok.danger { background: #dc2626; }
         .msg-ok.danger:hover { background: #b91c1c; }
 
-        /* Actions modal */
+
+        /* ---------- 4c. More-actions modal ---------- */
+
         .msg-card.actions-card { max-width: 48rem; padding: 0; text-align: left; overflow: hidden; border-radius: 1.25rem; background: #f8f9fc; }
         .actions-header { display: flex; align-items: center; justify-content: space-between; padding: 1rem 1.25rem; background: #fff; border-bottom: 1px solid #e5e7eb; }
         .actions-header h2 { margin: 0; font-size: 1rem; font-weight: 500; color: #374151; }
@@ -118,7 +369,34 @@
             .action-tile--empty { display: none; }
         }
 
-        /* Government Discount Modal */
+        /* More-actions tile colors (must stay after the .action-tile rules above) */
+        .action-tile { font-family: 'Poppins', sans-serif; font-weight: 600; }
+        .action-tile.c-green  { background: #dcfce7; color: #166534; }
+        .action-tile.c-green:hover  { background: #bbf7d0; color: #166534; }
+        .action-tile.c-blue   { background: #dbeafe; color: #1e40af; }
+        .action-tile.c-blue:hover   { background: #bfdbfe; color: #1e40af; }
+        .action-tile.c-amber  { background: #fef3c7; color: #92400e; }
+        .action-tile.c-amber:hover  { background: #fde68a; color: #92400e; }
+        .action-tile.c-orange { background: #ffedd5; color: #9a3412; }
+        .action-tile.c-orange:hover { background: #fed7aa; color: #9a3412; }
+        .action-tile.c-rose   { background: #ffe4e6; color: #9f1239; }
+        .action-tile.c-rose:hover   { background: #fecdd3; color: #9f1239; }
+        .action-tile.c-violet { background: #ede9fe; color: #5b21b6; }
+        .action-tile.c-violet:hover { background: #ddd6fe; color: #5b21b6; }
+        .action-tile.c-teal   { background: #ccfbf1; color: #115e59; }
+        .action-tile.c-teal:hover   { background: #99f6e4; color: #115e59; }
+        .action-tile.c-sky    { background: #e0f2fe; color: #075985; }
+        .action-tile.c-sky:hover    { background: #bae6fd; color: #075985; }
+        .action-tile.c-yellow { background: #fef08a; color: #854d0e; }
+        .action-tile.c-yellow:hover { background: #fde047; color: #854d0e; }
+        .action-tile.c-indigo { background: #e0e7ff; color: #3730a3; }
+        .action-tile.c-indigo:hover { background: #c7d2fe; color: #3730a3; }
+        .action-tile.c-cyan   { background: #cffafe; color: #155e75; }
+        .action-tile.c-cyan:hover   { background: #a5f3fc; color: #155e75; }
+
+
+        /* ---------- 4d. Government discount modal ---------- */
+
         .govt-modal-card {
             width: 100%;
             max-width: 30rem;
@@ -216,7 +494,9 @@
             background: #fecaca;
         }
 
-                /* Price Override modal */
+
+        /* ---------- 4e. Price override modal ---------- */
+
         #price-override-modal {
             background: rgba(15, 23, 42, .6);
             align-items: center;
@@ -338,7 +618,9 @@
         .po-apply:hover { background: #15803d; }
         .po-apply:focus-visible { outline: 2px solid #16a34a; outline-offset: 2px; }
 
-        /* Refund modal */
+
+        /* ---------- 4f. Refund modal ---------- */
+
         #refund-modal {
             background: rgba(15, 23, 42, .6);
             align-items: center;
@@ -414,7 +696,8 @@
         #refund-detail-remaining { font-size: 1rem !important; }
 
 
-        /* Change Fund modal */
+        /* ---------- 4g. Change fund modal ---------- */
+
         #changeFundModal {
             background: rgba(15, 23, 42, .6);
             align-items: center;
@@ -443,7 +726,9 @@
         .cf-btn:disabled { opacity: .5; cursor: not-allowed; }
         .cf-btn:disabled:hover { background: #16a34a; }
 
-        /* Retrieve modal */
+
+        /* ---------- 4h. Retrieve modal (list of suspended transactions) ---------- */
+
         #retrieveModal {
             background: rgba(15, 23, 42, .6);
             align-items: center;
@@ -471,6 +756,7 @@
         .rt-btn:disabled:hover { background: #16a34a; }
         .rt-total { color: #15803d; }
 
+        /* "Retrieve" buttons created by JavaScript inside the list */
         #suspendedSalesList button {
             background: #16a34a !important;
             color: #fff !important;
@@ -482,7 +768,9 @@
         }
         #suspendedSalesList button:hover { background: #15803d !important; }
 
-        /* General Note modal */
+
+        /* ---------- 4i. General note modal ---------- */
+
         #generalNoteModal {
             background: rgba(15, 23, 42, .6);
             align-items: center;
@@ -511,7 +799,9 @@
         .gn-btn:disabled { opacity: .5; cursor: not-allowed; }
         .gn-btn:disabled:hover { background: #16a34a; }
 
-        /* Customer Note modal */
+
+        /* ---------- 4j. Customer note modal ---------- */
+
         #customerNoteModal {
             background: rgba(15, 23, 42, .6);
             align-items: center;
@@ -540,7 +830,9 @@
         .cn-btn:disabled { opacity: .5; cursor: not-allowed; }
         .cn-btn:disabled:hover { background: #16a34a; }
 
-        /* Customer Management modal */
+
+        /* ---------- 4k. Customer management modal (customer list table) ---------- */
+
         #customerManagementModal {
             background: rgba(15, 23, 42, .6);
             align-items: center;
@@ -595,7 +887,9 @@
         .cm-btn:disabled { opacity: .5; cursor: not-allowed; }
         .cm-btn:disabled:hover { background: #16a34a; }
 
-        /* Add Customer modal */
+
+        /* ---------- 4l. Add customer modal ---------- */
+
         #addCustomerModal {
             background: rgba(15, 23, 42, .6);
             align-items: center;
@@ -624,7 +918,9 @@
         .ac-btn:disabled { opacity: .5; cursor: not-allowed; }
         .ac-btn:disabled:hover { background: #16a34a; }
 
-        /* Edit Customer modal */
+
+        /* ---------- 4m. Edit customer modal ---------- */
+
         #editCustomerModal {
             background: rgba(15, 23, 42, .6);
             align-items: center;
@@ -653,292 +949,112 @@
         .ec-btn:disabled { opacity: .5; cursor: not-allowed; }
         .ec-btn:disabled:hover { background: #16a34a; }
 
-            /* Claim Reward modal (same look as the General Note modal) */
-    #reward-modal {
-        background: rgba(15, 23, 42, .6);
-        align-items: center;
-        justify-content: center;
-        padding: 1rem;
-    }
-    #reward-modal .hidden { display: none !important; }
- 
-    .rw-card {
-        width: 100%;
-        max-width: 26rem;
-        background: #fff;
-        border-radius: 1rem;
-        padding: 1.5rem;
-        box-shadow: 0 25px 60px -12px rgba(0,0,0,.55), 0 0 0 1px rgba(0,0,0,.08);
-    }
- 
-    .rw-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 1rem; }
-    .rw-title-wrap { display: flex; align-items: center; gap: .75rem; }
-    .rw-icon {
-        display: flex; align-items: center; justify-content: center; flex: none;
-        width: 2.5rem; height: 2.5rem; border-radius: .75rem;
-        background: #dcfce7; color: #16a34a;
-    }
-    .rw-title { margin: 0; font-size: 1.05rem; font-weight: 700; color: #16161D; line-height: 1.25; }
-    .rw-sub { margin: .15rem 0 0; font-size: .75rem; color: #64748b; }
-    .rw-close {
-        border: 0; background: transparent; cursor: pointer; color: #94a3b8;
-        border-radius: .5rem; padding: .4rem .6rem; font-size: 1rem; line-height: 1;
-        transition: background .15s, color .15s;
-    }
-    .rw-close:hover { background: #f1f5f9; color: #475569; }
-    .rw-close:focus-visible { outline: 2px solid #16a34a; outline-offset: 2px; }
- 
-    .rw-body { margin-top: 1.25rem; display: grid; gap: 1rem; }
- 
-    .rw-customer { border-radius: .75rem; background: #f8fafc; border: 1px solid #e2e8f0; padding: 1rem; }
-    .rw-label { margin: 0; font-size: .75rem; font-weight: 500; color: #64748b; }
-    .rw-name { margin: .25rem 0 0; font-size: 1rem; font-weight: 700; color: #16161D; }
-    .rw-points-row {
-        margin-top: .85rem; padding-top: .75rem; border-top: 1px dashed #cbd5e1;
-        display: flex; align-items: center; justify-content: space-between;
-    }
-    .rw-points-row span:first-child { font-size: .875rem; color: #475569; }
-    .rw-points { font-size: 1.35rem; font-weight: 700; color: #16a34a; font-variant-numeric: tabular-nums; }
- 
-    .rw-field-label { display: block; margin-bottom: .5rem; font-size: .875rem; font-weight: 600; color: #334155; }
-    .rw-input {
-        width: 100%; box-sizing: border-box;
-        border-radius: .75rem; border: 1px solid #d1d5db; background: #fff;
-        padding: .75rem 1rem; font-size: 1.125rem; font-weight: 600; color: #16161D;
-        font-variant-numeric: tabular-nums;
-    }
-    .rw-input:focus {
-        outline: none !important;
-        border-color: #22c55e !important;
-        box-shadow: 0 0 0 3px rgba(34,197,94,.2) !important;
-    }
-    .rw-hint { margin-top: .5rem; display: flex; justify-content: space-between; align-items: center; font-size: .75rem; color: #64748b; }
-    .rw-link {
-        border: 0; background: transparent; cursor: pointer; padding: 0;
-        font-size: .75rem; font-weight: 600; color: #16a34a;
-    }
-    .rw-link:hover { color: #15803d; text-decoration: underline; }
-    .rw-link:focus-visible { outline: 2px solid #16a34a; outline-offset: 2px; border-radius: 2px; }
- 
-    .rw-discount { border-radius: .75rem; background: #f0fdf4; border: 1px solid #bbf7d0; padding: 1rem; }
-    .rw-discount .rw-label { color: #15803d; }
-    .rw-amount { margin: .25rem 0 0; font-size: 1.75rem; font-weight: 700; color: #15803d; font-variant-numeric: tabular-nums; }
-    .rw-note { margin: .25rem 0 0; font-size: .75rem; color: #16a34a; }
- 
-    .rw-error { margin: 0; border-radius: .5rem; background: #fef2f2; padding: .75rem 1rem; font-size: .875rem; color: #dc2626; }
-    .rw-applied { border-radius: .5rem; background: #f0fdf4; padding: .75rem 1rem; font-size: .875rem; color: #15803d; }
- 
-    .rw-actions {
-        margin-top: 1.25rem; padding-top: 1rem; border-top: 1px solid #f1f5f9;
-        display: flex; flex-wrap: wrap; justify-content: flex-end; gap: .5rem;
-    }
-    .rw-btn {
-        border-radius: .75rem; padding: .65rem 1.1rem; font-size: .875rem; font-weight: 600;
-        cursor: pointer; transition: background .15s, transform .1s;
-    }
-    .rw-btn:active { transform: scale(.98); }
-    .rw-btn-primary { background: #16a34a; color: #fff; border: 0; }
-    .rw-btn-primary:hover { background: #15803d; }
-    .rw-btn-primary:focus-visible { outline: 2px solid #16a34a; outline-offset: 2px; }
-    .rw-btn-primary:disabled { opacity: .5; cursor: not-allowed; }
-    .rw-btn-primary:disabled:hover { background: #16a34a; }
-    .rw-btn-ghost { background: #fff; color: #475569; border: 1px solid #d1d5db; }
-    .rw-btn-ghost:hover { background: #f8fafc; }
-    .rw-btn-danger { background: #fff; color: #dc2626; border: 1px solid #fecaca; }
-    .rw-btn-danger:hover { background: #fef2f2; }
-    .rw-btn-ghost:focus-visible, .rw-btn-danger:focus-visible { outline: 2px solid #16a34a; outline-offset: 2px; }
- 
-    @media (prefers-reduced-motion: reduce) {
-        .rw-btn, .rw-close { transition: none; }
-        .rw-btn:active { transform: none; }
-    }
 
-        /* ===== POS layout (plain CSS) ===== */
-        .pos-body { min-height: 100vh; }
-        .pos-top { display: flex; align-items: center; gap: 1rem; background: #fff; padding: .5rem 1rem; box-shadow: 0 1px 2px rgba(0,0,0,.06); flex-shrink: 0; }
-        .pos-brand { display: flex; align-items: center; gap: .6rem; }
-        .pos-search {
-            position: relative;
-            flex-shrink: 0;
-            margin-bottom: .75rem;
+        /* ---------- 4n. Claim reward modal (same look as the General Note modal) ---------- */
+
+        #reward-modal {
+            background: rgba(15, 23, 42, .6);
+            align-items: center;
+            justify-content: center;
+            padding: 1rem;
         }
-        .pos-products {
-            flex: 1;
-            min-height: 18rem;
-            display: flex;
-            flex-direction: column;
-            overflow: hidden;
+        #reward-modal .hidden { display: none !important; }
+
+        .rw-card {
+            width: 100%;
+            max-width: 26rem;
             background: #fff;
             border-radius: 1rem;
-            padding: .75rem;
-            box-shadow: 0 1px 2px rgba(0,0,0,.06);
-        }
-        #product-list {
-            flex: 1;
-            min-height: 0;
-            overflow-y: auto;
-            align-content: start;
+            padding: 1.5rem;
+            box-shadow: 0 25px 60px -12px rgba(0,0,0,.55), 0 0 0 1px rgba(0,0,0,.08);
         }
 
-        .pos-divider {
-            width: 1px;
-            height: 32px;
-            background: #cbd5e1; /* same color as the other divider */
-            margin: 0 12px;
-            flex-shrink: 0;
+        /* Header */
+        .rw-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 1rem; }
+        .rw-title-wrap { display: flex; align-items: center; gap: .75rem; }
+        .rw-icon {
+            display: flex; align-items: center; justify-content: center; flex: none;
+            width: 2.5rem; height: 2.5rem; border-radius: .75rem;
+            background: #dcfce7; color: #16a34a;
         }
-        .pos-nav { margin-left: auto; }
-        .pos-search input { width: 100%; border: 1px solid #e2e8f0; border-radius: 999px; background: #EEF0FA; padding: .55rem 1rem .55rem 2.75rem; font-size: .9rem; color: #16161D; }
-        .pos-search input:focus { outline: none; background: #fff; border-color: #4349E8; box-shadow: 0 0 0 3px rgba(67,73,232,.2); }
-        .pos-search svg { position: absolute; left: 1rem; top: 50%; transform: translateY(-50%); width: 1.1rem; height: 1.1rem; color: #94a3b8; pointer-events: none; }
-        .pos-nav { display: flex; align-items: center; gap: .5rem; font-size: .875rem; }
-        .pos-nav .btn { border-radius: 999px; padding: .45rem .9rem; font-weight: 500; text-decoration: none; transition: background .15s, color .15s; }
-        .pos-nav .btn-solid { background: #4349E8; color: #fff; border: 0; cursor: pointer; font: inherit; font-weight: 500; }
-        .pos-nav .btn-solid:hover { background: #3338D0; }
-        .pos-nav .btn-soft { background: #EEEFFD; color: #4349E8; }
-        .pos-nav .btn-soft:hover { background: #4349E8; color: #fff; }
-        .pos-nav .btn-line { border: 1px solid #e2e8f0; color: #475569; }
-        .pos-nav .btn-line:hover { background: #EEEFFD; color: #4349E8; }
-        .pos-user { display: none; align-items: center; gap: .5rem; border-left: 1px solid #e2e8f0; padding-left: 1rem; margin-left: .25rem; }
-        @media (min-width: 640px) { .pos-user { display: flex; } }
-        @media (max-width: 900px) { .pos-brand .pos-brand-text, .pos-nav .btn-line { display: none; } }
-
-        .pos-main { display: flex; flex-direction: column; gap: .75rem; padding: .75rem; flex: 1; min-height: 0; }
-        .pos-cart { display: flex; flex-direction: column; min-height: 0; background: #fff; border-radius: 1rem; box-shadow: 0 1px 2px rgba(0,0,0,.06); overflow: hidden; }
-        .pos-cart-head { display: flex; align-items: center; justify-content: space-between; padding: .85rem 1rem .5rem; }
-        .pos-cart-list { flex: 1; min-height: 14rem; overflow-y: auto; padding: 0 .75rem .5rem; }
-        .pos-cart-foot { flex-shrink: 0; border-top: 1px solid #eef0f5; background: #f8f9fc; padding: .75rem; }
-        .pos-totals { display: grid; grid-template-columns: 1fr 1fr; gap: .5rem; }
-        .pos-total-box { grid-column: 1 / -1; border-radius: .9rem; padding: .7rem 1rem; color: #fff; display: flex; align-items: flex-end; justify-content: space-between; }
-        .pos-change-box { grid-column: 1 / -1; display: flex; align-items: baseline; justify-content: space-between; border-radius: .9rem; background: #ecfdf5; padding: .45rem 1rem; color: #047857; }
-        .pos-details { margin-top: .6rem; border-radius: .9rem; background: #fff; border: 1px solid #e5e7eb; }
-        .pos-details summary { cursor: pointer; list-style: none; padding: .6rem .9rem; font-size: .85rem; font-weight: 600; color: #16161D; display: flex; justify-content: space-between; align-items: center; }
-        .pos-details summary::-webkit-details-marker { display: none; }
-        .pos-details summary::after { content: "▾"; color: #94a3b8; transition: transform .15s; }
-        .pos-details[open] summary::after { transform: rotate(180deg); }
-        .pos-details-body { max-height: 34vh; overflow-y: auto; padding: 0 .9rem .9rem; }
-        .pos-details-body .group { margin-top: .85rem; }
-        .pos-buttons { display: flex; gap: .6rem; margin-top: .6rem; }
-        .pos-pay { flex: 1; border: 0; border-radius: 999px; background: #4349E8; color: #fff; padding: .8rem 1rem; font: inherit; font-size: 1.1rem; font-weight: 700; cursor: pointer; box-shadow: 0 8px 16px -6px rgba(67,73,232,.5); transition: background .15s, transform .1s; }
-        .pos-pay:hover { background: #3338D0; }
-        .pos-pay:active { transform: scale(.98); }
-        .pos-clear { display: flex; align-items: center; gap: .4rem; border: 0; border-radius: 999px; background: #fef2f2; color: #dc2626; padding: .8rem 1.1rem; font: inherit; font-size: .9rem; font-weight: 600; cursor: pointer; box-shadow: inset 0 0 0 1px #fecaca; transition: background .15s, color .15s; }
-        .pos-clear:hover { background: #dc2626; color: #fff; }
-
-        .pos-right { display: flex; flex-direction: column; gap: .75rem; flex: 1; min-width: 0; min-height: 0; }
-        .pos-products { flex: 1; min-height: 18rem; overflow-y: auto; background: #fff; border-radius: 1rem; padding: .75rem; box-shadow: 0 1px 2px rgba(0,0,0,.06); }
-        .pos-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(8.25rem, 1fr)); gap: .5rem; }
-        .product { display: flex; flex-direction: column; height: 6.75rem; padding: .5rem .65rem; background: #fff; border: 1px solid #e5e7eb; border-radius: .5rem; text-align: left; cursor: pointer; font: inherit; transition: border-color .15s, background .15s, transform .1s; }
-        .product:hover { border-color: #4349E8; background: #EEEFFD; }
-        .product:active { transform: scale(.97); }
-        .product:focus-visible { outline: 2px solid #4349E8; outline-offset: 1px; }
-        .product .p-name { flex: 1; display: flex; align-items: center; justify-content: center; text-align: center; overflow: hidden; font-size: .8rem; font-weight: 500; line-height: 1.25; color: #16161D; }
-        .product .p-foot { display: flex; justify-content: space-between; align-items: baseline; gap: .25rem; }
-        .product .p-price { font-size: .8rem; font-weight: 700; color: #4349E8; font-variant-numeric: tabular-nums; }
-        .product .p-unit { font-size: .65rem; color: #94a3b8; }
-
-        .pos-actions { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: .4rem; flex-shrink: 0; }
-        .pos-act { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: .2rem; min-height: 3.5rem; border: 0; border-radius: .5rem; background: #e5e7eb; color: #374151; font: inherit; font-size: .7rem; font-weight: 500; text-align: center; cursor: pointer; transition: background .15s, transform .1s; }
-        .pos-act:hover { background: #d1d5db; }
-        .pos-act:active { transform: scale(.97); }
-        .pos-act:focus-visible { outline: 2px solid #4349E8; outline-offset: 2px; }
-        .pos-act .ic { font-size: 1.05rem; line-height: 1; }
-        .pos-act.soft { background: #EEEFFD; color: #4349E8; }
-        .pos-act.soft:hover { background: #dcdefb; }
-        .pos-act.danger { background: #ef4444; color: #fff; }
-        .pos-act.danger:hover { background: #dc2626; }
-        .pos-act.purple { background: #6b5baf; color: #fff; }
-        .pos-act.purple:hover { background: #5a4b9a; }
-
-        @media (min-width: 1024px) {
-            .pos-body { height: 100vh; overflow: hidden; display: flex; flex-direction: column; }
-            .pos-main { flex-direction: row; }
-            .pos-cart { width: 30%; flex-shrink: 0; }
-            .pos-cart-list { min-height: 0; }
-            .pos-products { min-height: 0; }
-            .pos-actions { grid-template-columns: repeat(7, minmax(0, 1fr)); }
+        .rw-title { margin: 0; font-size: 1.05rem; font-weight: 700; color: #16161D; line-height: 1.25; }
+        .rw-sub { margin: .15rem 0 0; font-size: .75rem; color: #64748b; }
+        .rw-close {
+            border: 0; background: transparent; cursor: pointer; color: #94a3b8;
+            border-radius: .5rem; padding: .4rem .6rem; font-size: 1rem; line-height: 1;
+            transition: background .15s, color .15s;
         }
+        .rw-close:hover { background: #f1f5f9; color: #475569; }
+        .rw-close:focus-visible { outline: 2px solid #16a34a; outline-offset: 2px; }
 
-        /* ===== Compact cart + payment (more rows visible) ===== */
-        .pos-cart-head { padding: .6rem .85rem .35rem; }
-        .pos-cart-head h1 { font-size: 1rem; }
-        .pos-cart-list { padding: 0 .5rem .35rem; }
-        #cart-items { zoom: .82; }
-        #cart-items > li { padding-top: .3rem !important; padding-bottom: .3rem !important; margin: 0 !important; }
-        .pos-cart-foot { padding: .5rem; }
-        .pos-total-box { padding: .45rem .85rem; }
-        .pos-total-box .text-4xl { font-size: 1.75rem; }
-        .pos-change-box { padding: .3rem .85rem; }
-        .pos-change-box .text-xl { font-size: 1.05rem; }
-        .pos-details { margin-top: .4rem; border-radius: .75rem; }
-        .pos-details summary { padding: .4rem .75rem; font-size: .8rem; }
-        .pos-details-body { padding: 0 .75rem .6rem; max-height: 28vh; }
-        .pos-details-body .group-title { margin-bottom: .3rem; font-size: .75rem; }
-        .pos-details-body .field label, .pos-details-body label { font-size: .68rem; margin-bottom: .1rem; }
-        .pos-details-body input, .pos-details-body select { padding: .3rem .55rem; font-size: .8rem; border-radius: .6rem; }
-        .pos-details-body .row { gap: .45rem; }
-        .pos-details-body .row-5 button { padding-top: .35rem; padding-bottom: .35rem; font-size: .68rem; }
-        .pos-buttons { margin-top: .4rem; gap: .45rem; }
-        .pos-pay { padding: .55rem 1rem; font-size: 1rem; }
-        .pos-clear { padding: .55rem .9rem; font-size: .8rem; }
+        /* Body: customer info, points input, discount preview */
+        .rw-body { margin-top: 1.25rem; display: grid; gap: 1rem; }
 
-        /* ===== Action tiles with shortcut hint ===== */
-        .pos-act { gap: .1rem; min-height: 3.75rem; padding: .35rem .25rem; }
-        .pos-act .lbl { font-size: .85rem; font-weight: 700; font-style: normal; line-height: 1.1; }
-        .pos-act .key { min-height: .8rem; font-size: .68rem; font-weight: 600; letter-spacing: .02em; opacity: .7; }
-        .pos-act.danger .key, .pos-act.purple .key { opacity: .85; }
-        .hint { margin-left: .3rem; border-radius: .3rem; background: rgba(0,0,0,.08); padding: 0 .3rem; font-size: .65rem; font-weight: 600; vertical-align: middle; }
-        .pos-pay .hint { background: rgba(255,255,255,.22); }
-        .pos-clear:hover .hint { background: rgba(255,255,255,.25); }
+        .rw-customer { border-radius: .75rem; background: #f8fafc; border: 1px solid #e2e8f0; padding: 1rem; }
+        .rw-label { margin: 0; font-size: .75rem; font-weight: 500; color: #64748b; }
+        .rw-name { margin: .25rem 0 0; font-size: 1rem; font-weight: 700; color: #16161D; }
+        .rw-points-row {
+            margin-top: .85rem; padding-top: .75rem; border-top: 1px dashed #cbd5e1;
+            display: flex; align-items: center; justify-content: space-between;
+        }
+        .rw-points-row span:first-child { font-size: .875rem; color: #475569; }
+        .rw-points { font-size: 1.35rem; font-weight: 700; color: #16a34a; font-variant-numeric: tabular-nums; }
 
-        /* Action tile colors */
-        .pos-act.c-green  { background: #dcfce7; color: #166534; }
-        .pos-act.c-green:hover  { background: #bbf7d0; }
-        .pos-act.c-blue   { background: #dbeafe; color: #1e40af; }
-        .pos-act.c-blue:hover   { background: #bfdbfe; }
-        .pos-act.c-amber  { background: #fef3c7; color: #92400e; }
-        .pos-act.c-amber:hover  { background: #fde68a; }
-        .pos-act.c-orange { background: #ffedd5; color: #9a3412; }
-        .pos-act.c-orange:hover { background: #fed7aa; }
-        .pos-act.c-rose   { background: #ffe4e6; color: #9f1239; }
-        .pos-act.c-rose:hover   { background: #fecdd3; }
-        .pos-act.c-violet { background: #ede9fe; color: #5b21b6; }
-        .pos-act.c-violet:hover { background: #ddd6fe; }
-        .pos-act.c-teal   { background: #ccfbf1; color: #115e59; }
-        .pos-act.c-teal:hover   { background: #99f6e4; }
-        .pos-act.c-sky    { background: #e0f2fe; color: #075985; }
-        .pos-act.c-sky:hover    { background: #bae6fd; }
-        .pos-act.c-yellow { background: #fef08a; color: #854d0e; }
-        .pos-act.c-yellow:hover { background: #fde047; }
-        .pos-act.c-indigo { background: #e0e7ff; color: #3730a3; }
-        .pos-act.c-indigo:hover { background: #c7d2fe; }
-        .pos-act.c-cyan   { background: #cffafe; color: #155e75; }
-        .pos-act.c-cyan:hover   { background: #a5f3fc; }
+        .rw-field-label { display: block; margin-bottom: .5rem; font-size: .875rem; font-weight: 600; color: #334155; }
+        .rw-input {
+            width: 100%; box-sizing: border-box;
+            border-radius: .75rem; border: 1px solid #d1d5db; background: #fff;
+            padding: .75rem 1rem; font-size: 1.125rem; font-weight: 600; color: #16161D;
+            font-variant-numeric: tabular-nums;
+        }
+        .rw-input:focus {
+            outline: none !important;
+            border-color: #22c55e !important;
+            box-shadow: 0 0 0 3px rgba(34,197,94,.2) !important;
+        }
+        .rw-hint { margin-top: .5rem; display: flex; justify-content: space-between; align-items: center; font-size: .75rem; color: #64748b; }
+        .rw-link {
+            border: 0; background: transparent; cursor: pointer; padding: 0;
+            font-size: .75rem; font-weight: 600; color: #16a34a;
+        }
+        .rw-link:hover { color: #15803d; text-decoration: underline; }
+        .rw-link:focus-visible { outline: 2px solid #16a34a; outline-offset: 2px; border-radius: 2px; }
 
-        /* More-actions tile colors */
-        .action-tile { font-family: 'Poppins', sans-serif; font-weight: 600; }
-        .action-tile.c-green  { background: #dcfce7; color: #166534; }
-        .action-tile.c-green:hover  { background: #bbf7d0; color: #166534; }
-        .action-tile.c-blue   { background: #dbeafe; color: #1e40af; }
-        .action-tile.c-blue:hover   { background: #bfdbfe; color: #1e40af; }
-        .action-tile.c-amber  { background: #fef3c7; color: #92400e; }
-        .action-tile.c-amber:hover  { background: #fde68a; color: #92400e; }
-        .action-tile.c-orange { background: #ffedd5; color: #9a3412; }
-        .action-tile.c-orange:hover { background: #fed7aa; color: #9a3412; }
-        .action-tile.c-rose   { background: #ffe4e6; color: #9f1239; }
-        .action-tile.c-rose:hover   { background: #fecdd3; color: #9f1239; }
-        .action-tile.c-violet { background: #ede9fe; color: #5b21b6; }
-        .action-tile.c-violet:hover { background: #ddd6fe; color: #5b21b6; }
-        .action-tile.c-teal   { background: #ccfbf1; color: #115e59; }
-        .action-tile.c-teal:hover   { background: #99f6e4; color: #115e59; }
-        .action-tile.c-sky    { background: #e0f2fe; color: #075985; }
-        .action-tile.c-sky:hover    { background: #bae6fd; color: #075985; }
-        .action-tile.c-yellow { background: #fef08a; color: #854d0e; }
-        .action-tile.c-yellow:hover { background: #fde047; color: #854d0e; }
-        .action-tile.c-indigo { background: #e0e7ff; color: #3730a3; }
-        .action-tile.c-indigo:hover { background: #c7d2fe; color: #3730a3; }
-        .action-tile.c-cyan   { background: #cffafe; color: #155e75; }
-        .action-tile.c-cyan:hover   { background: #a5f3fc; color: #155e75; }
+        .rw-discount { border-radius: .75rem; background: #f0fdf4; border: 1px solid #bbf7d0; padding: 1rem; }
+        .rw-discount .rw-label { color: #15803d; }
+        .rw-amount { margin: .25rem 0 0; font-size: 1.75rem; font-weight: 700; color: #15803d; font-variant-numeric: tabular-nums; }
+        .rw-note { margin: .25rem 0 0; font-size: .75rem; color: #16a34a; }
+
+        /* Error and "applied" messages */
+        .rw-error { margin: 0; border-radius: .5rem; background: #fef2f2; padding: .75rem 1rem; font-size: .875rem; color: #dc2626; }
+        .rw-applied { border-radius: .5rem; background: #f0fdf4; padding: .75rem 1rem; font-size: .875rem; color: #15803d; }
+
+        /* Footer buttons */
+        .rw-actions {
+            margin-top: 1.25rem; padding-top: 1rem; border-top: 1px solid #f1f5f9;
+            display: flex; flex-wrap: wrap; justify-content: flex-end; gap: .5rem;
+        }
+        .rw-btn {
+            border-radius: .75rem; padding: .65rem 1.1rem; font-size: .875rem; font-weight: 600;
+            cursor: pointer; transition: background .15s, transform .1s;
+        }
+        .rw-btn:active { transform: scale(.98); }
+        .rw-btn-primary { background: #16a34a; color: #fff; border: 0; }
+        .rw-btn-primary:hover { background: #15803d; }
+        .rw-btn-primary:focus-visible { outline: 2px solid #16a34a; outline-offset: 2px; }
+        .rw-btn-primary:disabled { opacity: .5; cursor: not-allowed; }
+        .rw-btn-primary:disabled:hover { background: #16a34a; }
+        .rw-btn-ghost { background: #fff; color: #475569; border: 1px solid #d1d5db; }
+        .rw-btn-ghost:hover { background: #f8fafc; }
+        .rw-btn-danger { background: #fff; color: #dc2626; border: 1px solid #fecaca; }
+        .rw-btn-danger:hover { background: #fef2f2; }
+        .rw-btn-ghost:focus-visible, .rw-btn-danger:focus-visible { outline: 2px solid #16a34a; outline-offset: 2px; }
+
+        /* Turn off animations for users who prefer reduced motion */
+        @media (prefers-reduced-motion: reduce) {
+            .rw-btn, .rw-close { transition: none; }
+            .rw-btn:active { transform: none; }
+        }
     </style>
 </head>
 
