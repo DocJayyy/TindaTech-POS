@@ -37,4 +37,5 @@ urlpatterns = [
     path("customers/manage-data/",views.customer_management_data_view,name="customer_management_data"),
     path("reward-settings/",views.reward_settings_view,name="reward_settings"),
     path("customers/<int:customer_id>/reward-balance/",views.customer_reward_balance_view,name="customer_reward_balance"),
+    path("pricelist/data/",views.pricelist_data_view,name="pricelist_data"),
 ]

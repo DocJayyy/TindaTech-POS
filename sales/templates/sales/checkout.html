@@ -2473,6 +2473,95 @@
         </div>
     </div>
 
+
+    <!-- Pricelist Modal -->
+    <div id="pricelist-modal"
+        class="fixed inset-0 z-[100] hidden items-center justify-center bg-slate-900/50 p-4 backdrop-blur-sm">
+
+        <div class="flex w-full max-w-4xl flex-col overflow-hidden rounded-2xl bg-white shadow-2xl ring-1 ring-slate-900/5"
+            style="display: flex; flex-direction: column; overflow: hidden; height: min(750px, 90vh); max-height: 90vh;">
+
+            <!-- Header -->
+            <div class="flex shrink-0 items-start justify-between border-b border-slate-100 px-5 py-4 sm:px-6">
+                <div>
+                    <h2 class="text-lg font-semibold tracking-tight text-slate-900">
+                        Pricelist
+                    </h2>
+                    <p class="mt-0.5 text-sm text-slate-500">
+                        View and print the current product price list.
+                    </p>
+                </div>
+
+                <button type="button"
+                        id="pricelist-close"
+                        aria-label="Close pricelist"
+                        class="ml-3 flex h-9 w-9 shrink-0 items-center justify-center rounded-lg text-slate-400 transition hover:bg-slate-100 hover:text-slate-700">
+                    ✕
+                </button>
+            </div>
+
+            <!-- Search -->
+            <div class="shrink-0 p-5 sm:px-6">
+                <p id="pricelist-status"
+                class="mt-3 text-sm text-slate-500">
+                    Loading products...
+                </p>
+            </div>
+
+            <!-- Product List -->
+            <div class="flex-1 overflow-auto px-5 pb-5 sm:px-6"
+                style="flex: 1 1 0%; min-height: 0; overflow-y: auto;">
+
+                <table class="w-full text-left text-sm">
+                    <thead class="sticky top-0 bg-slate-50 text-xs uppercase tracking-wide text-slate-500">
+                        <tr>
+                            <th class="px-3 py-3">Product</th>
+                            <th class="px-3 py-3">SKU</th>
+                            <th class="px-3 py-3">Barcode</th>
+                            <th class="px-3 py-3">Category</th>
+                            <th class="px-3 py-3">Unit</th>
+                            <th class="px-3 py-3 text-right">Price</th>
+                        </tr>
+                    </thead>
+
+                    <tbody id="pricelist-results"
+                        class="divide-y divide-slate-100">
+                    </tbody>
+                </table>
+            </div>
+
+<!-- Footer -->
+<div class="flex shrink-0 items-center justify-between gap-3 border-t border-slate-200 bg-slate-50 px-5 py-4 sm:px-6">
+
+    <button type="button"
+            id="pricelist-print"
+            class="inline-flex items-center justify-center gap-2 rounded-xl bg-blue-600 px-6 py-3 text-sm font-bold text-white shadow-md transition hover:bg-blue-700 active:scale-95"
+            style="background-color: #2563eb; color: #ffffff;">
+        <svg xmlns="http://www.w3.org/2000/svg"
+             width="18" height="18"
+             viewBox="0 0 24 24"
+             fill="none" stroke="currentColor"
+             stroke-width="2"
+             stroke-linecap="round"
+             stroke-linejoin="round">
+            <polyline points="6 9 6 2 18 2 18 9"></polyline>
+            <path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path>
+            <rect x="6" y="14" width="12" height="8"></rect>
+        </svg>
+        Print Pricelist
+    </button>
+
+    <button type="button"
+            id="pricelist-done"
+            class="rounded-xl bg-white px-6 py-3 text-sm font-semibold text-slate-700 shadow-sm ring-1 ring-slate-200 transition hover:bg-slate-100">
+        Close
+    </button>
+
+</div>
+
+        </div>
+    </div>
+
 <script>
 /* =====================================================================
    POS SCRIPT – TABLE OF CONTENTS
@@ -2498,6 +2587,7 @@
    19. Customer note modal
    20. Customer management / Edit customer / Add customer
    21. Reward points modal
+   22. Pricelist modal
    22. Checkout (form submit) validation
    23. Keyboard: Escape handlers
    24. Keyboard: POS shortcuts (Alt + key, F-keys, cart navigation)
@@ -3081,7 +3171,7 @@ actionTiles.forEach(tile => {
                 openCustomerNoteModal();
                 break;
             case "pricelist":
-                showMessage("Print or view the current price list.", "Pricelist");
+                openPricelistModal();
                 break;
 
             case "price-check":
@@ -5582,13 +5672,282 @@ checkoutForm.addEventListener("submit", event => {
     });
 });
 
+/* =========================================================
+   22. PRICELIST MODAL
+   ========================================================= */
+
+const pricelistModal = document.getElementById("pricelist-modal");
+const pricelistStatus = document.getElementById("pricelist-status");
+const pricelistResults = document.getElementById("pricelist-results");
+
+let pricelistProducts = [];
+let pricelistLoaded = false;
+let pricelistRequest = 0;
+
+
+// Close Pricelist Modal
+function closePricelistModal() {
+    pricelistModal.classList.add("hidden");
+    pricelistModal.classList.remove("flex");
+}
+
+
+// Open Pricelist Modal
+async function openPricelistModal() {
+    // Close More Actions Modal
+    if (actionsModal) {
+        actionsModal.classList.add("hidden");
+        actionsModal.classList.remove("flex");
+    }
+
+    pricelistModal.classList.remove("hidden");
+    pricelistModal.classList.add("flex");
+
+    if (!pricelistLoaded) {
+        await loadPricelist();
+    } else {
+        renderPricelist(pricelistProducts);
+    }
+}
+
+
+// Load all active products
+async function loadPricelist() {
+    const requestId = ++pricelistRequest;
+
+    pricelistStatus.textContent = "Loading products...";
+    pricelistResults.replaceChildren();
+
+    try {
+        const response = await fetch(
+            "{% url 'pricelist_data' %}",
+            {
+                headers: {
+                    "X-Requested-With": "XMLHttpRequest"
+                }
+            }
+        );
+
+        if (!response.ok) {
+            throw new Error("Unable to load pricelist.");
+        }
+
+        const data = await response.json();
+
+        if (requestId !== pricelistRequest) return;
+
+        pricelistProducts = data.products || [];
+        pricelistLoaded = true;
+
+        renderPricelist(pricelistProducts);
+
+    } catch (error) {
+        if (requestId !== pricelistRequest) return;
+
+        pricelistStatus.textContent =
+            "Unable to load products. Please try again.";
+
+        console.error("Pricelist Error:", error);
+    }
+}
+
+
+// Render products in the table
+function renderPricelist(products) {
+    pricelistResults.replaceChildren();
+
+    pricelistStatus.textContent =
+        `${products.length} product(s) found.`;
+
+    if (products.length === 0) {
+        pricelistStatus.textContent = "No products found.";
+        return;
+    }
+
+    products.forEach(product => {
+        const row = document.createElement("tr");
+
+        row.className = "hover:bg-slate-50";
+
+        const values = [
+            product.name,
+            product.sku || "—",
+            product.barcode || "—",
+            product.category || "—",
+            product.unit || "—"
+        ];
+
+        values.forEach((value, index) => {
+            const cell = document.createElement("td");
+
+            cell.className = "px-3 py-3 text-slate-600";
+            cell.textContent = value;
+
+            if (index === 0) {
+                cell.classList.add("font-semibold", "text-slate-900");
+            }
+
+            row.appendChild(cell);
+        });
+
+        const priceCell = document.createElement("td");
+
+        priceCell.className =
+            "px-3 py-3 text-right font-semibold text-slate-900";
+
+        priceCell.textContent =
+            "₱" + Number(product.price).toFixed(2);
+
+        row.appendChild(priceCell);
+
+        pricelistResults.appendChild(row);
+    });
+}
+
+// Print Pricelist
+document.getElementById("pricelist-print")
+    .addEventListener("click", () => {
+
+        const products = pricelistProducts;
+
+        if (products.length === 0) {
+            showMessage("There are no products to print.", "Pricelist");
+            return;
+        }
+
+        const escapeHTML = value =>
+            String(value ?? "").replace(/[&<>"']/g, char => ({
+                "&": "&amp;",
+                "<": "&lt;",
+                ">": "&gt;",
+                '"': "&quot;",
+                "'": "&#39;"
+            })[char]);
+
+        const rows = products.map(product => `
+            <tr>
+                <td>${escapeHTML(product.name)}</td>
+                <td>${escapeHTML(product.sku || "—")}</td>
+                <td>${escapeHTML(product.barcode || "—")}</td>
+                <td>${escapeHTML(product.category || "—")}</td>
+                <td>${escapeHTML(product.unit || "—")}</td>
+                <td class="price">₱${Number(product.price).toFixed(2)}</td>
+            </tr>
+        `).join("");
+
+        const printWindow = window.open("", "_blank");
+
+        if (!printWindow) {
+            showMessage(
+                "Please allow pop-ups to print the pricelist.",
+                "Print Pricelist"
+            );
+            return;
+        }
+
+        printWindow.document.write(`
+            <!DOCTYPE html>
+            <html>
+            <head>
+                <title>TindaTech POS - Pricelist</title>
+                <style>
+                    body {
+                        font-family: Arial, sans-serif;
+                        padding: 25px;
+                        color: #1e293b;
+                    }
+
+                    h2 {
+                        margin-bottom: 5px;
+                    }
+
+                    p {
+                        color: #64748b;
+                        font-size: 13px;
+                        margin-bottom: 20px;
+                    }
+
+                    table {
+                        width: 100%;
+                        border-collapse: collapse;
+                        font-size: 12px;
+                    }
+
+                    th, td {
+                        border: 1px solid #ddd;
+                        padding: 9px;
+                        text-align: left;
+                    }
+
+                    th {
+                        background: #f1f5f9;
+                    }
+
+                    .price {
+                        text-align: right;
+                        font-weight: bold;
+                    }
+
+                    @media print {
+                        body {
+                            padding: 0;
+                        }
+                    }
+                </style>
+            </head>
+            <body>
+                <h2>TindaTech POS - Pricelist</h2>
+                <p>Product Selling Prices</p>
+
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Product</th>
+                            <th>SKU</th>
+                            <th>Barcode</th>
+                            <th>Category</th>
+                            <th>Unit</th>
+                            <th>Price</th>
+                        </tr>
+                    </thead>
+                    <tbody>${rows}</tbody>
+                </table>
+
+                <script>
+                    window.onload = function() {
+                        window.print();
+                    };
+                <\/script>
+            </body>
+            </html>
+        `);
+
+        printWindow.document.close();
+    });
+
+
+// Close buttons
+document.getElementById("pricelist-close")
+    .addEventListener("click", closePricelistModal);
+
+document.getElementById("pricelist-done")
+    .addEventListener("click", closePricelistModal);
+
+
+// Close when clicking outside the modal
+pricelistModal.addEventListener("click", event => {
+    if (event.target === pricelistModal) {
+        closePricelistModal();
+    }
+});
+
 
 /* =====================================================================
    23. KEYBOARD: ESCAPE HANDLERS
    (Message, Confirm and More-actions Escape handlers are in sections 4, 5, 9)
    ===================================================================== */
 
-// Escape closes the top-most open modal (one at a time, in this priority order)
+// Escape closes the top-most open modal
 document.addEventListener("keydown", event => {
     if (event.key !== "Escape") return;
 
@@ -5610,6 +5969,8 @@ document.addEventListener("keydown", event => {
         closeAddCustomerModal();
     } else if (!customerManagementModal.classList.contains("hidden")) {
         closeCustomerManagement();
+    } else if (!pricelistModal.classList.contains("hidden")) {
+        closePricelistModal();
     } else if (!lookupModal.classList.contains("hidden")) {
         closeLookupModal();
     }
@@ -5685,6 +6046,7 @@ function isAnyModalOpen() {
         !actionsModal.hidden ||
         !govtModal.hidden ||
         !regularModal.hidden ||
+        !pricelistModal.classList.contains("hidden") ||
         !refundModal.classList.contains("hidden") ||
         !lookupModal.classList.contains("hidden") ||
         !changeFundModal.classList.contains("hidden") ||
@@ -5825,6 +6187,7 @@ document.addEventListener("keydown", function (event) {
         !confirmModal.hidden ||
         !govtModal.hidden ||
         !regularModal.hidden ||
+        !pricelistModal.classList.contains("hidden") ||
         !lookupModal.classList.contains("hidden") ||
         !refundModal.classList.contains("hidden") ||
         !changeFundModal.classList.contains("hidden") ||

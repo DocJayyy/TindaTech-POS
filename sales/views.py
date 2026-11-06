@@ -157,6 +157,29 @@ def inventory_lookup_view(request):
     return JsonResponse({"products": results})
 
 
+@login_required
+@pos_access_required
+def pricelist_data_view(request):
+    products = Product.objects.filter(
+        is_active=True
+    ).select_related("category")
+
+    results = [
+        {
+            "id": product.id,
+            "name": product.name,
+            "sku": product.sku or "",
+            "barcode": product.barcode or "",
+            "category": product.category.name,
+            "unit": product.get_unit_display(),
+            "price": str(product.selling_price),
+        }
+        for product in products
+    ]
+
+    return JsonResponse({"products": results})
+
+
 
 @login_required
 @pos_access_required
