@@ -45,6 +45,10 @@ from .utils import log_activity
 from django.http import JsonResponse
 from django.db.models import Q
 
+# NOTE: put this import at the top of views.py (it used to be inside the
+# `except` block). Skip it if you already have it.
+import logging
+
 
 
 @login_required
@@ -667,6 +671,8 @@ def x_reading_view(request):
         "total_sales": Decimal("0.00"),
         "cash_sales": Decimal("0.00"),
         "non_cash_sales": Decimal("0.00"),
+        "cash_refunds": Decimal("0.00"),
+        "additional_change_fund": Decimal("0.00"),
         "expected_cash": Decimal("0.00"),
     }
 
@@ -679,20 +685,37 @@ def x_reading_view(request):
             context,
         )
 
-    # Calculate the current shift's sales.
+    # ------------------------------------------------------------------
+    # Calculate the current shift's figures.
+    # Same computation as the Z Reading, so both reports always match.
+    # ------------------------------------------------------------------
     sales = Sale.objects.filter(cashier_session=session)
 
     completed_sales = sales.filter(
         status=Sale.Status.COMPLETED,
     )
 
-    voided_sales = sales.filter(
-        status=Sale.Status.VOIDED,
+    # Sales that were voided through an adjustment must not be counted.
+    voided_by_adjustment = SaleAdjustment.objects.filter(
+        sale__cashier_session=session,
+        status=SaleAdjustment.Status.COMPLETED,
+        adjustment_type=SaleAdjustment.AdjustmentType.VOID,
+    ).values_list("sale_id", flat=True)
+
+    valid_sales = completed_sales.exclude(
+        pk__in=voided_by_adjustment,
+    )
+
+    total_sales = (
+        valid_sales.aggregate(
+            total=Sum("total_amount"),
+        )["total"]
+        or Decimal("0.00")
     )
 
     cash_sales = (
-        completed_sales.filter(
-            payment_method__iexact="cash",
+        valid_sales.filter(
+            payment_method=Sale.PaymentMethod.CASH,
         ).aggregate(
             total=Sum("total_amount"),
         )["total"]
@@ -700,29 +723,61 @@ def x_reading_view(request):
     )
 
     non_cash_sales = (
-        completed_sales.exclude(
-            payment_method__iexact="cash",
+        valid_sales.exclude(
+            payment_method=Sale.PaymentMethod.CASH,
         ).aggregate(
             total=Sum("total_amount"),
         )["total"]
         or Decimal("0.00")
     )
 
-    total_sales = (
-        completed_sales.aggregate(
-            total=Sum("total_amount"),
+    # Cash that was given back to customers (returns / refunds).
+    cash_refunds = (
+        SaleAdjustment.objects.filter(
+            sale__cashier_session=session,
+            sale__status=Sale.Status.COMPLETED,
+            sale__payment_method=Sale.PaymentMethod.CASH,
+            status=SaleAdjustment.Status.COMPLETED,
+            adjustment_type__in=[
+                SaleAdjustment.AdjustmentType.RETURN,
+                SaleAdjustment.AdjustmentType.REFUND,
+            ],
+        )
+        .exclude(
+            sale_id__in=voided_by_adjustment,
+        )
+        .aggregate(
+            total=Sum("amount"),
         )["total"]
         or Decimal("0.00")
     )
 
-    transaction_count = completed_sales.count()
-    voided_count = voided_sales.count()
+    # Extra change fund added to the drawer during this shift.
+    additional_change_fund = (
+        CashFundMovement.objects.filter(
+            session=session
+        ).aggregate(
+            total=Sum("amount")
+        )["total"]
+        or Decimal("0.00")
+    )
 
+    transaction_count = valid_sales.count()
+    voided_count = sales.filter(
+        status=Sale.Status.VOIDED,
+    ).count()
+
+    # Opening cash + change fund + cash sales - cash refunds
     expected_cash = (
-        session.opening_cash + cash_sales
+        session.opening_cash
+        + additional_change_fund
+        + cash_sales
+        - cash_refunds
     ).quantize(Decimal("0.01"))
 
+    # ------------------------------------------------------------------
     # Save a new X Reading for the current open shift.
+    # ------------------------------------------------------------------
     if request.method == "POST":
         try:
             with transaction.atomic():
@@ -745,6 +800,8 @@ def x_reading_view(request):
                     "total_sales": str(total_sales),
                     "cash_sales": str(cash_sales),
                     "non_cash_sales": str(non_cash_sales),
+                    "cash_refunds": str(cash_refunds),
+                    "additional_change_fund": str(additional_change_fund),
                     "transaction_count": transaction_count,
                     "voided_count": voided_count,
                     "expected_cash": str(expected_cash),
@@ -767,6 +824,8 @@ def x_reading_view(request):
                         "total_sales": str(total_sales),
                         "cash_sales": str(cash_sales),
                         "non_cash_sales": str(non_cash_sales),
+                        "cash_refunds": str(cash_refunds),
+                        "additional_change_fund": str(additional_change_fund),
                         "transaction_count": transaction_count,
                         "voided_count": voided_count,
                         "expected_cash": str(expected_cash),
@@ -782,9 +841,7 @@ def x_reading_view(request):
             return redirect("x_reading")
 
         except Exception:
-            import logging
-
-            logging.getLogger(__name__).exception(
+            logger.exception(
                 "Failed to save X Reading for session %s",
                 session.pk,
             )
@@ -802,6 +859,8 @@ def x_reading_view(request):
         "total_sales": total_sales,
         "cash_sales": cash_sales,
         "non_cash_sales": non_cash_sales,
+        "cash_refunds": cash_refunds,
+        "additional_change_fund": additional_change_fund,
         "expected_cash": expected_cash,
     })
 
