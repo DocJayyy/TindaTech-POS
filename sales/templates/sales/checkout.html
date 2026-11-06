@@ -1211,8 +1211,7 @@
 
                 <button type="button" class="action-tile c-blue" data-action="customer-note"><span class="tile-icon">■</span><span>Customer Note</span><span class="hint">Alt+B</span></button>
 
-                <button type="button"data-action="customer-management"class="action-tile c-indigo">
-                <span class="tile-icon">👥</span><span>Customer Management</span></button>
+                <button type="button" data-action="customer-management" class="action-tile c-indigo"><span class="tile-icon">👥</span><span>Customer Management</span><span class="hint">Alt+U</span></button>
 
                 <button type="button" class="action-tile c-indigo" data-action="pricelist"><span class="tile-icon">☰</span><span>Pricelist</span><span class="hint">Alt+L</span></button>
 
@@ -2359,8 +2358,48 @@
     </div>
 
 <script>
+/* =====================================================================
+   POS SCRIPT – TABLE OF CONTENTS
+   ---------------------------------------------------------------------
+    1. Core state & DOM references (cart, totals, discounts, charges)
+    2. Helper functions (money, numberValue)
+    3. Live date & time
+    4. Message modal (simple alert popup)
+    5. Confirm modal (Yes / Cancel popup)
+    6. Totals & discount computation
+    7. Cart: add product, search, render, clear
+    8. Payment inputs & quick-payment buttons
+    9. "More actions" modal
+   10. Action tiles dispatcher (what each action button does)
+   11. Product lookup modal (Price Check / Inventory Lookup)
+   12. Government discount modal
+   13. Regular discount modal
+   14. Price override modal
+   15. Refund modal
+   16. Change fund modal
+   17. Suspend & Retrieve transaction
+   18. General note modal
+   19. Customer note modal
+   20. Customer management / Edit customer / Add customer
+   21. Reward points modal
+   22. Checkout (form submit) validation
+   23. Keyboard: Escape handlers
+   24. Keyboard: POS shortcuts (Alt + key, F-keys, cart navigation)
+   25. Initial run (start-up calls)
+   ===================================================================== */
+
+
+/* =====================================================================
+   1. CORE STATE & DOM REFERENCES
+   ===================================================================== */
+
+// Cart: key = product id, value = item object
 const cart = new Map();
+
+// Currently selected (highlighted) item in the cart
 let selectedCartItemId = null;
+
+// Main page elements
 const search = document.getElementById("search");
 const cartBody = document.getElementById("cart-items");
 const cartEmpty = document.getElementById("cart-empty");
@@ -2370,34 +2409,18 @@ const noMatch = document.getElementById("no-match");
 const amountInput = document.getElementById("id_amount_tendered");
 const changeDisplay = document.getElementById("change");
 const checkoutForm = document.getElementById("checkout-form");
+
+// Discount fields (Django form fields)
 const discountType = document.getElementById("id_discount_type");
 const regularDiscountInput = document.getElementById("id_regular_discount_percent");
 const specialDiscountInput = document.getElementById("id_special_discount_amount");
 const customerNameInput = document.getElementById("id_discount_customer_name");
 const discountReferenceInput = document.getElementById("id_discount_reference");
-// Reward Elements
+
+// Customer dropdown (used by rewards, notes, suspend/retrieve)
 const customerSelect = document.getElementById("customer-select");
 
-const rewardModal = document.getElementById("reward-modal");
-const rewardModalClose = document.getElementById("reward-modal-close");
-const rewardCancel = document.getElementById("reward-cancel");
-const rewardApply = document.getElementById("reward-apply");
-const rewardRemove = document.getElementById("reward-remove");
-const rewardUseAll = document.getElementById("reward-use-all");
-
-const rewardCustomerName = document.getElementById("reward-customer-name");
-const rewardAvailablePoints = document.getElementById("reward-available-points");
-const rewardPointsInput = document.getElementById("reward-points-input");
-const rewardDiscountPreview = document.getElementById("reward-discount-preview");
-const rewardError = document.getElementById("reward-error");
-const rewardAppliedInfo = document.getElementById("reward-applied-info");
-
-const rewardPointsHidden = document.getElementById("reward-points-to-redeem");
-
-let availableRewardPoints = 0;
-let rewardPointsToRedeem = 0;
-let rewardBalanceRequest = 0;
-
+// Additional charges: packaging, delivery, service, other
 const chargeInputs = [
     document.getElementById("id_packaging_charge"),
     document.getElementById("id_delivery_charge"),
@@ -2405,9 +2428,28 @@ const chargeInputs = [
     document.getElementById("id_other_charge")
 ];
 
+// Product buttons shown on the POS screen
 const productButtons = Array.from(document.querySelectorAll(".product"));
 
-// ---------- Live date and time ----------
+// General note of the current transaction
+let generalNote = "";
+
+
+/* =====================================================================
+   2. HELPER FUNCTIONS
+   ===================================================================== */
+
+// Round to 2 decimal places
+const money = value => Math.round((value + Number.EPSILON) * 100) / 100;
+
+// Safely read a number from an input (never negative, never NaN)
+const numberValue = input => { const value = Number(input?.value || 0); return Number.isFinite(value) ? Math.max(0, value) : 0; };
+
+
+/* =====================================================================
+   3. LIVE DATE & TIME
+   ===================================================================== */
+
 (function () {
     const dateEl = document.getElementById("live-date");
     const timeEl = document.getElementById("live-time");
@@ -2421,7 +2463,11 @@ const productButtons = Array.from(document.querySelectorAll(".product"));
     setInterval(tick, 1000);
 })();
 
-// ---------- Message modal ----------
+
+/* =====================================================================
+   4. MESSAGE MODAL  (simple popup with an OK button)
+   ===================================================================== */
+
 const messageModal = document.getElementById("message-modal");
 const messageTitle = document.getElementById("message-modal-title");
 const messageBody = document.getElementById("message-modal-body");
@@ -2450,7 +2496,11 @@ messageModal.addEventListener("click", event => { if (event.target === messageMo
 document.addEventListener("keydown", event => { if (event.key === "Escape" && !messageModal.hidden) closeMessage(); });
 if (!messageModal.hidden) messageOk.focus();
 
-// ---------- Confirm modal ----------
+
+/* =====================================================================
+   5. CONFIRM MODAL  (returns a Promise: true = confirmed, false = cancelled)
+   ===================================================================== */
+
 const confirmModal = document.getElementById("confirm-modal");
 const confirmTitle = document.getElementById("confirm-modal-title");
 const confirmBody = document.getElementById("confirm-modal-body");
@@ -2488,7 +2538,336 @@ confirmCancel.addEventListener("click", () => closeConfirm(false));
 confirmModal.addEventListener("click", event => { if (event.target === confirmModal) closeConfirm(false); });
 document.addEventListener("keydown", event => { if (event.key === "Escape" && !confirmModal.hidden) closeConfirm(false); });
 
-// ---------- Actions Modal ----------
+
+/* =====================================================================
+   6. TOTALS & DISCOUNT COMPUTATION
+   ===================================================================== */
+
+// Sum of (price x quantity) of all cart items
+function getSubtotal() {
+    let subtotal = 0;
+    cart.forEach(item => { subtotal += item.price * item.quantity; });
+    return money(subtotal);
+}
+
+// Discount amount (regular = percent, senior/pwd/naac/solo_parent = fixed amount)
+function getDiscount(subtotal) {
+    const type = discountType.value;
+    let discount = 0;
+    if (type === "regular") {
+        const percent = numberValue(regularDiscountInput);
+        discount = subtotal * Math.min(percent, 100) / 100;
+    } else if (["senior", "pwd", "naac", "solo_parent"].includes(type)) {
+        discount = numberValue(specialDiscountInput);
+    }
+    return money(discount);
+}
+
+// Total of packaging + delivery + service + other charges
+function getCharges() {
+    return money(chargeInputs.reduce((sum, input) => sum + numberValue(input), 0));
+}
+
+// Final amount to pay: subtotal - discount - reward + charges
+function getTotal() {
+    const subtotal = getSubtotal();
+    const discount = getDiscount(subtotal);
+    const rewardDiscount = getRewardDiscount();
+    const charges = getCharges();
+
+    return money(
+        Math.max(0, subtotal - discount - rewardDiscount + charges)
+    );
+}
+
+// Recompute the change (tendered - total)
+function updateChange() {
+    const total = getTotal();
+    const tendered = numberValue(amountInput);
+    changeDisplay.textContent = money(Math.max(0, tendered - total)).toFixed(2);
+}
+
+// Refresh total + change on screen
+function updateTotals() {
+    totalDisplay.textContent = getTotal().toFixed(2);
+    updateChange();
+}
+
+// Show/hide + enable/disable discount fields depending on the selected discount type
+function updateDiscountFields() {
+    const type = discountType.value;
+    const regular = type === "regular";
+    const special = ["senior", "pwd", "naac", "solo_parent"].includes(type);
+
+    document.getElementById("regular-discount-fields").hidden = !regular;
+    document.getElementById("special-discount-fields").hidden = !special;
+    document.getElementById("discount-customer-field").hidden = !special;
+    document.getElementById("discount-reference-field").hidden = !special;
+
+    regularDiscountInput.disabled = !regular;
+    specialDiscountInput.disabled = !special;
+    customerNameInput.disabled = !special;
+    discountReferenceInput.disabled = !special;
+
+    if (!regular) regularDiscountInput.value = "0";
+    if (!special) {
+        specialDiscountInput.value = "0";
+        customerNameInput.value = "";
+        discountReferenceInput.value = "";
+    }
+    updateTotals();
+}
+
+// Recalculate totals whenever discount inputs change
+regularDiscountInput.addEventListener("input", updateTotals);
+specialDiscountInput.addEventListener("input", updateTotals);
+discountType.addEventListener("change", updateDiscountFields);
+
+
+/* =====================================================================
+   7. CART: ADD PRODUCT, SEARCH, RENDER, CLEAR
+   ===================================================================== */
+
+// Add a product to the cart (or +1 quantity if already there)
+function addProduct(button) {
+    const id = button.dataset.id;
+    const existing = cart.get(id);
+
+    if (existing) {
+        existing.quantity += 1;
+    } else {
+        const originalPrice = Number(button.dataset.price);
+
+        cart.set(id, {
+            id,
+            name: button.dataset.name,
+            price: originalPrice,
+            originalPrice: originalPrice,
+            priceOverridden: false,
+            unit: button.dataset.unit,
+            quantity: 1
+        });
+    }
+
+    renderCart();
+}
+
+// Clicking a product button adds it to the cart
+productButtons.forEach(button => {
+    button.addEventListener("click", () => addProduct(button));
+});
+
+// Filter the product list by name / barcode while typing in the search box
+function filterProducts() {
+    const term = search.value.toLowerCase().trim();
+    let visible = 0;
+    productButtons.forEach(button => {
+        const name = button.dataset.name || "";
+        const barcode = button.dataset.barcode || "";
+        const text = (name + " " + barcode).toLowerCase();
+        button.hidden = !text.includes(term);
+        if (!button.hidden) visible++;
+    });
+    noMatch.hidden = !(productButtons.length > 0 && visible === 0);
+}
+
+search.addEventListener("input", filterProducts);
+
+// Pressing Enter in the search box adds the product if there is exactly one match (barcode scan)
+search.addEventListener("keydown", event => {
+    if (event.key !== "Enter") return;
+    event.preventDefault();
+    const matches = productButtons.filter(button => !button.hidden);
+    if (matches.length === 1) {
+        addProduct(matches[0]);
+        search.value = "";
+        filterProducts();
+        search.focus();
+    } else if (matches.length > 1) {
+        showMessage("More than one product matches. Type more to narrow your search.", "Multiple matches");
+    } else {
+        showMessage("No matching product found.", "No match");
+    }
+});
+
+// Create the round "+" / "−" button used in the cart
+function makeStepButton(label, ariaLabel, onClick) {
+    const button = document.createElement("button");
+    button.type = "button";
+    button.textContent = label;
+    button.className = "flex h-9 w-9 items-center justify-center rounded-full bg-brand-soft text-lg font-bold text-brand transition hover:bg-brand hover:text-white focus:outline-none focus:ring-2 focus:ring-brand active:scale-95";
+    button.setAttribute("aria-label", ariaLabel);
+    button.addEventListener("click", onClick);
+    return button;
+}
+
+// Redraw the whole cart list + update hidden cart-data + totals
+function renderCart() {
+    cartBody.replaceChildren();
+    let count = 0;
+    cart.forEach(item => {
+        count += item.quantity;
+        const row = document.createElement("li");
+
+        row.dataset.productId = item.id;
+        row.tabIndex = -1; // lets the row receive focus for Del / + / - / arrow keys
+
+        row.className = [
+            "rounded-2xl px-3 py-3 transition cursor-pointer",
+            selectedCartItemId === String(item.id)
+                ? "bg-red-50 ring-2 ring-red-400"
+                : "hover:bg-canvas/60"
+        ].join(" ");
+
+        // Click a row to select it
+        row.addEventListener("click", (event) => {
+            if (event.target.closest("button, input")) return;
+
+            selectedCartItemId = item.id;
+            renderCart();
+        });
+
+        const top = document.createElement("div");
+        top.className = "flex items-start justify-between gap-3";
+
+        const info = document.createElement("div");
+        info.className = "min-w-0";
+
+        const name = document.createElement("p");
+        name.className = "truncate text-sm font-semibold text-ink";
+        name.textContent = item.name;
+
+        const meta = document.createElement("p");
+        meta.className = "tabular text-xs text-slate-500";
+        meta.textContent = "₱" + item.price.toFixed(2) + (item.unit ? " / " + item.unit : "");
+
+        info.append(name, meta);
+
+        const lineTotal = document.createElement("p");
+        lineTotal.className = "tabular shrink-0 text-base font-bold text-ink";
+        lineTotal.textContent = "₱" + money(item.price * item.quantity).toFixed(2);
+
+        top.append(info, lineTotal);
+
+        const controls = document.createElement("div");
+        controls.className = "mt-2 flex items-center justify-between";
+
+        const stepper = document.createElement("div");
+        stepper.className = "flex items-center gap-1.5";
+
+        // Quantity input (up to 3 decimal places)
+        const quantityInput = document.createElement("input");
+        quantityInput.type = "number";
+        quantityInput.min = "0.001";
+        quantityInput.step = "0.001";
+        quantityInput.value = item.quantity;
+        quantityInput.className = "tabular h-9 w-20 rounded-xl border border-slate-200 px-2 text-center text-sm font-semibold focus:border-brand focus:outline-none focus:ring-2 focus:ring-brand/30";
+        quantityInput.setAttribute("aria-label", "Quantity for " + item.name);
+
+        quantityInput.addEventListener("change", () => {
+            const value = Number(quantityInput.value);
+            if (Number.isFinite(value) && value > 0 && value === Math.round(value * 1000) / 1000) {
+                item.quantity = value;
+            } else {
+                showMessage("Enter a quantity with up to 3 decimal places.", "Invalid quantity");
+                if (cart.has(item.id)) {
+                    item.quantity = Math.max(0.001, Math.floor(item.quantity * 1000) / 1000);
+                }
+            }
+            renderCart();
+        });
+
+        // "−" button: decrease quantity (removes the item if it reaches 0)
+        const minus = makeStepButton("−", "Decrease quantity of " + item.name, () => {
+            if (item.quantity > 1) {
+                item.quantity -= 1;
+            } else {
+                cart.delete(item.id);
+            }
+            renderCart();
+        });
+
+        // "+" button: increase quantity
+        const plus = makeStepButton("+", "Increase quantity of " + item.name, () => {
+            item.quantity += 1;
+            renderCart();
+        });
+
+        stepper.append(minus, quantityInput, plus);
+
+        // "Remove" button for this row
+        const removeButton = document.createElement("button");
+        removeButton.type = "button";
+        removeButton.textContent = "Remove";
+        removeButton.className = "rounded-full px-3 py-1.5 text-xs font-semibold text-red-600 transition hover:bg-red-50";
+        removeButton.addEventListener("click", () => {
+            cart.delete(item.id);
+            renderCart();
+        });
+
+        controls.append(stepper, removeButton);
+        row.append(top, controls);
+        cartBody.appendChild(row);
+    });
+
+    itemCount.textContent = count + (count === 1 ? " item" : " items");
+    cartEmpty.hidden = cart.size > 0;
+    cartBody.hidden = cart.size === 0;
+
+    // Hidden field sent to the server on checkout
+    document.getElementById("cart-data").value = JSON.stringify(
+    Array.from(cart.values()).map(item => ({
+        product_id: item.id,
+        quantity: item.quantity,
+        unit_price: item.price,
+        price_overridden: item.priceOverridden || false
+    }))
+);
+    updateTotals();
+}
+
+// "Clear cart" button
+document.getElementById("clear-cart").addEventListener("click", async () => {
+    if (cart.size === 0) return;
+    const ok = await showConfirm({
+        title: "Clear cart?",
+        text: "This will remove all items from the current sale.",
+        confirmLabel: "Clear",
+        danger: true
+    });
+    if (ok) {
+        cart.clear();
+        renderCart();
+        search.focus();
+    }
+});
+
+
+/* =====================================================================
+   8. PAYMENT INPUTS & QUICK-PAYMENT BUTTONS
+   ===================================================================== */
+
+// Recalculate change / totals when payment or charges change
+amountInput.addEventListener("input", updateChange);
+chargeInputs.forEach(input => {
+    input.addEventListener("input", updateTotals);
+    input.addEventListener("change", updateTotals);
+});
+
+// Quick payment buttons (e.g. 100, 500, "exact")
+document.querySelectorAll("[data-quick]").forEach(button => {
+    button.addEventListener("click", () => {
+        const value = button.dataset.quick === "exact" ? getTotal().toFixed(2) : button.dataset.quick;
+        amountInput.value = value;
+        updateChange();
+    });
+});
+
+
+/* =====================================================================
+   9. "MORE ACTIONS" MODAL
+   ===================================================================== */
+
 const actionsModal = document.getElementById("actions-modal");
 const openActionsBtn = document.querySelector('.pos-act.soft');
 const actionsClose = document.getElementById("actions-close");
@@ -2514,260 +2893,12 @@ actionsClose.addEventListener("click", closeActionsModal);
 actionsModal.addEventListener("click", event => { if (event.target === actionsModal) closeActionsModal(); });
 document.addEventListener("keydown", event => { if (event.key === "Escape" && !actionsModal.hidden) closeActionsModal(); });
 
-// ---------- Product lookup modal (Price Check / Inventory Lookup) ----------
-// NOTE: this block used to live inside the action click handler, which re-attached
-// every listener on each click. It now runs once.
-const lookupModal = document.getElementById("product-lookup-modal");
-const lookupTitle = document.getElementById("lookup-title");
-const lookupSubtitle = document.getElementById("lookup-subtitle");
-const lookupSearch = document.getElementById("lookup-search");
-const lookupStatus = document.getElementById("lookup-status");
-const lookupResults = document.getElementById("lookup-results");
 
-let lookupMode = "price-check";
-let lookupTimer = null;
-let lookupRequest = 0;
+/* =====================================================================
+   10. ACTION TILES DISPATCHER
+   Every button with data-action="..." ends up here.
+   ===================================================================== */
 
-function closeLookupModal() {
-    lookupModal.classList.add("hidden");
-    lookupModal.classList.remove("flex");
-
-    clearTimeout(lookupTimer);
-    lookupRequest++;
-}
-
-function openLookupModal(mode) {
-    lookupMode = mode;
-
-    lookupTitle.textContent =
-        mode === "price-check" ? "Price Check" : "Inventory Lookup";
-
-    lookupSubtitle.textContent =
-        mode === "price-check"
-            ? "Check a product's current selling price."
-            : "Check available stock and reorder level.";
-
-    lookupSearch.value = "";
-    lookupResults.replaceChildren();
-    lookupStatus.textContent = "Type to search for a product.";
-
-    lookupModal.classList.remove("hidden");
-    lookupModal.classList.add("flex");
-
-    setTimeout(() => lookupSearch.focus(), 50);
-}
-
-function renderLookupResults(products) {
-    lookupResults.replaceChildren();
-
-    if (!products.length) {
-        lookupStatus.textContent = "No matching products found.";
-        return;
-    }
-
-    lookupStatus.textContent =
-        `${products.length} product(s) found.`;
-
-    products.forEach(product => {
-        const card = document.createElement("div");
-        card.className =
-            "rounded-xl border border-gray-200 p-4 hover:bg-gray-50";
-
-        const header = document.createElement("div");
-        header.className = "flex items-start justify-between gap-4";
-
-        const details = document.createElement("div");
-        details.className = "min-w-0";
-
-        const name = document.createElement("p");
-        name.className = "font-semibold text-gray-900";
-        name.textContent = product.name;
-
-        const identifiers = document.createElement("p");
-        identifiers.className = "mt-1 text-xs text-gray-500";
-        identifiers.textContent =
-            `Barcode: ${product.barcode || "N/A"} · SKU: ${product.sku || "N/A"}`;
-
-        details.append(name, identifiers);
-
-        const price = document.createElement("p");
-        price.className =
-            "shrink-0 font-semibold text-gray-900";
-        price.textContent =
-            `₱${Number(product.price).toLocaleString("en-PH", {
-                minimumFractionDigits: 2,
-                maximumFractionDigits: 2
-            })}`;
-
-        header.append(details, price);
-        card.append(header);
-
-        const unit = document.createElement("p");
-        unit.className = "mt-2 text-sm text-gray-600";
-        unit.textContent = `Unit: ${product.unit}`;
-        card.append(unit);
-
-        if (lookupMode === "inventory-lookup") {
-            const stock = document.createElement("p");
-            stock.className = "mt-2 text-sm font-medium";
-
-            stock.textContent =
-                `Current stock: ${product.current_stock} ${product.unit}`;
-
-            stock.classList.add(
-                product.low_stock ? "text-red-600" : "text-green-700"
-            );
-
-            card.append(stock);
-
-            const reorder = document.createElement("p");
-            reorder.className = "mt-1 text-xs text-gray-500";
-            reorder.textContent =
-                `Reorder level: ${product.reorder_level} ${product.unit}`;
-
-            card.append(reorder);
-
-            if (product.low_stock) {
-                const warning = document.createElement("p");
-                warning.className =
-                    "mt-2 text-xs font-medium text-red-600";
-                warning.textContent = "Low stock — consider restocking.";
-                card.append(warning);
-            }
-        }
-
-        lookupResults.append(card);
-    });
-}
-
-async function searchLookupProducts(query) {
-    const requestId = ++lookupRequest;
-
-    if (!query.trim()) {
-        lookupResults.replaceChildren();
-        lookupStatus.textContent = "Type to search for a product.";
-        return;
-    }
-
-    lookupStatus.textContent = "Searching...";
-    lookupResults.replaceChildren();
-
-    const endpoint =
-        lookupMode === "price-check"
-            ? "{% url 'price_check' %}"
-            : "{% url 'inventory_lookup' %}";
-
-    try {
-        const response = await fetch(
-            `${endpoint}?q=${encodeURIComponent(query)}`,
-            {
-                headers: { "X-Requested-With": "XMLHttpRequest" }
-            }
-        );
-
-        if (!response.ok) {
-            throw new Error("Search request failed.");
-        }
-
-        const data = await response.json();
-
-        if (requestId !== lookupRequest) return;
-
-        renderLookupResults(data.products || []);
-    } catch (error) {
-        if (requestId !== lookupRequest) return;
-
-        lookupStatus.textContent =
-            "Unable to search products. Check your connection and try again.";
-    }
-}
-
-lookupSearch.addEventListener("input", () => {
-    clearTimeout(lookupTimer);
-
-    const query = lookupSearch.value;
-
-    lookupTimer = setTimeout(() => {
-        searchLookupProducts(query);
-    }, 250);
-});
-
-document.getElementById("lookup-close").addEventListener("click", closeLookupModal);
-document.getElementById("lookup-done").addEventListener("click", closeLookupModal);
-
-lookupModal.addEventListener("click", event => {
-    if (event.target === lookupModal) {
-        closeLookupModal();
-    }
-});
-
-document.addEventListener("keydown", event => {
-    if (event.key !== "Escape") return;
-
-    if (!rewardModal.hidden) {
-        closeRewardModal();
-    } else if (!priceOverrideModal.classList.contains("hidden")) {
-        closePriceOverrideModal();
-    } else if (!regularModal.hidden) {
-        closeRegularDiscountModal();
-    } else if (!govtModal.hidden) {
-        closeGovtDiscountModal();
-    } else if (!refundModal.classList.contains("hidden")) {
-        closeRefundModal();
-    } else if (!changeFundModal.classList.contains("hidden")) {
-        closeChangeFundModal();
-    } else if (!lookupModal.classList.contains("hidden")) {
-        closeLookupModal();
-    }
-});
-
-document.addEventListener("keydown", event => {
-    if (
-        event.key === "Escape" &&
-        !lookupModal.classList.contains("hidden")
-    ) {
-        closeLookupModal();
-    }
-});
-
-// =====================================
-// REWARD MODAL EVENT LISTENERS
-// =====================================
-
-rewardModalClose.addEventListener("click", closeRewardModal);
-rewardCancel.addEventListener("click", closeRewardModal);
-
-rewardApply.addEventListener("click", applyReward);
-rewardRemove.addEventListener("click", removeReward);
-
-rewardUseAll.addEventListener("click", () => {
-    rewardPointsInput.value = String(availableRewardPoints);
-    updateRewardPreview();
-});
-
-rewardPointsInput.addEventListener("input", updateRewardPreview);
-
-customerSelect.addEventListener("change", () => {
-    // Remove previously applied reward points.
-    rewardPointsToRedeem = 0;
-    rewardPointsHidden.value = "0";
-
-    // Reset displayed reward balance.
-    availableRewardPoints = 0;
-    rewardAvailablePoints.textContent = "0";
-
-    rewardCustomerName.textContent = customerSelect.value
-        ? "Customer changed"
-        : "No customer selected";
-
-    rewardPointsInput.value = "0";
-
-    clearRewardError();
-    updateRewardPreview();
-    updateTotals();
-});
-
-// ---------- Action handlers ----------
 actionTiles.forEach(tile => {
     tile.addEventListener("click", async () => {
         const action = tile.dataset.action;
@@ -2915,79 +3046,207 @@ actionTiles.forEach(tile => {
     });
 });
 
-// ---------- Totals ----------
-const money = value => Math.round((value + Number.EPSILON) * 100) / 100;
-const numberValue = input => { const value = Number(input?.value || 0); return Number.isFinite(value) ? Math.max(0, value) : 0; };
 
-function getSubtotal() {
-    let subtotal = 0;
-    cart.forEach(item => { subtotal += item.price * item.quantity; });
-    return money(subtotal);
+/* =====================================================================
+   11. PRODUCT LOOKUP MODAL (Price Check / Inventory Lookup)
+   ---------------------------------------------------------------------
+   NOTE: this block used to live inside the action click handler, which re-attached
+   every listener on each click. It now runs once.
+   ===================================================================== */
+
+const lookupModal = document.getElementById("product-lookup-modal");
+const lookupTitle = document.getElementById("lookup-title");
+const lookupSubtitle = document.getElementById("lookup-subtitle");
+const lookupSearch = document.getElementById("lookup-search");
+const lookupStatus = document.getElementById("lookup-status");
+const lookupResults = document.getElementById("lookup-results");
+
+let lookupMode = "price-check";
+let lookupTimer = null;
+let lookupRequest = 0;
+
+function closeLookupModal() {
+    lookupModal.classList.add("hidden");
+    lookupModal.classList.remove("flex");
+
+    clearTimeout(lookupTimer);
+    lookupRequest++;
 }
 
-function getDiscount(subtotal) {
-    const type = discountType.value;
-    let discount = 0;
-    if (type === "regular") {
-        const percent = numberValue(regularDiscountInput);
-        discount = subtotal * Math.min(percent, 100) / 100;
-    } else if (["senior", "pwd", "naac", "solo_parent"].includes(type)) {
-        discount = numberValue(specialDiscountInput);
+function openLookupModal(mode) {
+    lookupMode = mode;
+
+    lookupTitle.textContent =
+        mode === "price-check" ? "Price Check" : "Inventory Lookup";
+
+    lookupSubtitle.textContent =
+        mode === "price-check"
+            ? "Check a product's current selling price."
+            : "Check available stock and reorder level.";
+
+    lookupSearch.value = "";
+    lookupResults.replaceChildren();
+    lookupStatus.textContent = "Type to search for a product.";
+
+    lookupModal.classList.remove("hidden");
+    lookupModal.classList.add("flex");
+
+    setTimeout(() => lookupSearch.focus(), 50);
+}
+
+// Draw the product cards returned by the server
+function renderLookupResults(products) {
+    lookupResults.replaceChildren();
+
+    if (!products.length) {
+        lookupStatus.textContent = "No matching products found.";
+        return;
     }
-    return money(discount);
+
+    lookupStatus.textContent =
+        `${products.length} product(s) found.`;
+
+    products.forEach(product => {
+        const card = document.createElement("div");
+        card.className =
+            "rounded-xl border border-gray-200 p-4 hover:bg-gray-50";
+
+        const header = document.createElement("div");
+        header.className = "flex items-start justify-between gap-4";
+
+        const details = document.createElement("div");
+        details.className = "min-w-0";
+
+        const name = document.createElement("p");
+        name.className = "font-semibold text-gray-900";
+        name.textContent = product.name;
+
+        const identifiers = document.createElement("p");
+        identifiers.className = "mt-1 text-xs text-gray-500";
+        identifiers.textContent =
+            `Barcode: ${product.barcode || "N/A"} · SKU: ${product.sku || "N/A"}`;
+
+        details.append(name, identifiers);
+
+        const price = document.createElement("p");
+        price.className =
+            "shrink-0 font-semibold text-gray-900";
+        price.textContent =
+            `₱${Number(product.price).toLocaleString("en-PH", {
+                minimumFractionDigits: 2,
+                maximumFractionDigits: 2
+            })}`;
+
+        header.append(details, price);
+        card.append(header);
+
+        const unit = document.createElement("p");
+        unit.className = "mt-2 text-sm text-gray-600";
+        unit.textContent = `Unit: ${product.unit}`;
+        card.append(unit);
+
+        // Extra info (stock + reorder level) only for Inventory Lookup
+        if (lookupMode === "inventory-lookup") {
+            const stock = document.createElement("p");
+            stock.className = "mt-2 text-sm font-medium";
+
+            stock.textContent =
+                `Current stock: ${product.current_stock} ${product.unit}`;
+
+            stock.classList.add(
+                product.low_stock ? "text-red-600" : "text-green-700"
+            );
+
+            card.append(stock);
+
+            const reorder = document.createElement("p");
+            reorder.className = "mt-1 text-xs text-gray-500";
+            reorder.textContent =
+                `Reorder level: ${product.reorder_level} ${product.unit}`;
+
+            card.append(reorder);
+
+            if (product.low_stock) {
+                const warning = document.createElement("p");
+                warning.className =
+                    "mt-2 text-xs font-medium text-red-600";
+                warning.textContent = "Low stock — consider restocking.";
+                card.append(warning);
+            }
+        }
+
+        lookupResults.append(card);
+    });
 }
 
-function getCharges() {
-    return money(chargeInputs.reduce((sum, input) => sum + numberValue(input), 0));
-}
+// Ask the server for products matching the query
+async function searchLookupProducts(query) {
+    const requestId = ++lookupRequest;
 
-function getTotal() {
-    const subtotal = getSubtotal();
-    const discount = getDiscount(subtotal);
-    const rewardDiscount = getRewardDiscount();
-    const charges = getCharges();
-
-    return money(
-        Math.max(0, subtotal - discount - rewardDiscount + charges)
-    );
-}
-
-function updateChange() {
-    const total = getTotal();
-    const tendered = numberValue(amountInput);
-    changeDisplay.textContent = money(Math.max(0, tendered - total)).toFixed(2);
-}
-
-function updateTotals() {
-    totalDisplay.textContent = getTotal().toFixed(2);
-    updateChange();
-}
-
-function updateDiscountFields() {
-    const type = discountType.value;
-    const regular = type === "regular";
-    const special = ["senior", "pwd", "naac", "solo_parent"].includes(type);
-
-    document.getElementById("regular-discount-fields").hidden = !regular;
-    document.getElementById("special-discount-fields").hidden = !special;
-    document.getElementById("discount-customer-field").hidden = !special;
-    document.getElementById("discount-reference-field").hidden = !special;
-
-    regularDiscountInput.disabled = !regular;
-    specialDiscountInput.disabled = !special;
-    customerNameInput.disabled = !special;
-    discountReferenceInput.disabled = !special;
-
-    if (!regular) regularDiscountInput.value = "0";
-    if (!special) {
-        specialDiscountInput.value = "0";
-        customerNameInput.value = "";
-        discountReferenceInput.value = "";
+    if (!query.trim()) {
+        lookupResults.replaceChildren();
+        lookupStatus.textContent = "Type to search for a product.";
+        return;
     }
-    updateTotals();
+
+    lookupStatus.textContent = "Searching...";
+    lookupResults.replaceChildren();
+
+    const endpoint =
+        lookupMode === "price-check"
+            ? "{% url 'price_check' %}"
+            : "{% url 'inventory_lookup' %}";
+
+    try {
+        const response = await fetch(
+            `${endpoint}?q=${encodeURIComponent(query)}`,
+            {
+                headers: { "X-Requested-With": "XMLHttpRequest" }
+            }
+        );
+
+        if (!response.ok) {
+            throw new Error("Search request failed.");
+        }
+
+        const data = await response.json();
+
+        // Ignore outdated responses
+        if (requestId !== lookupRequest) return;
+
+        renderLookupResults(data.products || []);
+    } catch (error) {
+        if (requestId !== lookupRequest) return;
+
+        lookupStatus.textContent =
+            "Unable to search products. Check your connection and try again.";
+    }
 }
 
-// ---------- Government Discount Modal ----------
+// Search while typing (250ms debounce)
+lookupSearch.addEventListener("input", () => {
+    clearTimeout(lookupTimer);
+
+    const query = lookupSearch.value;
+
+    lookupTimer = setTimeout(() => {
+        searchLookupProducts(query);
+    }, 250);
+});
+
+document.getElementById("lookup-close").addEventListener("click", closeLookupModal);
+document.getElementById("lookup-done").addEventListener("click", closeLookupModal);
+
+lookupModal.addEventListener("click", event => {
+    if (event.target === lookupModal) {
+        closeLookupModal();
+    }
+});
+
+
+/* =====================================================================
+   12. GOVERNMENT DISCOUNT MODAL (Senior / PWD / NAAC / Solo Parent)
+   ===================================================================== */
 
 const govtModal = document.getElementById("govt-discount-modal");
 
@@ -3040,6 +3299,7 @@ govtModal.addEventListener("click", event => {
     }
 });
 
+// APPLY government discount
 document.getElementById("govt-modal-apply")
     .addEventListener("click", () => {
 
@@ -3107,6 +3367,7 @@ document.getElementById("govt-modal-apply")
         );
     });
 
+// REMOVE government discount
 document.getElementById("govt-modal-remove")
     .addEventListener("click", () => {
 
@@ -3149,9 +3410,10 @@ document.getElementById("govt-modal-remove")
         );
     });
 
-    
 
-    // ---------- Regular Discount Modal ----------
+/* =====================================================================
+   13. REGULAR DISCOUNT MODAL (percentage discount)
+   ===================================================================== */
 
 const regularModal = document.getElementById("regular-discount-modal");
 
@@ -3194,6 +3456,7 @@ function closeRegularDiscountModal() {
     search.focus();
 }
 
+// Live preview of the discount amount inside the modal
 function updateRegularDiscountPreview() {
 
     const subtotal = getSubtotal();
@@ -3228,6 +3491,7 @@ regularModal.addEventListener("click", event => {
     }
 });
 
+// APPLY regular discount
 document.getElementById("regular-modal-apply")
     .addEventListener("click", () => {
 
@@ -3263,8 +3527,7 @@ document.getElementById("regular-modal-apply")
         );
     });
 
-// ---------- Remove Regular Discount ----------
-
+// REMOVE regular discount
 document.getElementById("regular-modal-remove")
     .addEventListener("click", () => {
 
@@ -3299,8 +3562,9 @@ document.getElementById("regular-modal-remove")
     });
 
 
-
-// ---------- Price Override Modal ----------
+/* =====================================================================
+   14. PRICE OVERRIDE MODAL (change the price of the selected cart item)
+   ===================================================================== */
 
 const priceOverrideModal = document.getElementById("price-override-modal");
 const overrideProductName = document.getElementById("override-product-name");
@@ -3372,6 +3636,7 @@ priceOverrideModal.addEventListener("click", event => {
     }
 });
 
+// Save the new price
 overrideForm.addEventListener("submit", event => {
     event.preventDefault();
 
@@ -3423,7 +3688,9 @@ overrideForm.addEventListener("submit", event => {
 });
 
 
-// ---------- Refund Modal ----------
+/* =====================================================================
+   15. REFUND MODAL (search receipt -> enter amount + reason -> process)
+   ===================================================================== */
 
 const refundModal = document.getElementById("refund-modal");
 const refundReceiptInput = document.getElementById("refund-receipt-number");
@@ -3439,6 +3706,7 @@ const refundProcessBtn = document.getElementById("refund-process-btn");
 let selectedRefundSale = null;
 let refundSearchRequest = 0;
 
+// Format a number as peso (₱1,234.00)
 function formatRefundMoney(value) {
     return "₱" + Number(value).toLocaleString("en-PH", {
         minimumFractionDigits: 2,
@@ -3446,6 +3714,7 @@ function formatRefundMoney(value) {
     });
 }
 
+// Reset all fields of the refund modal
 function resetRefundModal() {
     selectedRefundSale = null;
 
@@ -3730,7 +3999,10 @@ async function submitRefund() {
 
 refundProcessBtn.addEventListener("click", submitRefund);
 
-// ---------- Change Fund Modal ----------
+
+/* =====================================================================
+   16. CHANGE FUND MODAL (add cash to the drawer)
+   ===================================================================== */
 
 const changeFundModal = document.getElementById("changeFundModal");
 const changeFundForm = document.getElementById("changeFundForm");
@@ -3755,8 +4027,7 @@ function closeChangeFundModal() {
     search.focus();
 }
 
-// ---------- Change Fund Submit ----------
-
+// Submit change fund to the server
 changeFundForm.addEventListener("submit", async event => {
     event.preventDefault();
 
@@ -3831,7 +4102,12 @@ changeFundForm.addEventListener("submit", async event => {
     }
 });
 
-// ---------- SUSPEND TRANSACTION ----------
+
+/* =====================================================================
+   17. SUSPEND & RETRIEVE TRANSACTION
+   ===================================================================== */
+
+// ---------- SUSPEND: save the current sale on the server and clear the cart ----------
 
 async function suspendCurrentSale() {
     if (cart.size === 0) {
@@ -3856,6 +4132,7 @@ async function suspendCurrentSale() {
 
     const customerSelect = document.getElementById("customer-select");
 
+    // Everything needed to restore the sale later
     const transactionData = {
         general_note: generalNote,
         customer_id: customerSelect ? customerSelect.value : "",
@@ -3912,6 +4189,7 @@ async function suspendCurrentSale() {
             );
         }
 
+        // Reset the screen after a successful suspend
         cart.clear();
         selectedCartItemId = null;
 
@@ -3969,7 +4247,7 @@ async function suspendCurrentSale() {
 }
 
 
-// ---------- RETRIEVE TRANSACTION MODAL ----------
+// ---------- RETRIEVE MODAL (open / close) ----------
 
 const retrieveModal = document.getElementById("retrieveModal");
 const suspendedSalesList = document.getElementById("suspendedSalesList");
@@ -3987,7 +4265,7 @@ function closeRetrieveModal() {
 }
 
 
-// ---------- LOAD SUSPENDED TRANSACTIONS ----------
+// ---------- LOAD LIST OF SUSPENDED TRANSACTIONS ----------
 
 async function loadSuspendedSales() {
     suspendedSalesList.replaceChildren();
@@ -4069,7 +4347,7 @@ async function loadSuspendedSales() {
 }
 
 
-// ---------- RETRIEVE SELECTED TRANSACTION ----------
+// ---------- RETRIEVE ONE SELECTED TRANSACTION (restore cart, discount, charges, notes) ----------
 
 async function retrieveSuspendedSale(suspendedSaleId) {
 
@@ -4232,7 +4510,7 @@ async function retrieveSuspendedSale(suspendedSaleId) {
 }
 
 
-// ---------- RETRIEVE BUTTON CLICK ----------
+// ---------- RETRIEVE BUTTON CLICK (inside the list) ----------
 
 suspendedSalesList.addEventListener("click", event => {
     const button = event.target.closest("[data-suspended-id]");
@@ -4255,9 +4533,9 @@ retrieveModal.addEventListener("click", event => {
 });
 
 
-// ---------- GENERAL NOTE MODAL ----------
-
-let generalNote = "";
+/* =====================================================================
+   18. GENERAL NOTE MODAL (note for the whole transaction)
+   ===================================================================== */
 
 const generalNoteModal = document.getElementById("generalNoteModal");
 const generalNoteInput = document.getElementById("generalNoteInput");
@@ -4300,7 +4578,9 @@ document.getElementById("saveGeneralNote").addEventListener("click", () => {
 });
 
 
-// ---------- CUSTOMER NOTE MODAL ----------
+/* =====================================================================
+   19. CUSTOMER NOTE MODAL (note saved to the selected customer)
+   ===================================================================== */
 
 const customerNoteModal = document.getElementById("customerNoteModal");
 const customerNoteName = document.getElementById("customerNoteName");
@@ -4401,7 +4681,11 @@ saveCustomerNoteButton.addEventListener("click", async function () {
 });
 
 
-// ---------- CUSTOMER MANAGEMENT MODAL ----------
+/* =====================================================================
+   20. CUSTOMER MANAGEMENT / EDIT CUSTOMER / ADD CUSTOMER
+   ===================================================================== */
+
+// ---------- CUSTOMER MANAGEMENT MODAL (list of customers) ----------
 
 const customerManagementModal = document.getElementById(
     "customerManagementModal"
@@ -4470,6 +4754,7 @@ function closeCustomerManagement() {
 }
 
 
+// Load customers from the server and fill the table
 async function loadCustomerManagement() {
     const search = customerManagementSearch.value.trim();
 
@@ -4602,6 +4887,7 @@ addCustomerFromManagementBtn.addEventListener("click", function() {
     closeCustomerManagement();
     openAddCustomerModal();
 });
+
 
 // ---------- EDIT CUSTOMER MODAL ----------
 
@@ -4815,228 +5101,251 @@ addCustomerForm.addEventListener("submit", async function(event) {
 });
 
 
-function addProduct(button) {
-    const id = button.dataset.id;
-    const existing = cart.get(id);
+/* =====================================================================
+   21. REWARD POINTS MODAL (redeem customer points as a discount)
+   ===================================================================== */
 
-    if (existing) {
-        existing.quantity += 1;
-    } else {
-        const originalPrice = Number(button.dataset.price);
+// ---------- Reward elements ----------
+const rewardModal = document.getElementById("reward-modal");
+const rewardModalClose = document.getElementById("reward-modal-close");
+const rewardCancel = document.getElementById("reward-cancel");
+const rewardApply = document.getElementById("reward-apply");
+const rewardRemove = document.getElementById("reward-remove");
+const rewardUseAll = document.getElementById("reward-use-all");
 
-        cart.set(id, {
-            id,
-            name: button.dataset.name,
-            price: originalPrice,
-            originalPrice: originalPrice,
-            priceOverridden: false,
-            unit: button.dataset.unit,
-            quantity: 1
-        });
-    }
+const rewardCustomerName = document.getElementById("reward-customer-name");
+const rewardAvailablePoints = document.getElementById("reward-available-points");
+const rewardPointsInput = document.getElementById("reward-points-input");
+const rewardDiscountPreview = document.getElementById("reward-discount-preview");
+const rewardError = document.getElementById("reward-error");
+const rewardAppliedInfo = document.getElementById("reward-applied-info");
 
-    renderCart();
-}
+// Hidden field submitted with the checkout form
+const rewardPointsHidden = document.getElementById("reward-points-to-redeem");
 
+// ---------- Reward state ----------
+let availableRewardPoints = 0;   // customer's available points
+let rewardPointsToRedeem = 0;    // points currently applied to this sale
+let rewardBalanceRequest = 0;    // used to ignore outdated balance responses
 
-productButtons.forEach(button => {
-    button.addEventListener("click", () => addProduct(button));
+// =====================================
+// REWARD MODAL EVENT LISTENERS
+// =====================================
+
+rewardModalClose.addEventListener("click", closeRewardModal);
+rewardCancel.addEventListener("click", closeRewardModal);
+
+rewardApply.addEventListener("click", applyReward);
+rewardRemove.addEventListener("click", removeReward);
+
+// "Use all" button: put all available points in the input
+rewardUseAll.addEventListener("click", () => {
+    rewardPointsInput.value = String(availableRewardPoints);
+    updateRewardPreview();
 });
 
-function filterProducts() {
-    const term = search.value.toLowerCase().trim();
-    let visible = 0;
-    productButtons.forEach(button => {
-        const name = button.dataset.name || "";
-        const barcode = button.dataset.barcode || "";
-        const text = (name + " " + barcode).toLowerCase();
-        button.hidden = !text.includes(term);
-        if (!button.hidden) visible++;
-    });
-    noMatch.hidden = !(productButtons.length > 0 && visible === 0);
-}
+rewardPointsInput.addEventListener("input", updateRewardPreview);
 
-search.addEventListener("input", filterProducts);
-search.addEventListener("keydown", event => {
-    if (event.key !== "Enter") return;
-    event.preventDefault();
-    const matches = productButtons.filter(button => !button.hidden);
-    if (matches.length === 1) {
-        addProduct(matches[0]);
-        search.value = "";
-        filterProducts();
-        search.focus();
-    } else if (matches.length > 1) {
-        showMessage("More than one product matches. Type more to narrow your search.", "Multiple matches");
-    } else {
-        showMessage("No matching product found.", "No match");
-    }
+// When the customer changes, reset any applied reward
+customerSelect.addEventListener("change", () => {
+    // Remove previously applied reward points.
+    rewardPointsToRedeem = 0;
+    rewardPointsHidden.value = "0";
+
+    // Reset displayed reward balance.
+    availableRewardPoints = 0;
+    rewardAvailablePoints.textContent = "0";
+
+    rewardCustomerName.textContent = customerSelect.value
+        ? "Customer changed"
+        : "No customer selected";
+
+    rewardPointsInput.value = "0";
+
+    clearRewardError();
+    updateRewardPreview();
+    updateTotals();
 });
 
-function makeStepButton(label, ariaLabel, onClick) {
-    const button = document.createElement("button");
-    button.type = "button";
-    button.textContent = label;
-    button.className = "flex h-9 w-9 items-center justify-center rounded-full bg-brand-soft text-lg font-bold text-brand transition hover:bg-brand hover:text-white focus:outline-none focus:ring-2 focus:ring-brand active:scale-95";
-    button.setAttribute("aria-label", ariaLabel);
-    button.addEventListener("click", onClick);
-    return button;
+// ---------- Reward functions ----------
+
+// 1 point = ₱1 discount
+function getRewardDiscount() {
+    return money(rewardPointsToRedeem);
 }
 
-function renderCart() {
-    cartBody.replaceChildren();
-    let count = 0;
-    cart.forEach(item => {
-        count += item.quantity;
-        const row = document.createElement("li");
+function showRewardError(message) {
+    rewardError.textContent = message;
+    rewardError.classList.remove("hidden");
+}
 
-        row.dataset.productId = item.id;
-        row.tabIndex = -1; // lets the row receive focus for Del / + / - / arrow keys
+function clearRewardError() {
+    rewardError.textContent = "";
+    rewardError.classList.add("hidden");
+}
 
-        row.className = [
-            "rounded-2xl px-3 py-3 transition cursor-pointer",
-            selectedCartItemId === String(item.id)
-                ? "bg-red-50 ring-2 ring-red-400"
-                : "hover:bg-canvas/60"
-        ].join(" ");
+// Show the peso value of the points typed in the modal
+function updateRewardPreview() {
+    const points = Math.floor(Number(rewardPointsInput.value) || 0);
 
-        row.addEventListener("click", (event) => {
-            if (event.target.closest("button, input")) return;
+    rewardDiscountPreview.textContent = money(points).toFixed(2);
+}
 
-            selectedCartItemId = item.id;
-            renderCart();
-        });
+// Load the selected customer's reward balance from the server
+async function loadCustomerRewardBalance() {
+    const customerId = customerSelect.value;
+    const requestId = ++rewardBalanceRequest;
 
-        const top = document.createElement("div");
-        top.className = "flex items-start justify-between gap-3";
+    availableRewardPoints = 0;
+    rewardApply.disabled = true;
 
-        const info = document.createElement("div");
-        info.className = "min-w-0";
+    clearRewardError();
 
-        const name = document.createElement("p");
-        name.className = "truncate text-sm font-semibold text-ink";
-        name.textContent = item.name;
+    if (!customerId) {
+        rewardCustomerName.textContent = "No customer selected";
+        rewardAvailablePoints.textContent = "0";
+        rewardPointsInput.value = "0";
+        updateRewardPreview();
+        return;
+    }
 
-        const meta = document.createElement("p");
-        meta.className = "tabular text-xs text-slate-500";
-        meta.textContent = "₱" + item.price.toFixed(2) + (item.unit ? " / " + item.unit : "");
+    rewardCustomerName.textContent = "Loading...";
+    rewardAvailablePoints.textContent = "...";
 
-        info.append(name, meta);
-
-        const lineTotal = document.createElement("p");
-        lineTotal.className = "tabular shrink-0 text-base font-bold text-ink";
-        lineTotal.textContent = "₱" + money(item.price * item.quantity).toFixed(2);
-
-        top.append(info, lineTotal);
-
-        const controls = document.createElement("div");
-        controls.className = "mt-2 flex items-center justify-between";
-
-        const stepper = document.createElement("div");
-        stepper.className = "flex items-center gap-1.5";
-
-        const quantityInput = document.createElement("input");
-        quantityInput.type = "number";
-        quantityInput.min = "0.001";
-        quantityInput.step = "0.001";
-        quantityInput.value = item.quantity;
-        quantityInput.className = "tabular h-9 w-20 rounded-xl border border-slate-200 px-2 text-center text-sm font-semibold focus:border-brand focus:outline-none focus:ring-2 focus:ring-brand/30";
-        quantityInput.setAttribute("aria-label", "Quantity for " + item.name);
-
-        quantityInput.addEventListener("change", () => {
-            const value = Number(quantityInput.value);
-            if (Number.isFinite(value) && value > 0 && value === Math.round(value * 1000) / 1000) {
-                item.quantity = value;
-            } else {
-                showMessage("Enter a quantity with up to 3 decimal places.", "Invalid quantity");
-                if (cart.has(item.id)) {
-                    item.quantity = Math.max(0.001, Math.floor(item.quantity * 1000) / 1000);
+    try {
+        const response = await fetch(
+            `/sales/customers/${customerId}/reward-balance/`,
+            {
+                headers: {
+                    "X-Requested-With": "XMLHttpRequest"
                 }
             }
-            renderCart();
-        });
+        );
 
-        const minus = makeStepButton("−", "Decrease quantity of " + item.name, () => {
-            if (item.quantity > 1) {
-                item.quantity -= 1;
-            } else {
-                cart.delete(item.id);
-            }
-            renderCart();
-        });
+        const data = await response.json();
 
-        const plus = makeStepButton("+", "Increase quantity of " + item.name, () => {
-            item.quantity += 1;
-            renderCart();
-        });
+        if (requestId !== rewardBalanceRequest) return;
 
-        stepper.append(minus, quantityInput, plus);
+        if (!response.ok || !data.success) {
+            throw new Error(
+                data.message || "Unable to load reward balance."
+            );
+        }
 
-        const removeButton = document.createElement("button");
-        removeButton.type = "button";
-        removeButton.textContent = "Remove";
-        removeButton.className = "rounded-full px-3 py-1.5 text-xs font-semibold text-red-600 transition hover:bg-red-50";
-        removeButton.addEventListener("click", () => {
-            cart.delete(item.id);
-            renderCart();
-        });
+        rewardCustomerName.textContent = data.customer_name;
 
-        controls.append(stepper, removeButton);
-        row.append(top, controls);
-        cartBody.appendChild(row);
-    });
+        availableRewardPoints = Number(data.available_points) || 0;
 
-    itemCount.textContent = count + (count === 1 ? " item" : " items");
-    cartEmpty.hidden = cart.size > 0;
-    cartBody.hidden = cart.size === 0;
+        rewardAvailablePoints.textContent =
+            availableRewardPoints.toLocaleString();
 
-    document.getElementById("cart-data").value = JSON.stringify(
-    Array.from(cart.values()).map(item => ({
-        product_id: item.id,
-        quantity: item.quantity,
-        unit_price: item.price,
-        price_overridden: item.priceOverridden || false
-    }))
-);
-    updateTotals();
+        if (!data.is_enabled) {
+            showRewardError(
+                "The reward system is currently disabled."
+            );
+            rewardApply.disabled = true;
+        } else {
+            rewardApply.disabled = false;
+        }
+
+    } catch (error) {
+        if (requestId !== rewardBalanceRequest) return;
+
+        rewardCustomerName.textContent = "Unable to load customer";
+        rewardAvailablePoints.textContent = "0";
+
+        showRewardError(error.message);
+        rewardApply.disabled = true;
+    }
 }
 
-// Payment input and charges
-amountInput.addEventListener("input", updateChange);
-chargeInputs.forEach(input => {
-    input.addEventListener("input", updateTotals);
-    input.addEventListener("change", updateTotals);
-});
-regularDiscountInput.addEventListener("input", updateTotals);
-specialDiscountInput.addEventListener("input", updateTotals);
-discountType.addEventListener("change", updateDiscountFields);
+function openRewardModal() {
+    clearRewardError();
+    rewardAppliedInfo.classList.add("hidden");
 
-// Quick payment buttons
-document.querySelectorAll("[data-quick]").forEach(button => {
-    button.addEventListener("click", () => {
-        const value = button.dataset.quick === "exact" ? getTotal().toFixed(2) : button.dataset.quick;
-        amountInput.value = value;
-        updateChange();
-    });
-});
+    rewardApply.disabled = true;
 
-// Clear cart
-document.getElementById("clear-cart").addEventListener("click", async () => {
-    if (cart.size === 0) return;
-    const ok = await showConfirm({
-        title: "Clear cart?",
-        text: "This will remove all items from the current sale.",
-        confirmLabel: "Clear",
-        danger: true
-    });
-    if (ok) {
-        cart.clear();
-        renderCart();
-        search.focus();
+    rewardPointsInput.value = String(rewardPointsToRedeem);
+    rewardRemove.classList.toggle(
+        "hidden",
+        rewardPointsToRedeem === 0
+    );
+
+    rewardModal.hidden = false;
+
+    updateRewardPreview();
+    loadCustomerRewardBalance();
+}
+
+function closeRewardModal() {
+    rewardModal.hidden = true;
+    clearRewardError();
+}
+
+// Validate and apply the entered points
+function applyReward() {
+    clearRewardError();
+
+    const customerId = customerSelect.value;
+    const points = Number(rewardPointsInput.value);
+
+    if (!customerId) {
+        showRewardError("Please select a registered customer first.");
+        return;
     }
-});
 
-// Checkout validation
+    if (rewardApply.disabled) {
+        showRewardError("Please wait until the reward balance finishes loading.");
+        return;
+    }
+
+    if (!Number.isSafeInteger(points) || points < 0) {
+        showRewardError("Enter a valid whole number of points.");
+        return;
+    }
+
+    if (points > availableRewardPoints) {
+        showRewardError("Insufficient reward points.");
+        return;
+    }
+
+    const eligibleAmount = money(
+        getSubtotal() - getDiscount(getSubtotal())
+    );
+
+    if (points > eligibleAmount) {
+        showRewardError(
+            "Reward discount cannot exceed the eligible amount."
+        );
+        return;
+    }
+
+    rewardPointsToRedeem = points;
+    rewardPointsHidden.value = String(points);
+
+    updateTotals();
+
+    rewardAppliedInfo.classList.remove("hidden");
+    rewardRemove.classList.toggle("hidden", points === 0);
+
+    closeRewardModal();
+}
+
+// Remove the applied reward
+function removeReward() {
+    rewardPointsToRedeem = 0;
+    rewardPointsHidden.value = "0";
+    rewardPointsInput.value = "0";
+
+    updateTotals();
+    closeRewardModal();
+}
+
+
+/* =====================================================================
+   22. CHECKOUT (FORM SUBMIT) VALIDATION
+   ===================================================================== */
+
 checkoutForm.addEventListener("submit", event => {
     if (cart.size === 0) {
         event.preventDefault();
@@ -5128,6 +5437,7 @@ checkoutForm.addEventListener("submit", event => {
 
     event.preventDefault();
 
+    // Final confirmation before really submitting the form
     showConfirm({
         title: "Complete this sale?",
         text: "Total: ₱" + total.toFixed(2) +
@@ -5156,178 +5466,53 @@ checkoutForm.addEventListener("submit", event => {
     });
 });
 
-updateDiscountFields();
-renderCart();
 
-function getRewardDiscount() {
-    return money(rewardPointsToRedeem);
-}
+/* =====================================================================
+   23. KEYBOARD: ESCAPE HANDLERS
+   (Message, Confirm and More-actions Escape handlers are in sections 4, 5, 9)
+   ===================================================================== */
 
-function showRewardError(message) {
-    rewardError.textContent = message;
-    rewardError.classList.remove("hidden");
-}
+// Escape closes the top-most open modal (one at a time, in this priority order)
+document.addEventListener("keydown", event => {
+    if (event.key !== "Escape") return;
 
-function clearRewardError() {
-    rewardError.textContent = "";
-    rewardError.classList.add("hidden");
-}
-
-function updateRewardPreview() {
-    const points = Math.floor(Number(rewardPointsInput.value) || 0);
-
-    rewardDiscountPreview.textContent = money(points).toFixed(2);
-}
-
-async function loadCustomerRewardBalance() {
-    const customerId = customerSelect.value;
-    const requestId = ++rewardBalanceRequest;
-
-    availableRewardPoints = 0;
-    rewardApply.disabled = true;
-
-    clearRewardError();
-
-    if (!customerId) {
-        rewardCustomerName.textContent = "No customer selected";
-        rewardAvailablePoints.textContent = "0";
-        rewardPointsInput.value = "0";
-        updateRewardPreview();
-        return;
+    if (!rewardModal.hidden) {
+        closeRewardModal();
+    } else if (!priceOverrideModal.classList.contains("hidden")) {
+        closePriceOverrideModal();
+    } else if (!regularModal.hidden) {
+        closeRegularDiscountModal();
+    } else if (!govtModal.hidden) {
+        closeGovtDiscountModal();
+    } else if (!refundModal.classList.contains("hidden")) {
+        closeRefundModal();
+    } else if (!changeFundModal.classList.contains("hidden")) {
+        closeChangeFundModal();
+    } else if (!editCustomerModal.classList.contains("hidden")) {
+        closeEditCustomerModal();
+    } else if (!addCustomerModal.classList.contains("hidden")) {
+        closeAddCustomerModal();
+    } else if (!customerManagementModal.classList.contains("hidden")) {
+        closeCustomerManagement();
+    } else if (!lookupModal.classList.contains("hidden")) {
+        closeLookupModal();
     }
+});
 
-    rewardCustomerName.textContent = "Loading...";
-    rewardAvailablePoints.textContent = "...";
-
-    try {
-        const response = await fetch(
-            `/sales/customers/${customerId}/reward-balance/`,
-            {
-                headers: {
-                    "X-Requested-With": "XMLHttpRequest"
-                }
-            }
-        );
-
-        const data = await response.json();
-
-        if (requestId !== rewardBalanceRequest) return;
-
-        if (!response.ok || !data.success) {
-            throw new Error(
-                data.message || "Unable to load reward balance."
-            );
-        }
-
-        rewardCustomerName.textContent = data.customer_name;
-
-        availableRewardPoints = Number(data.available_points) || 0;
-
-        rewardAvailablePoints.textContent =
-            availableRewardPoints.toLocaleString();
-
-        if (!data.is_enabled) {
-            showRewardError(
-                "The reward system is currently disabled."
-            );
-            rewardApply.disabled = true;
-        } else {
-            rewardApply.disabled = false;
-        }
-
-    } catch (error) {
-        if (requestId !== rewardBalanceRequest) return;
-
-        rewardCustomerName.textContent = "Unable to load customer";
-        rewardAvailablePoints.textContent = "0";
-
-        showRewardError(error.message);
-        rewardApply.disabled = true;
+// Extra Escape handler just for the lookup modal
+document.addEventListener("keydown", event => {
+    if (
+        event.key === "Escape" &&
+        !lookupModal.classList.contains("hidden")
+    ) {
+        closeLookupModal();
     }
-}
-
-function openRewardModal() {
-    clearRewardError();
-    rewardAppliedInfo.classList.add("hidden");
-
-    rewardApply.disabled = true;
-
-    rewardPointsInput.value = String(rewardPointsToRedeem);
-    rewardRemove.classList.toggle(
-        "hidden",
-        rewardPointsToRedeem === 0
-    );
-
-    rewardModal.hidden = false;
-
-    updateRewardPreview();
-    loadCustomerRewardBalance();
-}
-
-function closeRewardModal() {
-    rewardModal.hidden = true;
-    clearRewardError();
-}
-
-function applyReward() {
-    clearRewardError();
-
-    const customerId = customerSelect.value;
-    const points = Number(rewardPointsInput.value);
-
-    if (!customerId) {
-        showRewardError("Please select a registered customer first.");
-        return;
-    }
-
-    if (rewardApply.disabled) {
-        showRewardError("Please wait until the reward balance finishes loading.");
-        return;
-    }
-
-    if (!Number.isSafeInteger(points) || points < 0) {
-        showRewardError("Enter a valid whole number of points.");
-        return;
-    }
-
-    if (points > availableRewardPoints) {
-        showRewardError("Insufficient reward points.");
-        return;
-    }
-
-    const eligibleAmount = money(
-        getSubtotal() - getDiscount(getSubtotal())
-    );
-
-    if (points > eligibleAmount) {
-        showRewardError(
-            "Reward discount cannot exceed the eligible amount."
-        );
-        return;
-    }
-
-    rewardPointsToRedeem = points;
-    rewardPointsHidden.value = String(points);
-
-    updateTotals();
-
-    rewardAppliedInfo.classList.remove("hidden");
-    rewardRemove.classList.toggle("hidden", points === 0);
-
-    closeRewardModal();
-}
-
-function removeReward() {
-    rewardPointsToRedeem = 0;
-    rewardPointsHidden.value = "0";
-    rewardPointsInput.value = "0";
-
-    updateTotals();
-    closeRewardModal();
-}
+});
 
 
-// ---------- POS KEYBOARD SHORTCUTS ----------
+/* =====================================================================
+   24. KEYBOARD: POS SHORTCUTS
+   ===================================================================== */
 
 const paymentMethodInput = document.getElementById("id_payment_method");
 const clearCartButton = document.getElementById("clear-cart");
@@ -5358,9 +5543,11 @@ const ALT_SHORTCUTS = {
     Digit5: "item-finder",
     KeyS: "salesperson",
     Digit8: "retrieve",
-    KeyY: "sales-history"
+    KeyY: "sales-history",
+    KeyU: "customer-management"   // Alt + U -> Customer Management
 };
 
+// Trigger an action by name (same as clicking its button)
 function triggerAction(name) {
     if (name === "more") {
         // Alt+M toggles the More actions modal
@@ -5374,6 +5561,7 @@ function triggerAction(name) {
     document.querySelector(`[data-action="${name}"]`)?.click();
 }
 
+// True if any modal is currently open
 function isAnyModalOpen() {
     return (
         !messageModal.hidden ||
@@ -5389,6 +5577,7 @@ function isAnyModalOpen() {
     );
 }
 
+// True if the user is typing in an input / textarea / select
 function isTypingTarget(element) {
     return (
         element instanceof HTMLInputElement ||
@@ -5398,6 +5587,7 @@ function isTypingTarget(element) {
     );
 }
 
+// Select the first cart item and focus it (F3)
 function focusCart() {
     if (cart.size === 0) {
         showMessage("The cart is empty.", "Cart");
@@ -5417,6 +5607,7 @@ function focusCart() {
     row?.focus();
 }
 
+// Move the cart selection up (-1) or down (+1)
 function navigateCart(direction) {
     const rows = Array.from(cartBody.querySelectorAll("li[data-product-id]"));
 
@@ -5448,6 +5639,7 @@ function navigateCart(direction) {
     selectedRow?.focus();
 }
 
+// Delete key: remove the selected cart item (with confirmation)
 function removeSelectedCartItem() {
     if (
         selectedCartItemId === null ||
@@ -5474,6 +5666,7 @@ function removeSelectedCartItem() {
     });
 }
 
+// + / - keys: change quantity of the selected cart item
 function changeSelectedQuantity(amount) {
     if (
         selectedCartItemId === null ||
@@ -5501,6 +5694,7 @@ function changeSelectedQuantity(amount) {
     selectedRow?.focus();
 }
 
+// Main keyboard handler
 document.addEventListener("keydown", function (event) {
     const key = event.key;
     const activeElement = document.activeElement;
@@ -5544,45 +5738,45 @@ document.addEventListener("keydown", function (event) {
 
     // Function keys
     switch (key) {
-        case "F1":
+        case "F1":   // Focus product search
             event.preventDefault();
             search.focus();
             search.select();
             return;
 
-        case "F2":
+        case "F2":   // Focus product search
             event.preventDefault();
             search.focus();
             search.select();
             return;
 
-        case "F3":
+        case "F3":   // Focus the cart
             event.preventDefault();
             focusCart();
             return;
 
-        case "F4":
+        case "F4":   // Focus payment method
             event.preventDefault();
             paymentMethodInput?.focus();
             return;
 
-        case "F5":
+        case "F5":   // Focus amount tendered
             event.preventDefault();
             amountInput.focus();
             amountInput.select();
             return;
 
-        case "F6":
+        case "F6":   // Open regular discount modal
             event.preventDefault();
             openRegularDiscountModal();
             return;
 
-        case "F7":
+        case "F7":   // Clear cart
             event.preventDefault();
             clearCartButton.click();
             return;
 
-        case "F8":
+        case "F8":   // Suspend transaction
             event.preventDefault();
 
             if (suspendButton) {
@@ -5591,12 +5785,12 @@ document.addEventListener("keydown", function (event) {
 
             return;
 
-        case "F9":
+        case "F9":   // Pay / complete sale
             event.preventDefault();
             payButton.click();
             return;
 
-        case "F10":
+        case "F10":  // Print receipt (info only)
             event.preventDefault();
 
             showMessage(
@@ -5610,7 +5804,7 @@ document.addEventListener("keydown", function (event) {
     // Do not interfere with normal typing.
     if (typing) return;
 
-    // Cart navigation
+    // Cart navigation (when a cart row is focused)
     const focusedCartRow = activeElement.closest?.("li[data-product-id]");
 
     if (focusedCartRow) {
@@ -5645,7 +5839,7 @@ document.addEventListener("keydown", function (event) {
         }
     }
 
-    // Product result navigation
+    // Product result navigation (when a product button is focused)
     const focusedProduct = activeElement.closest?.(".product");
 
     if (focusedProduct) {
@@ -5674,7 +5868,7 @@ document.addEventListener("keydown", function (event) {
         }
     }
 
-    // Search navigation
+    // Search box: ArrowDown jumps to the first visible product
     if (activeElement === search && key === "ArrowDown") {
         const firstProduct = productButtons.find(button => !button.hidden);
 
@@ -5684,6 +5878,15 @@ document.addEventListener("keydown", function (event) {
         }
     }
 });
+
+
+/* =====================================================================
+   25. INITIAL RUN
+   Must stay at the very bottom so everything above is already defined.
+   ===================================================================== */
+
+updateDiscountFields();
+renderCart();
 </script>
 </body>
 </html>
