@@ -4,7 +4,7 @@ from datetime import date, datetime, time, timedelta
 from decimal import Decimal, InvalidOperation
 from io import BytesIO
 from uuid import uuid4
-
+from django.core.paginator import Paginator
 
 
 from datetime import datetime as _datetime, time as _time, timedelta as _timedelta
@@ -706,12 +706,17 @@ def x_reading_view(request):
         "generated_by",
     ).order_by(
         "-generated_at",
+        "-id",
     )
+
+    # Show 10 saved readings per page.
+    paginator = Paginator(readings, 10)
+    readings_page = paginator.get_page(request.GET.get("page"))
 
     # Default values when there is no open shift.
     context = {
         "session": session,
-        "readings": readings,
+        "readings": readings_page,
         "has_open_shift": session is not None,
         "transaction_count": 0,
         "voided_count": 0,
