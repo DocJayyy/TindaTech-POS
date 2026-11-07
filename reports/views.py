@@ -1090,10 +1090,16 @@ def receipt_settings_view(request):
 # ACTIVITY LOG
 # ============================================================
 
+from datetime import date, datetime, time, timedelta
+
+from django.core.paginator import Paginator
+from django.utils import timezone
+
+
 @login_required
 @owner_required
 def activity_log_view(request):
-    logs = AuditLog.objects.select_related("user").all()
+    logs = AuditLog.objects.select_related("user").order_by("-timestamp", "-id")
 
     search = request.GET.get("q", "").strip()
     selected_date = request.GET.get("date", "").strip()
@@ -1107,19 +1113,22 @@ def activity_log_view(request):
     if selected_date:
         try:
             selected_date = date.fromisoformat(selected_date)
-            logs = logs.filter(timestamp__date=selected_date)
+            start = timezone.make_aware(datetime.combine(selected_date, time.min))
+            logs = logs.filter(
+                timestamp__gte=start,
+                timestamp__lt=start + timedelta(days=1),
+            )
         except ValueError:
             selected_date = ""
 
+    paginator = Paginator(logs, 5)
+    page_obj = paginator.get_page(request.GET.get("page"))
+
     context = {
-        "logs": logs,
+        "logs": page_obj,
         "search": search,
         "selected_date": selected_date,
-        "total_logs": logs.count(),
+        "total_logs": paginator.count,
     }
 
-    return render(
-        request,
-        "reports/activity_log.html",
-        context,
-    )
+    return render(request, "reports/activity_log.html", context)
