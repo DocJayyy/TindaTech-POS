@@ -2929,44 +2929,129 @@
 
 
 
-<!-- X-READING MODAL -->
-<div id="x-reading-modal" class="msg-modal" role="dialog"
-     aria-modal="true" aria-labelledby="x-reading-title" hidden>
+    <!-- X-READING MODAL -->
+    <div id="x-reading-modal" class="msg-modal" role="dialog"
+        aria-modal="true" aria-labelledby="x-reading-title" hidden>
 
-    <div class="msg-card xr-card">
+        <div class="msg-card xr-card">
 
-        <div class="actions-header shrink-0">
-            <h2 id="x-reading-title">X-Reading</h2>
-            <button type="button" id="x-reading-close"
-                    class="actions-close" aria-label="Close X-Reading">
-                &times;
-            </button>
+            <div class="actions-header shrink-0">
+                <h2 id="x-reading-title">X-Reading</h2>
+                <button type="button" id="x-reading-close"
+                        class="actions-close" aria-label="Close X-Reading">
+                    &times;
+                </button>
+            </div>
+
+            <!-- Ito lang ang nag-i-scroll -->
+            <div id="x-reading-content" class="xr-body p-4">
+                <p class="text-center text-gray-500">
+                    Loading X-Reading...
+                </p>
+            </div>
+
+            <!-- Footer: laging kita -->
+            <div class="xr-footer flex justify-end gap-2 p-4 border-t">
+                <button type="button" id="x-reading-cancel"
+                        class="xr-btn-cancel px-4 py-2 rounded-lg border">
+                    Cancel
+                </button>
+
+                <button type="button" id="x-reading-save"
+                        class="xr-btn-save px-4 py-2 rounded-lg"
+                        disabled>
+                    Save X-Reading
+                </button>
+            </div>
+
         </div>
-
-        <!-- Ito lang ang nag-i-scroll -->
-        <div id="x-reading-content" class="xr-body p-4">
-            <p class="text-center text-gray-500">
-                Loading X-Reading...
-            </p>
-        </div>
-
-        <!-- Footer: laging kita -->
-        <div class="xr-footer flex justify-end gap-2 p-4 border-t">
-            <button type="button" id="x-reading-cancel"
-                    class="xr-btn-cancel px-4 py-2 rounded-lg border">
-                Cancel
-            </button>
-
-            <button type="button" id="x-reading-save"
-                    class="xr-btn-save px-4 py-2 rounded-lg"
-                    disabled>
-                Save X-Reading
-            </button>
-        </div>
-
     </div>
-</div>
 
+
+    <!-- Z-READING MODAL -->
+    <div id="z-reading-modal" class="msg-modal"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="z-reading-title"
+        hidden>
+
+        <div class="msg-card" style="width: min(500px, 95vw);">
+
+            <div class="actions-header">
+                <h2 id="z-reading-title">Z-Reading</h2>
+
+                <button type="button"
+                        id="z-reading-close"
+                        class="actions-close"
+                        aria-label="Close Z-Reading">
+                    &times;
+                </button>
+            </div>
+
+
+            <form id="z-reading-form"
+                method="POST"
+                action="{% url 'close_shift' %}">
+
+                {% csrf_token %}
+
+                <div class="p-5">
+
+                    <div class="mb-5 rounded-xl bg-red-50 p-4">
+                        <p class="font-semibold text-red-700">
+                            Close Cashier Shift
+                        </p>
+
+                        <p class="mt-1 text-sm text-red-600">
+                            Please count the actual cash in your drawer
+                            before closing this shift.
+                        </p>
+                    </div>
+
+                    <label for="z-actual-cash"
+                        class="mb-2 block text-sm font-medium text-gray-700">
+                        Actual Cash Counted (₱)
+                    </label>
+
+                    <input
+                        type="number"
+                        id="z-actual-cash"
+                        name="actual_cash"
+                        min="0"
+                        step="0.01"
+                        required
+                        placeholder="Enter the cash you counted"
+                        class="w-full rounded-xl border border-gray-300 px-4 py-3 text-lg focus:border-red-500 focus:outline-none focus:ring-2 focus:ring-red-200"
+                    />
+
+                    <p class="mt-2 text-xs text-gray-500">
+                        This action will permanently close your current
+                        cashier shift.
+                    </p>
+
+                </div>
+
+                <div class="flex justify-end gap-2 border-t p-4">
+
+                    <button type="button"
+                            id="z-reading-cancel"
+                            class="rounded-lg border px-4 py-2">
+                        Cancel
+                    </button>
+
+                    <button type="submit"
+                            id="z-reading-submit"
+                            class="rounded-lg bg-red-600 px-5 py-2 font-semibold text-white hover:bg-red-700">
+                        Confirm Z-Reading
+                    </button>
+
+                </div>
+
+            </form>
+
+
+        </div>
+    </div>
 
 
 
@@ -3158,6 +3243,8 @@
    22. Cash Checkout
    23. Pricelist modal
    24. Salesperson management 
+   25. X-Reading modal
+   26. Z-Reading modal
    22. Checkout (form submit) validation
    23. Keyboard: Escape handlers
    24. Keyboard: POS shortcuts (Alt + key, F-keys, cart navigation)
@@ -3681,112 +3768,116 @@ actionTiles.forEach(tile => {
         closeActionsModal();
 
         switch (action) {
-            case "z-reading":
-                const okZ = await showConfirm({
-                    title: "Perform Z-Reading?",
-                    text: "This will close the current business day and generate a Z-reading report. This cannot be undone.",
-                    confirmLabel: "Perform Z-Reading",
-                    danger: true
-                });
-                if (okZ) showMessage("Z-Reading is not yet wired to the backend.", "Z-Reading");
+
+            case "z-reading": {
+                document.getElementById("actions-modal").hidden = true;
+
+                const modal = document.getElementById("z-reading-modal");
+                const input = document.getElementById("z-actual-cash");
+
+                modal.hidden = false;
+                input.value = "";
+
+                setTimeout(() => input.focus(), 100);
+
                 break;
+            }
 
+            case "x-reading": {
+                document.getElementById("actions-modal").hidden = true;
 
-                case "x-reading": {
-                    document.getElementById("actions-modal").hidden = true;
+                const modal = document.getElementById("x-reading-modal");
+                const content = document.getElementById("x-reading-content");
+                const saveButton = document.getElementById("x-reading-save");
 
-                    const modal = document.getElementById("x-reading-modal");
-                    const content = document.getElementById("x-reading-content");
-                    const saveButton = document.getElementById("x-reading-save");
+                modal.hidden = false;
+                saveButton.disabled = true;
 
-                    modal.hidden = false;
-                    saveButton.disabled = true;
+                content.innerHTML = `
+                    <p class="text-center text-gray-500 py-6">
+                        Loading X-Reading...
+                    </p>
+                `;
 
-                    content.innerHTML = `
-                        <p class="text-center text-gray-500 py-6">
-                            Loading X-Reading...
-                        </p>
-                    `;
-
-                    try {
-                        const response = await fetch("{% url 'x_reading_data' %}", {
-                            method: "GET",
-                            headers: {
-                                "X-Requested-With": "XMLHttpRequest"
-                            }
-                        });
-
-                        const result = await response.json();
-
-                        if (!response.ok || !result.success) {
-                            throw new Error(result.message || "Unable to load X-Reading.");
+                try {
+                    const response = await fetch("{% url 'x_reading_data' %}", {
+                        method: "GET",
+                        headers: {
+                            "X-Requested-With": "XMLHttpRequest"
                         }
+                    });
 
-                        if (!result.has_open_shift) {
-                            content.innerHTML = `
-                                <div class="text-center py-8">
-                                    <p class="text-amber-600 font-semibold">
-                                        No Open Cashier Shift
-                                    </p>
-                                    <p class="text-sm text-gray-500 mt-2">
-                                        ${result.message}
-                                    </p>
-                                </div>
-                            `;
-                            return;
-                        }
+                    const result = await response.json();
 
-                        const data = result.reading;
-
-                        const money = value =>
-                            "₱" + Number(value || 0).toLocaleString("en-PH", {
-                                minimumFractionDigits: 2,
-                                maximumFractionDigits: 2
-                            });
-
-                        const rows = [
-                            ["Opening Cash", money(data.opening_cash)],
-                            ["Total Sales", money(data.total_sales)],
-                            ["Cash Sales", money(data.cash_sales)],
-                            ["Non-Cash Sales", money(data.non_cash_sales)],
-                            ["Cash Refunds / Returns", money(data.cash_refunds)],
-                            ["Additional Change Fund", money(data.additional_change_fund)],
-                            ["Cash Takeout", money(data.cash_takeout)],
-                            ["Expected Cash", money(data.expected_cash)],
-                            ["Completed Transactions", data.transaction_count],
-                            ["Voided Transactions", data.voided_count]
-                        ];
-
-                        content.innerHTML = `
-                            <div class="mb-4">
-                                <p class="text-sm text-gray-500">Reading Number</p>
-                                <p class="text-xl font-bold">#${result.reading_number}</p>
-                            </div>
-
-                            <div class="space-y-3">
-                                ${rows.map(([label, value], index) => `
-                                    <div class="flex justify-between gap-4 py-2 border-b border-gray-100
-                                        ${index === 7 ? "font-bold text-sky-700" : ""}">
-                                        <span>${label}</span>
-                                        <span class="text-right">${value}</span>
-                                    </div>
-                                `).join("")}
-                            </div>
-                        `;
-
-                        saveButton.disabled = false;
-
-                    } catch (error) {
-                        content.innerHTML = `
-                            <p class="text-center text-red-600 py-6">
-                                ${error.message}
-                            </p>
-                        `;
-                        saveButton.disabled = true;
+                    if (!response.ok || !result.success) {
+                        throw new Error(result.message || "Unable to load X-Reading.");
                     }
 
-                    break;
+                    if (!result.has_open_shift) {
+                        content.innerHTML = `
+                            <div class="text-center py-8">
+                                <p class="text-amber-600 font-semibold">
+                                    No Open Cashier Shift
+                                </p>
+                                <p class="text-sm text-gray-500 mt-2">
+                                    ${result.message}
+                                </p>
+                            </div>
+                        `;
+                        return;
+                    }
+
+                    const data = result.reading;
+
+                    const money = value =>
+                        "₱" + Number(value || 0).toLocaleString("en-PH", {
+                            minimumFractionDigits: 2,
+                            maximumFractionDigits: 2
+                        });
+
+                    const rows = [
+                        ["Opening Cash", money(data.opening_cash)],
+                        ["Total Sales", money(data.total_sales)],
+                        ["Cash Sales", money(data.cash_sales)],
+                        ["Non-Cash Sales", money(data.non_cash_sales)],
+                        ["Cash Refunds / Returns", money(data.cash_refunds)],
+                        ["Additional Change Fund", money(data.additional_change_fund)],
+                        ["Cash Takeout", money(data.cash_takeout)],
+                        ["Expected Cash", money(data.expected_cash)],
+                        ["Completed Transactions", data.transaction_count],
+                        ["Voided Transactions", data.voided_count]
+                    ];
+
+                    content.innerHTML = `
+                        <div class="mb-4">
+                            <p class="text-sm text-gray-500">Reading Number</p>
+                            <p class="text-xl font-bold">#${result.reading_number}</p>
+                        </div>
+
+                        <div class="space-y-3">
+                            ${rows.map(([label, value], index) => `
+                                <div class="flex justify-between gap-4 py-2 border-b border-gray-100
+                                    ${index === 7 ? "font-bold text-sky-700" : ""}">
+                                    <span>${label}</span>
+                                    <span class="text-right">${value}</span>
+                                </div>
+                            `).join("")}
+                        </div>
+                    `;
+
+                    saveButton.disabled = false;
+
+                } catch (error) {
+                    content.innerHTML = `
+                        <p class="text-center text-red-600 py-6">
+                            ${error.message}
+                        </p>
+                    `;
+                    saveButton.disabled = true;
                 }
+
+                break;
+            }
 
 
             case "void-all":
@@ -7165,7 +7256,7 @@ async function toggleSalespersonStatus(salesperson) {
 
 
 
-// X-Reading modal controls
+// 25. X-Reading modal controls
 const xReadingModal = document.getElementById("x-reading-modal");
 
 function closeXReadingModal() {
@@ -7230,6 +7321,76 @@ document.getElementById("x-reading-save").addEventListener("click", async functi
         saveButton.textContent = "Save X-Reading";
     }
 });
+
+
+
+
+// Z-Reading modal controls
+const zReadingModal = document.getElementById("z-reading-modal");
+
+function closeZReadingModal() {
+    zReadingModal.hidden = true;
+}
+
+document.getElementById("z-reading-close").addEventListener("click", closeZReadingModal);
+
+document.getElementById("z-reading-cancel").addEventListener("click", closeZReadingModal);
+
+
+// Z-Reading AJAX submission
+document.getElementById("z-reading-form").addEventListener("submit", async function (event) {
+    event.preventDefault();
+
+    const form = this;
+    const submitButton = document.getElementById("z-reading-submit");
+
+    const confirmed = await showConfirm({
+        title: "Perform Z-Reading?",
+        text: "This will permanently close your current cashier shift. You cannot continue selling using this shift.",
+        confirmLabel: "Confirm Z-Reading",
+        danger: true
+    });
+
+    if (!confirmed) return;
+
+    submitButton.disabled = true;
+    submitButton.textContent = "Processing...";
+
+    try {
+        const response = await fetch(form.action, {
+            method: "POST",
+            headers: {
+                "X-Requested-With": "XMLHttpRequest"
+            },
+            body: new FormData(form)
+        });
+
+        const result = await response.json();
+
+        if (!response.ok || !result.success) {
+            throw new Error(
+                result.message || "Unable to perform Z-Reading."
+            );
+        }
+
+        closeZReadingModal();
+
+        showMessage(result.message, "Z-Reading");
+
+        setTimeout(() => {
+            window.location.href = "{% url 'dashboard' %}";
+        }, 1000);
+
+    } catch (error) {
+        showMessage(error.message, "Z-Reading Error");
+
+    } finally {
+        submitButton.disabled = false;
+        submitButton.textContent = "Confirm Z-Reading";
+    }
+});
+
+
 
 
 

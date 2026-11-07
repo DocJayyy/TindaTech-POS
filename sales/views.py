@@ -1235,6 +1235,13 @@ def close_shift_view(request):
         },
     )
 
+    if request.headers.get("X-Requested-With") == "XMLHttpRequest":
+        return JsonResponse({
+            "success": True,
+            "message": f"Shift closed successfully. Z Reading: {z_number}",
+            "z_number": z_number,
+        })
+
     messages.success(
         request,
         f"Shift closed successfully. Z Reading: {z_number}",
