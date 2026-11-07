@@ -3,7 +3,8 @@ import csv
 from collections import defaultdict
 from datetime import date, datetime, time, timedelta
 from decimal import Decimal
-
+from django.core.paginator import Paginator
+from django.utils import timezone
 from django.contrib import messages
 from django.contrib.auth import get_user_model, update_session_auth_hash
 from django.contrib.auth.decorators import login_required
@@ -1089,11 +1090,6 @@ def receipt_settings_view(request):
 # ============================================================
 # ACTIVITY LOG
 # ============================================================
-
-from datetime import date, datetime, time, timedelta
-
-from django.core.paginator import Paginator
-from django.utils import timezone
 
 
 @login_required

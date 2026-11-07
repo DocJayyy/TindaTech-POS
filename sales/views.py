@@ -5,6 +5,13 @@ from decimal import Decimal, InvalidOperation
 from io import BytesIO
 from uuid import uuid4
 
+
+
+from datetime import datetime as _datetime, time as _time, timedelta as _timedelta
+
+from django.core.paginator import Paginator
+from django.utils import timezone
+
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.core.exceptions import PermissionDenied, ValidationError
@@ -15,6 +22,7 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.template.loader import render_to_string
 from django.utils import timezone
 from django.views.decorators.http import require_POST, require_GET
+from django.core.paginator import Paginator
 
 from accounts.permissions import (
     pos_access_required,
@@ -411,8 +419,15 @@ def sales_history_view(request):
     if selected_date:
         try:
             selected_date = date.fromisoformat(selected_date)
+
+            # Exact local day: start of day <= created_at < start of next day.
+            # More reliable than created_at__date (no DB timezone-table needed).
+            day_start = timezone.make_aware(
+                _datetime.combine(selected_date, _time.min)
+            )
             sales = sales.filter(
-                created_at__date=selected_date
+                created_at__gte=day_start,
+                created_at__lt=day_start + _timedelta(days=1),
             )
         except ValueError:
             selected_date = ""
@@ -489,8 +504,17 @@ def sales_history_view(request):
 
         total_sales += sale.net_total
 
+    # 10 transactions per page. Totals above still cover ALL filtered sales.
+    paginator = Paginator(sales, 10)
+    page_obj = paginator.get_page(request.GET.get("page"))
+
+    # Query string without "page", used by the pagination links.
+    params = request.GET.copy()
+    params.pop("page", None)
+
     context = {
-        "sales": sales,
+        "sales": page_obj,
+        "qs": params.urlencode(),
         "search": search,
         "search_query": search,
         "selected_date": selected_date,

@@ -563,6 +563,48 @@
                         </tbody>
                     </table>
                 </div>
+
+                <!-- Pagination: 10 per page -->
+                {% if sales.paginator.count %}
+                    <div class="flex flex-wrap items-center justify-between gap-3 border-t border-slate-100 px-6 py-4">
+                        <p class="text-sm text-slate-500">
+                            Showing
+                            <span class="tabular font-medium text-ink">{{ sales.start_index }}&ndash;{{ sales.end_index }}</span>
+                            of
+                            <span class="tabular font-medium text-ink">{{ sales.paginator.count }}</span>
+                        </p>
+
+                        {% if sales.paginator.num_pages > 1 %}
+                            <nav class="flex flex-wrap items-center gap-1" aria-label="Pagination">
+                                {% if sales.has_previous %}
+                                    <a href="?{% if qs %}{{ qs }}&amp;{% endif %}page={{ sales.previous_page_number }}"
+                                       data-page="{{ sales.previous_page_number }}"
+                                       class="rounded-full px-3.5 py-1.5 text-sm font-medium text-slate-600 transition hover:bg-brand-soft hover:text-brand">Previous</a>
+                                {% else %}
+                                    <span class="rounded-full px-3.5 py-1.5 text-sm font-medium text-slate-300">Previous</span>
+                                {% endif %}
+
+                                {% for p in sales.paginator.page_range %}
+                                    {% if p == sales.number %}
+                                        <span aria-current="page"
+                                              class="tabular rounded-full bg-brand px-3 py-1.5 text-sm font-semibold text-white shadow-md shadow-brand/30">{{ p }}</span>
+                                    {% elif p == 1 or p == sales.paginator.num_pages or p|add:"2" >= sales.number and p <= sales.number|add:"2" %}
+                                        <a href="?{% if qs %}{{ qs }}&amp;{% endif %}page={{ p }}" data-page="{{ p }}"
+                                           class="tabular rounded-full px-3 py-1.5 text-sm font-medium text-slate-600 transition hover:bg-brand-soft hover:text-brand">{{ p }}</a>
+                                    {% endif %}
+                                {% endfor %}
+
+                                {% if sales.has_next %}
+                                    <a href="?{% if qs %}{{ qs }}&amp;{% endif %}page={{ sales.next_page_number }}"
+                                       data-page="{{ sales.next_page_number }}"
+                                       class="rounded-full px-3.5 py-1.5 text-sm font-medium text-slate-600 transition hover:bg-brand-soft hover:text-brand">Next</a>
+                                {% else %}
+                                    <span class="rounded-full px-3.5 py-1.5 text-sm font-medium text-slate-300">Next</span>
+                                {% endif %}
+                            </nav>
+                        {% endif %}
+                    </div>
+                {% endif %}
             </div>
         </div>
     </main>
@@ -603,7 +645,7 @@
             let timer = null;
             let controller = null;
 
-            function buildUrl() {
+            function buildUrl(page) {
                 const params = new URLSearchParams(new FormData(form));
 
                 // Keep the same search parameter expected by the view.
@@ -611,14 +653,16 @@
                 params.delete('q');
                 if (q) params.set('search', q);
 
+                if (page && page > 1) params.set('page', page);
+
                 return form.action + (params.toString() ? '?' + params.toString() : '');
             }
 
-            async function refresh() {
+            async function refresh(page) {
                 if (controller) controller.abort();
 
                 controller = new AbortController();
-                const url = buildUrl();
+                const url = buildUrl(page);
 
                 try {
                     const response = await fetch(url, {
@@ -653,19 +697,31 @@
             form.addEventListener('input', function (event) {
                 if (event.target.name === 'q') {
                     clearTimeout(timer);
-                    timer = setTimeout(refresh, 300);
+                    timer = setTimeout(function () { refresh(); }, 300);
                 }
             });
 
             const dateInput = document.getElementById('date');
             const statusSelect = document.getElementById('status');
 
-            if (dateInput) dateInput.addEventListener('change', refresh);
-            if (statusSelect) statusSelect.addEventListener('change', refresh);
+            if (dateInput) dateInput.addEventListener('change', function () { refresh(); });
+            if (statusSelect) statusSelect.addEventListener('change', function () { refresh(); });
 
             form.addEventListener('submit', function (event) {
                 event.preventDefault();
                 refresh();
+            });
+
+            // Pagination links. #results is replaced on every refresh, so listen on document.
+            document.addEventListener('click', function (event) {
+                const link = event.target.closest('#results a[data-page]');
+                if (!link) return;
+
+                event.preventDefault();
+                refresh(parseInt(link.dataset.page, 10)).then(function () {
+                    const results = document.getElementById('results');
+                    if (results) results.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                });
             });
         })();
 
