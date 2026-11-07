@@ -349,6 +349,26 @@ def sales_report_view(request):
 
     gross_profit = total_sales - total_cost
 
+    # ========================================
+    # SALESPERSON PERFORMANCE SUMMARY
+    # ========================================
+    salesperson_performance = (
+        completed_sales
+        .filter(salesperson__isnull=False)
+        .values(
+            "salesperson__id",
+            "salesperson__full_name",
+        )
+        .annotate(
+            transaction_count=Count("id"),
+            gross_sales=Coalesce(
+                Sum("total_amount"),
+                Decimal("0.00"),
+            ),
+        )
+        .order_by("-gross_sales")
+    )
+
     context = {
         "period": period,
         "period_label": period_label,
@@ -362,6 +382,7 @@ def sales_report_view(request):
         "gross_profit": gross_profit,
         "transaction_count": sales_summary["transaction_count"],
         "payment_breakdown": payment_breakdown,
+        "salesperson_performance": salesperson_performance,
     }
 
     return render(request, "reports/sales_report.html", context)
@@ -370,6 +391,7 @@ def sales_report_view(request):
 # ============================================================
 # EXPORT SALES REPORT CSV
 # ============================================================
+
 
 @login_required
 @owner_required
@@ -387,6 +409,9 @@ def export_sales_report_csv(request):
     except (ValueError, TypeError):
         selected_date = today
 
+    # ========================================
+    # DATE RANGE
+    # ========================================
     if period == "weekly":
         start_date = selected_date - timedelta(
             days=selected_date.weekday()
@@ -420,18 +445,43 @@ def export_sales_report_csv(request):
         current_tz,
     )
 
-    sales = Sale.objects.filter(
-        status=Sale.Status.COMPLETED,
-        created_at__gte=start_datetime,
-        created_at__lt=end_datetime,
-    ).select_related(
-        "cashier",
-    ).prefetch_related(
-        "items",
-    ).order_by("created_at")
+    # ========================================
+    # COMPLETED SALES
+    # ========================================
+    sales = (
+        Sale.objects
+        .filter(
+            status=Sale.Status.COMPLETED,
+            created_at__gte=start_datetime,
+            created_at__lt=end_datetime,
+        )
+        .select_related("cashier")
+        .prefetch_related("items")
+        .order_by("created_at")
+    )
 
     transaction_count = sales.count()
 
+    # ========================================
+    # SALESPERSON PERFORMANCE DATA
+    # ========================================
+    salesperson_performance = list(
+        sales
+        .filter(salesperson__isnull=False)
+        .values("salesperson__full_name")
+        .annotate(
+            transaction_count=Count("id"),
+            gross_sales=Coalesce(
+                Sum("total_amount"),
+                Decimal("0.00"),
+            ),
+        )
+        .order_by("-gross_sales")
+    )
+
+    # ========================================
+    # CSV RESPONSE
+    # ========================================
     response = HttpResponse(
         content_type="text/csv; charset=utf-8",
     )
@@ -440,12 +490,16 @@ def export_sales_report_csv(request):
     filename = (
         f"sales_report_{period}_{selected_date.isoformat()}.csv"
     )
+
     response["Content-Disposition"] = (
         f'attachment; filename="{filename}"'
     )
 
     writer = csv.writer(response)
 
+    # ========================================
+    # SALES REPORT HEADER
+    # ========================================
     writer.writerow([
         "Receipt Number",
         "Date",
@@ -459,6 +513,9 @@ def export_sales_report_csv(request):
         "Gross Profit (PHP)",
     ])
 
+    # ========================================
+    # INDIVIDUAL SALES RECORDS
+    # ========================================
     for sale in sales:
         product_cost = sum(
             (
@@ -491,7 +548,41 @@ def export_sales_report_csv(request):
             gross_profit,
         ])
 
-    # One log per export request, not one log per sale.
+    # ========================================
+    # SALESPERSON PERFORMANCE CSV SECTION
+    # OUTSIDE THE SALES LOOP
+    # ========================================
+    writer.writerow([])
+    writer.writerow(["SALESPERSON PERFORMANCE"])
+    writer.writerow([
+        "Rank",
+        "Salesperson",
+        "Transactions",
+        "Gross Sales (PHP)",
+    ])
+
+    if salesperson_performance:
+        for rank, item in enumerate(
+            salesperson_performance,
+            start=1,
+        ):
+            writer.writerow([
+                rank,
+                item["salesperson__full_name"],
+                item["transaction_count"],
+                item["gross_sales"],
+            ])
+    else:
+        writer.writerow([
+            "",
+            "No salesperson sales found",
+            0,
+            Decimal("0.00"),
+        ])
+
+    # ========================================
+    # ACTIVITY LOG
+    # ========================================
     log_activity(
         request.user,
         "Sales Report Exported",
@@ -499,8 +590,11 @@ def export_sales_report_csv(request):
             "period": period,
             "selected_date": selected_date.isoformat(),
             "start_date": start_date.isoformat(),
-            "end_date": (end_date - timedelta(days=1)).isoformat(),
+            "end_date": (
+                end_date - timedelta(days=1)
+            ).isoformat(),
             "transaction_count": transaction_count,
+            "salesperson_count": len(salesperson_performance),
             "filename": filename,
         },
     )
