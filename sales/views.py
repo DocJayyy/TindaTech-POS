@@ -732,16 +732,250 @@ def open_shift_view(request):
 
 
 
+
+def get_x_reading_summary(session):
+    """Calculate current shift totals for X-Reading."""
+
+    sales = Sale.objects.filter(cashier_session=session)
+
+    completed_sales = sales.filter(
+        status=Sale.Status.COMPLETED,
+    )
+
+    voided_by_adjustment = SaleAdjustment.objects.filter(
+        sale__cashier_session=session,
+        status=SaleAdjustment.Status.COMPLETED,
+        adjustment_type=SaleAdjustment.AdjustmentType.VOID,
+    ).values_list("sale_id", flat=True)
+
+    valid_sales = completed_sales.exclude(
+        pk__in=voided_by_adjustment,
+    )
+
+    total_sales = (
+        valid_sales.aggregate(total=Sum("total_amount"))["total"]
+        or Decimal("0.00")
+    )
+
+    cash_sales = (
+        valid_sales.filter(
+            payment_method=Sale.PaymentMethod.CASH,
+        ).aggregate(total=Sum("total_amount"))["total"]
+        or Decimal("0.00")
+    )
+
+    non_cash_sales = (
+        valid_sales.exclude(
+            payment_method=Sale.PaymentMethod.CASH,
+        ).aggregate(total=Sum("total_amount"))["total"]
+        or Decimal("0.00")
+    )
+
+    cash_refunds = (
+        SaleAdjustment.objects.filter(
+            sale__cashier_session=session,
+            sale__status=Sale.Status.COMPLETED,
+            sale__payment_method=Sale.PaymentMethod.CASH,
+            status=SaleAdjustment.Status.COMPLETED,
+            adjustment_type__in=[
+                SaleAdjustment.AdjustmentType.RETURN,
+                SaleAdjustment.AdjustmentType.REFUND,
+            ],
+        )
+        .exclude(sale_id__in=voided_by_adjustment)
+        .aggregate(total=Sum("amount"))["total"]
+        or Decimal("0.00")
+    )
+
+    additional_change_fund = (
+        CashFundMovement.objects.filter(
+            session=session,
+            movement_type=CashFundMovement.MovementType.CASH_IN,
+        ).aggregate(total=Sum("amount"))["total"]
+        or Decimal("0.00")
+    )
+
+    cash_takeout = (
+        CashFundMovement.objects.filter(
+            session=session,
+            movement_type=CashFundMovement.MovementType.CASH_OUT,
+        ).aggregate(total=Sum("amount"))["total"]
+        or Decimal("0.00")
+    )
+
+    transaction_count = valid_sales.count()
+
+    voided_count = sales.filter(
+        status=Sale.Status.VOIDED,
+    ).count()
+
+    expected_cash = (
+        session.opening_cash
+        + additional_change_fund
+        + cash_sales
+        - cash_refunds
+        - cash_takeout
+    ).quantize(Decimal("0.01"))
+
+    return {
+        "opening_cash": session.opening_cash,
+        "total_sales": total_sales,
+        "cash_sales": cash_sales,
+        "non_cash_sales": non_cash_sales,
+        "cash_refunds": cash_refunds,
+        "additional_change_fund": additional_change_fund,
+        "cash_takeout": cash_takeout,
+        "transaction_count": transaction_count,
+        "voided_count": voided_count,
+        "expected_cash": expected_cash,
+    }
+
+
+def create_x_reading(session, user, summary):
+    """Save an X-Reading record for the current shift."""
+
+    with transaction.atomic():
+        # Lock the session while assigning the next reading number.
+        locked_session = CashierSession.objects.select_for_update().get(
+            pk=session.pk,
+            cashier=user,
+            status=CashierSession.Status.OPEN,
+        )
+
+        last_reading = XReading.objects.filter(
+            session=locked_session,
+        ).order_by("-reading_number").first()
+
+        reading_number = (
+            last_reading.reading_number + 1
+            if last_reading
+            else 1
+        )
+
+        report_data = {
+            key: str(value) if isinstance(value, Decimal) else value
+            for key, value in summary.items()
+        }
+
+        reading = XReading.objects.create(
+            session=locked_session,
+            reading_number=reading_number,
+            generated_by=user,
+            report_data=report_data,
+        )
+
+        log_activity(
+            user,
+            "X Reading Generated",
+            {
+                "reading_id": reading.pk,
+                "reading_number": reading.reading_number,
+                "session_id": locked_session.pk,
+                **report_data,
+            },
+        )
+
+    return reading
+
+
 @login_required
 @pos_access_required
-def x_reading_view(request):
-    # Get the current open shift, if available.
+@require_GET
+def x_reading_data_view(request):
+    """Return current shift figures for the checkout X-Reading modal."""
+
     session = CashierSession.objects.filter(
         cashier=request.user,
         status=CashierSession.Status.OPEN,
     ).order_by("-opened_at").first()
 
-    # Get all saved X Readings belonging to this cashier.
+    if not session:
+        return JsonResponse({
+            "success": True,
+            "has_open_shift": False,
+            "message": "There is no open cashier shift.",
+        })
+
+    summary = get_x_reading_summary(session)
+
+    last_reading = XReading.objects.filter(
+        session=session,
+    ).order_by("-reading_number").first()
+
+    reading_number = (
+        last_reading.reading_number + 1
+        if last_reading
+        else 1
+    )
+
+    return JsonResponse({
+        "success": True,
+        "has_open_shift": True,
+        "reading_number": reading_number,
+        "reading": {
+            key: str(value) if isinstance(value, Decimal) else value
+            for key, value in summary.items()
+        },
+    })
+
+
+@login_required
+@pos_access_required
+@require_POST
+def x_reading_save_view(request):
+    """Save X-Reading through the checkout modal."""
+
+    session = CashierSession.objects.filter(
+        cashier=request.user,
+        status=CashierSession.Status.OPEN,
+    ).order_by("-opened_at").first()
+
+    if not session:
+        return JsonResponse({
+            "success": False,
+            "message": "There is no open cashier shift.",
+        }, status=400)
+
+    try:
+        summary = get_x_reading_summary(session)
+        reading = create_x_reading(
+            session,
+            request.user,
+            summary,
+        )
+
+        return JsonResponse({
+            "success": True,
+            "message": (
+                f"X-Reading #{reading.reading_number} "
+                "was saved successfully."
+            ),
+            "reading_id": reading.pk,
+            "reading_number": reading.reading_number,
+        })
+
+    except Exception:
+        logger.exception(
+            "Failed to save X-Reading for session %s",
+            session.pk,
+        )
+
+        return JsonResponse({
+            "success": False,
+            "message": "X-Reading could not be saved. Please check the server error log.",
+        }, status=500)
+
+
+@login_required
+@pos_access_required
+def x_reading_view(request):
+    """Display the full X-Reading page and saved reading history."""
+
+    session = CashierSession.objects.filter(
+        cashier=request.user,
+        status=CashierSession.Status.OPEN,
+    ).order_by("-opened_at").first()
+
     readings = XReading.objects.filter(
         session__cashier=request.user,
     ).select_related(
@@ -752,11 +986,9 @@ def x_reading_view(request):
         "-id",
     )
 
-    # Show 10 saved readings per page.
     paginator = Paginator(readings, 10)
     readings_page = paginator.get_page(request.GET.get("page"))
 
-    # Default values when there is no open shift.
     context = {
         "session": session,
         "readings": readings_page,
@@ -772,209 +1004,42 @@ def x_reading_view(request):
         "expected_cash": Decimal("0.00"),
     }
 
-    # If there is no open shift, still show the saved history.
-    if not session:
-        context["has_open_shift"] = False
-        return render(
-            request,
-            "sales/x_reading.html",
-            context,
-        )
+    if session:
+        summary = get_x_reading_summary(session)
+        context.update(summary)
 
-    # ------------------------------------------------------------------
-    # Calculate the current shift's figures.
-    # Same computation as the Z Reading, so both reports always match.
-    # ------------------------------------------------------------------
-    sales = Sale.objects.filter(cashier_session=session)
-
-    completed_sales = sales.filter(
-        status=Sale.Status.COMPLETED,
-    )
-
-    # Sales that were voided through an adjustment must not be counted.
-    voided_by_adjustment = SaleAdjustment.objects.filter(
-        sale__cashier_session=session,
-        status=SaleAdjustment.Status.COMPLETED,
-        adjustment_type=SaleAdjustment.AdjustmentType.VOID,
-    ).values_list("sale_id", flat=True)
-
-    valid_sales = completed_sales.exclude(
-        pk__in=voided_by_adjustment,
-    )
-
-    total_sales = (
-        valid_sales.aggregate(
-            total=Sum("total_amount"),
-        )["total"]
-        or Decimal("0.00")
-    )
-
-    cash_sales = (
-        valid_sales.filter(
-            payment_method=Sale.PaymentMethod.CASH,
-        ).aggregate(
-            total=Sum("total_amount"),
-        )["total"]
-        or Decimal("0.00")
-    )
-
-    non_cash_sales = (
-        valid_sales.exclude(
-            payment_method=Sale.PaymentMethod.CASH,
-        ).aggregate(
-            total=Sum("total_amount"),
-        )["total"]
-        or Decimal("0.00")
-    )
-
-    # Cash that was given back to customers (returns / refunds).
-    cash_refunds = (
-        SaleAdjustment.objects.filter(
-            sale__cashier_session=session,
-            sale__status=Sale.Status.COMPLETED,
-            sale__payment_method=Sale.PaymentMethod.CASH,
-            status=SaleAdjustment.Status.COMPLETED,
-            adjustment_type__in=[
-                SaleAdjustment.AdjustmentType.RETURN,
-                SaleAdjustment.AdjustmentType.REFUND,
-            ],
-        )
-        .exclude(
-            sale_id__in=voided_by_adjustment,
-        )
-        .aggregate(
-            total=Sum("amount"),
-        )["total"]
-        or Decimal("0.00")
-    )
-
-    # Cash added to the drawer during this shift.
-    additional_change_fund = (
-        CashFundMovement.objects.filter(
-            session=session,
-            movement_type=CashFundMovement.MovementType.CASH_IN,
-        ).aggregate(
-            total=Sum("amount")
-        )["total"]
-        or Decimal("0.00")
-    )
-
-    # Cash removed from the drawer during this shift.
-    cash_takeout = (
-        CashFundMovement.objects.filter(
-            session=session,
-            movement_type=CashFundMovement.MovementType.CASH_OUT,
-        ).aggregate(
-            total=Sum("amount")
-        )["total"]
-        or Decimal("0.00")
-    )
-
-    transaction_count = valid_sales.count()
-    voided_count = sales.filter(
-        status=Sale.Status.VOIDED,
-    ).count()
-
-    # Opening cash + cash in + cash sales - refunds - cash takeout
-    expected_cash = (
-        session.opening_cash
-        + additional_change_fund
-        + cash_sales
-        - cash_refunds
-        - cash_takeout
-    ).quantize(Decimal("0.01"))
-
-    # ------------------------------------------------------------------
-    # Save a new X Reading for the current open shift.
-    # ------------------------------------------------------------------
     if request.method == "POST":
+        if not session:
+            messages.error(
+                request,
+                "You need an open cashier shift to generate an X-Reading.",
+            )
+            return redirect("x_reading")
+
         try:
-            with transaction.atomic():
-                last_reading = (
-                    XReading.objects.filter(
-                        session=session,
-                    ).order_by(
-                        "-reading_number",
-                    ).first()
-                )
-
-                reading_number = (
-                    last_reading.reading_number + 1
-                    if last_reading
-                    else 1
-                )
-
-                report_data = {
-                    "opening_cash": str(session.opening_cash),
-                    "total_sales": str(total_sales),
-                    "cash_sales": str(cash_sales),
-                    "non_cash_sales": str(non_cash_sales),
-                    "cash_refunds": str(cash_refunds),
-                    "additional_change_fund": str(additional_change_fund),
-                    "cash_takeout": str(cash_takeout),
-                    "transaction_count": transaction_count,
-                    "voided_count": voided_count,
-                    "expected_cash": str(expected_cash),
-                }
-
-                reading = XReading.objects.create(
-                    session=session,
-                    reading_number=reading_number,
-                    generated_by=request.user,
-                    report_data=report_data,
-                )
-
-                log_activity(
-                    request.user,
-                    "X Reading Generated",
-                    {
-                        "reading_id": reading.pk,
-                        "reading_number": reading.reading_number,
-                        "session_id": session.pk,
-                        "total_sales": str(total_sales),
-                        "cash_sales": str(cash_sales),
-                        "non_cash_sales": str(non_cash_sales),
-                        "cash_refunds": str(cash_refunds),
-                        "additional_change_fund": str(additional_change_fund),
-                        "cash_takeout": str(cash_takeout),
-                        "transaction_count": transaction_count,
-                        "voided_count": voided_count,
-                        "expected_cash": str(expected_cash),
-                    },
-                )
+            reading = create_x_reading(
+                session,
+                request.user,
+                get_x_reading_summary(session),
+            )
 
             messages.success(
                 request,
-                f"X Reading #{reading.reading_number} "
-                "was saved successfully.",
+                f"X-Reading #{reading.reading_number} was saved successfully.",
             )
-
-            return redirect("x_reading")
 
         except Exception:
             logger.exception(
-                "Failed to save X Reading for session %s",
+                "Failed to save X-Reading for session %s",
                 session.pk,
             )
 
             messages.error(
                 request,
-                "X Reading could not be saved. "
-                "Please check the server error log.",
+                "X-Reading could not be saved. Please check the server error log.",
             )
 
-    # Update the context with the current shift's figures.
-    context.update({
-        "transaction_count": transaction_count,
-        "voided_count": voided_count,
-        "total_sales": total_sales,
-        "cash_sales": cash_sales,
-        "non_cash_sales": non_cash_sales,
-        "cash_refunds": cash_refunds,
-        "additional_change_fund": additional_change_fund,
-        "cash_takeout": cash_takeout,
-        "expected_cash": expected_cash,
-    })
+        return redirect("x_reading")
 
     return render(
         request,
@@ -2388,6 +2453,7 @@ def refund_process_view(request):
         "amount": str(adjustment.amount),
     })
 
+
 @login_required
 @pos_access_required
 @require_POST
@@ -2422,48 +2488,47 @@ def change_fund_view(request):
             "message": "Reason cannot exceed 255 characters."
         }, status=400)
 
-        with transaction.atomic():
-            session = (
-                CashierSession.objects
-                .select_for_update()
-                .filter(
-                    cashier=request.user,
-                    status=CashierSession.Status.OPEN,
-                )
-                .first()
+    with transaction.atomic():
+        session = (
+            CashierSession.objects
+            .select_for_update()
+            .filter(
+                cashier=request.user,
+                status=CashierSession.Status.OPEN,
             )
+            .first()
+        )
 
-            if not session:
-                return JsonResponse({
-                    "success": False,
-                    "message": "You don't have an open cashier shift."
-                }, status=400)
+        if not session:
+            return JsonResponse({
+                "success": False,
+                "message": "You don't have an open cashier shift."
+            }, status=400)
 
-            movement = CashFundMovement.objects.create(
-                session=session,
-                movement_type=CashFundMovement.MovementType.CASH_IN,
-                amount=amount,
-                reason=reason,
-                processed_by=request.user,
-            )
+        movement = CashFundMovement.objects.create(
+            session=session,
+            movement_type=CashFundMovement.MovementType.CASH_IN,
+            amount=amount,
+            reason=reason,
+            processed_by=request.user,
+        )
 
-    log_activity(
-        request.user,
-        "Change Fund Added",
-        {
-            "session_id": session.pk,
-            "movement_id": movement.pk,
-            "amount": str(amount),
-            "reason": reason,
-        },
-    )
+        log_activity(
+            request.user,
+            "Change Fund Added",
+            {
+                "session_id": session.pk,
+                "movement_id": movement.pk,
+                "amount": str(amount),
+                "reason": reason,
+            },
+        )
 
     return JsonResponse({
         "success": True,
         "message": "Change fund added successfully.",
         "amount": str(movement.amount),
     })
-
 
 
 @login_required

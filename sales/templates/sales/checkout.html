@@ -51,6 +51,7 @@
             4m. Edit customer modal
             4n. Claim reward modal
             4n. Salesperson management modal
+            4o. X-reading modal
 
         IMPORTANT: in CSS, the ORDER of rules matters (the later rule wins
         when specificity is equal). The relative order of all rules that
@@ -1087,6 +1088,46 @@
             padding: 1.5rem;
             box-shadow: 0 25px 60px -12px rgba(0,0,0,.55), 0 0 0 1px rgba(0,0,0,.08);
         }
+
+        /* ---------- 4o. X-Reading modal (same look as the General Note modal) ---------- */
+        .xr-card {
+            width: min(600px, 95vw);
+            display: flex;
+            flex-direction: column;
+            max-height: 90vh;
+            overflow: hidden;
+            background: #fff;
+        }
+        .xr-body {
+            flex: 1 1 auto;
+            min-height: 0;
+            overflow-y: auto;
+        }
+        .xr-footer {
+            flex-shrink: 0;
+            background: #fff;
+        }
+
+        /* Hindi aasa sa Tailwind bg-sky-600 (puwedeng wala sa build) */
+        .xr-btn-cancel {
+            background: #fff;
+            color: #4b5563;
+            border: 1px solid #d1d5db;
+            cursor: pointer;
+        }
+        .xr-btn-cancel:hover { background: #f9fafb; }
+
+        .xr-btn-save {
+            background: #0284c7;
+            color: #fff;
+            border: 0;
+            cursor: pointer;
+            transition: background .15s, transform .1s;
+        }
+        .xr-btn-save:hover { background: #0369a1; }
+        .xr-btn-save:active { transform: scale(.98); }
+        .xr-btn-save:disabled { opacity: .5; cursor: not-allowed; }
+        .xr-btn-save:disabled:hover { background: #0284c7; }
 
         /* Header */
         .rw-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 1rem; }
@@ -2888,6 +2929,50 @@
 
 
 
+<!-- X-READING MODAL -->
+<div id="x-reading-modal" class="msg-modal" role="dialog"
+     aria-modal="true" aria-labelledby="x-reading-title" hidden>
+
+    <div class="msg-card xr-card">
+
+        <div class="actions-header shrink-0">
+            <h2 id="x-reading-title">X-Reading</h2>
+            <button type="button" id="x-reading-close"
+                    class="actions-close" aria-label="Close X-Reading">
+                &times;
+            </button>
+        </div>
+
+        <!-- Ito lang ang nag-i-scroll -->
+        <div id="x-reading-content" class="xr-body p-4">
+            <p class="text-center text-gray-500">
+                Loading X-Reading...
+            </p>
+        </div>
+
+        <!-- Footer: laging kita -->
+        <div class="xr-footer flex justify-end gap-2 p-4 border-t">
+            <button type="button" id="x-reading-cancel"
+                    class="xr-btn-cancel px-4 py-2 rounded-lg border">
+                Cancel
+            </button>
+
+            <button type="button" id="x-reading-save"
+                    class="xr-btn-save px-4 py-2 rounded-lg"
+                    disabled>
+                Save X-Reading
+            </button>
+        </div>
+
+    </div>
+</div>
+
+
+
+
+
+
+
     <!-- Message modal -->
     <div id="message-modal" class="msg-modal" role="alertdialog" aria-modal="true"
          aria-labelledby="message-modal-title" aria-describedby="message-modal-body"
@@ -3605,9 +3690,105 @@ actionTiles.forEach(tile => {
                 });
                 if (okZ) showMessage("Z-Reading is not yet wired to the backend.", "Z-Reading");
                 break;
-            case "x-reading":
-                showMessage("X-Reading shows current-day totals without closing the day.", "X-Reading");
-                break;
+
+
+                case "x-reading": {
+                    document.getElementById("actions-modal").hidden = true;
+
+                    const modal = document.getElementById("x-reading-modal");
+                    const content = document.getElementById("x-reading-content");
+                    const saveButton = document.getElementById("x-reading-save");
+
+                    modal.hidden = false;
+                    saveButton.disabled = true;
+
+                    content.innerHTML = `
+                        <p class="text-center text-gray-500 py-6">
+                            Loading X-Reading...
+                        </p>
+                    `;
+
+                    try {
+                        const response = await fetch("{% url 'x_reading_data' %}", {
+                            method: "GET",
+                            headers: {
+                                "X-Requested-With": "XMLHttpRequest"
+                            }
+                        });
+
+                        const result = await response.json();
+
+                        if (!response.ok || !result.success) {
+                            throw new Error(result.message || "Unable to load X-Reading.");
+                        }
+
+                        if (!result.has_open_shift) {
+                            content.innerHTML = `
+                                <div class="text-center py-8">
+                                    <p class="text-amber-600 font-semibold">
+                                        No Open Cashier Shift
+                                    </p>
+                                    <p class="text-sm text-gray-500 mt-2">
+                                        ${result.message}
+                                    </p>
+                                </div>
+                            `;
+                            return;
+                        }
+
+                        const data = result.reading;
+
+                        const money = value =>
+                            "₱" + Number(value || 0).toLocaleString("en-PH", {
+                                minimumFractionDigits: 2,
+                                maximumFractionDigits: 2
+                            });
+
+                        const rows = [
+                            ["Opening Cash", money(data.opening_cash)],
+                            ["Total Sales", money(data.total_sales)],
+                            ["Cash Sales", money(data.cash_sales)],
+                            ["Non-Cash Sales", money(data.non_cash_sales)],
+                            ["Cash Refunds / Returns", money(data.cash_refunds)],
+                            ["Additional Change Fund", money(data.additional_change_fund)],
+                            ["Cash Takeout", money(data.cash_takeout)],
+                            ["Expected Cash", money(data.expected_cash)],
+                            ["Completed Transactions", data.transaction_count],
+                            ["Voided Transactions", data.voided_count]
+                        ];
+
+                        content.innerHTML = `
+                            <div class="mb-4">
+                                <p class="text-sm text-gray-500">Reading Number</p>
+                                <p class="text-xl font-bold">#${result.reading_number}</p>
+                            </div>
+
+                            <div class="space-y-3">
+                                ${rows.map(([label, value], index) => `
+                                    <div class="flex justify-between gap-4 py-2 border-b border-gray-100
+                                        ${index === 7 ? "font-bold text-sky-700" : ""}">
+                                        <span>${label}</span>
+                                        <span class="text-right">${value}</span>
+                                    </div>
+                                `).join("")}
+                            </div>
+                        `;
+
+                        saveButton.disabled = false;
+
+                    } catch (error) {
+                        content.innerHTML = `
+                            <p class="text-center text-red-600 py-6">
+                                ${error.message}
+                            </p>
+                        `;
+                        saveButton.disabled = true;
+                    }
+
+                    break;
+                }
+
+
             case "void-all":
                 if (cart.size === 0) { showMessage("The cart is already empty.", "Nothing to void"); break; }
                 const okVoid = await showConfirm({
@@ -6981,6 +7162,75 @@ async function toggleSalespersonStatus(salesperson) {
         );
     }
 }
+
+
+
+// X-Reading modal controls
+const xReadingModal = document.getElementById("x-reading-modal");
+
+function closeXReadingModal() {
+    xReadingModal.hidden = true;
+}
+
+document.getElementById("x-reading-close").addEventListener("click", closeXReadingModal);
+
+document.getElementById("x-reading-cancel").addEventListener("click", closeXReadingModal);
+
+
+// Save X-Reading through AJAX
+document.getElementById("x-reading-save").addEventListener("click", async function () {
+    const saveButton = this;
+    const content = document.getElementById("x-reading-content");
+
+    const confirmed = await showConfirm({
+        title: "Save X-Reading?",
+        text: "This will save the current shift totals as an X-Reading. Your cashier shift will remain open.",
+        confirmLabel: "Save X-Reading"
+    });
+
+    if (!confirmed) return;
+
+    saveButton.disabled = true;
+    saveButton.textContent = "Saving...";
+
+    try {
+        const csrfToken = document.querySelector(
+            '[name="csrfmiddlewaretoken"]'
+        )?.value;
+
+        if (!csrfToken) {
+            throw new Error("CSRF token not found. Please refresh the page.");
+        }
+
+        const response = await fetch("{% url 'x_reading_save' %}", {
+            method: "POST",
+            headers: {
+                "X-Requested-With": "XMLHttpRequest",
+                "X-CSRFToken": csrfToken
+            }
+        });
+
+        const result = await response.json();
+
+        if (!response.ok || !result.success) {
+            throw new Error(result.message || "Unable to save X-Reading.");
+        }
+
+        closeXReadingModal();
+
+        showMessage(result.message, "X-Reading");
+
+    } catch (error) {
+        content.insertAdjacentHTML(
+            "afterbegin",
+            `<p class="text-red-600 text-sm mb-3">${error.message}</p>`
+        );
+    } finally {
+        saveButton.disabled = false;
+        saveButton.textContent = "Save X-Reading";
+    }
+});
+
 
 
 /* =====================================================================
