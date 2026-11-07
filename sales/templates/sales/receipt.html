@@ -439,6 +439,16 @@
                     <span>{{ sale.cashier.username }}</span>
                 </div>
                 <div class="line">
+                    <span class="muted">Salesperson</span>
+                    <span>
+                        {% if sale.salesperson %}
+                            {{ sale.salesperson.full_name }}
+                        {% else %}
+                            N/A
+                        {% endif %}
+                    </span>
+                </div>
+                <div class="line">
                     <span class="muted">Status</span>
                     <span class="bold">{{ sale.get_status_display }}</span>
                 </div>

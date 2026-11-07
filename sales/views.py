@@ -46,6 +46,7 @@ from .models import (
     CashFundMovement,
     SuspendedSale,
     Customer,
+    Salesperson,
 )
 from .services import process_sale
 from .utils import log_activity
@@ -83,6 +84,9 @@ def checkout_view(request):
         "form": CheckoutForm(),
         "session": session,
         "customers": Customer.objects.all().order_by("name"),
+        "salespersons": Salesperson.objects.filter(
+            is_active=True
+        ).order_by("full_name"),
     }
 
     is_owner = (
@@ -189,6 +193,7 @@ def pricelist_data_view(request):
 
 
 
+
 @login_required
 @pos_access_required
 @require_POST
@@ -205,6 +210,10 @@ def complete_sale_view(request):
     try:
         cart_items = json.loads(request.POST.get("cart", "[]"))
         general_note = request.POST.get("general_note", "").strip()[:500]
+
+        # ========================================
+        # GET AND VALIDATE SELECTED CUSTOMER
+        # ========================================
         customer_id = request.POST.get("customer_id", "").strip()
         customer = None
 
@@ -214,15 +223,42 @@ def complete_sale_view(request):
             except (ValueError, Customer.DoesNotExist):
                 raise ValidationError("Selected customer is invalid.")
 
+        # ========================================
+        # GET AND VALIDATE SELECTED SALESPERSON
+        # ========================================
+        salesperson_id = request.POST.get(
+            "salesperson_id", ""
+        ).strip()
+
+        salesperson = None
+
+        if salesperson_id:
+            try:
+                salesperson = Salesperson.objects.get(
+                    pk=int(salesperson_id),
+                    is_active=True,
+                )
+            except (ValueError, Salesperson.DoesNotExist):
+                raise ValidationError(
+                    "Selected salesperson is invalid or inactive."
+                )
+
+        # ========================================
+        # VALIDATE CART
+        # ========================================
         if not isinstance(cart_items, list) or not cart_items:
             raise ValidationError(
                 "Your shopping cart is empty or invalid."
             )
 
+        # ========================================
+        # PROCESS SALE
+        # ========================================
         sale = process_sale(
             cart_items=cart_items,
             cashier=request.user,
             customer=customer,
+            salesperson=salesperson,
             reward_points_to_redeem=(
                 form.cleaned_data["reward_points_to_redeem"] or 0
             ),
@@ -302,7 +338,9 @@ def complete_sale_view(request):
         messages.error(request, error_message)
         return redirect("checkout")
 
-    # Delete the retrieved suspended transaction only after sale succeeds.
+    # ========================================
+    # DELETE SUSPENDED TRANSACTION AFTER SALE
+    # ========================================
     suspended_sale_id = request.POST.get("suspended_sale_id")
 
     if suspended_sale_id:
@@ -318,7 +356,9 @@ def complete_sale_view(request):
                 cashier_session=cashier_session,
             ).delete()
 
-    # Record completed sale activity.
+    # ========================================
+    # RECORD COMPLETED SALE ACTIVITY
+    # ========================================
     log_activity(
         request.user,
         "Sale Completed",
@@ -388,7 +428,10 @@ def sales_history_view(request):
     # Load sales and their completed adjustments.
     sales = (
         Sale.objects
-        .select_related("cashier")
+        .select_related(
+            "cashier",
+            "salesperson",  # ADDED: Load assigned salesperson
+        )
         .prefetch_related(
             "items",
             Prefetch(
@@ -1111,6 +1154,7 @@ def close_shift_view(request):
             "total_sales": str(total_sales),
             "cash_refunds": str(cash_refunds),
             "additional_change_fund": str(additional_change_fund),
+            "cash_takeout": str(cash_takeout),
             "completed_transactions": completed_count,
             "voided_transactions": voided_count,
         },
@@ -1671,6 +1715,256 @@ def customer_reward_balance_view(request, customer_id):
         "is_enabled": reward_settings.is_enabled,
     })
 
+@login_required
+@pos_access_required
+def salesperson_management_data_view(request):
+    if not is_owner_user(request.user):
+        raise PermissionDenied(
+            "Only the owner can manage salespersons."
+        )
+
+    search = request.GET.get("q", "").strip()
+
+    salespersons = Salesperson.objects.all().order_by("full_name")
+
+    if search:
+        salespersons = salespersons.filter(
+            Q(full_name__icontains=search)
+            | Q(contact_number__icontains=search)
+        )
+
+    salesperson_data = [
+        {
+            "id": salesperson.id,
+            "full_name": salesperson.full_name,
+            "contact_number": salesperson.contact_number,
+            "is_active": salesperson.is_active,
+        }
+        for salesperson in salespersons
+    ]
+
+    return JsonResponse({
+        "success": True,
+        "salespersons": salesperson_data,
+        "count": len(salesperson_data),
+    })
+
+
+@login_required
+@pos_access_required
+@require_POST
+def salesperson_create_view(request):
+    if not is_owner_user(request.user):
+        raise PermissionDenied(
+            "Only the owner can add salespersons."
+        )
+
+    full_name = request.POST.get("full_name", "").strip()
+    contact_number = request.POST.get(
+        "contact_number", ""
+    ).strip()
+
+    is_ajax = (
+        request.headers.get("X-Requested-With")
+        == "XMLHttpRequest"
+    )
+
+    # Validation
+    if not full_name:
+        error_message = "Salesperson name is required."
+
+        if is_ajax:
+            return JsonResponse({
+                "success": False,
+                "message": error_message,
+            }, status=400)
+
+        messages.error(request, error_message)
+        return redirect("checkout")
+
+    if len(full_name) > 200:
+        error_message = "Name cannot exceed 200 characters."
+
+        if is_ajax:
+            return JsonResponse({
+                "success": False,
+                "message": error_message,
+            }, status=400)
+
+        messages.error(request, error_message)
+        return redirect("checkout")
+
+    if len(contact_number) > 30:
+        error_message = "Contact number cannot exceed 30 characters."
+
+        if is_ajax:
+            return JsonResponse({
+                "success": False,
+                "message": error_message,
+            }, status=400)
+
+        messages.error(request, error_message)
+        return redirect("checkout")
+
+    salesperson = Salesperson.objects.create(
+        full_name=full_name,
+        contact_number=contact_number,
+    )
+
+    log_activity(
+        request.user,
+        "Salesperson Added",
+        {
+            "salesperson_id": salesperson.pk,
+            "salesperson_name": salesperson.full_name,
+        },
+    )
+
+    if is_ajax:
+        return JsonResponse({
+            "success": True,
+            "message": "Salesperson added successfully.",
+            "salesperson": {
+                "id": salesperson.pk,
+                "full_name": salesperson.full_name,
+                "contact_number": salesperson.contact_number,
+                "is_active": salesperson.is_active,
+            },
+        })
+
+    messages.success(
+        request,
+        "Salesperson added successfully."
+    )
+
+    return redirect("checkout")
+
+
+@login_required
+@pos_access_required
+@require_POST
+def salesperson_update_view(request, salesperson_id):
+    if not is_owner_user(request.user):
+        raise PermissionDenied(
+            "Only the owner can edit salespersons."
+        )
+
+    salesperson = get_object_or_404(
+        Salesperson,
+        pk=salesperson_id,
+    )
+
+    full_name = request.POST.get("full_name", "").strip()
+    contact_number = request.POST.get(
+        "contact_number", ""
+    ).strip()
+
+    is_ajax = (
+        request.headers.get("X-Requested-With")
+        == "XMLHttpRequest"
+    )
+
+    # Validation
+    if not full_name:
+        error_message = "Salesperson name is required."
+
+        if is_ajax:
+            return JsonResponse({
+                "success": False,
+                "message": error_message,
+            }, status=400)
+
+        messages.error(request, error_message)
+        return redirect("checkout")
+
+    if len(full_name) > 200 or len(contact_number) > 30:
+        error_message = "Please check the salesperson information."
+
+        if is_ajax:
+            return JsonResponse({
+                "success": False,
+                "message": error_message,
+            }, status=400)
+
+        messages.error(request, error_message)
+        return redirect("checkout")
+
+    # Update salesperson
+    salesperson.full_name = full_name
+    salesperson.contact_number = contact_number
+    salesperson.save()
+
+    log_activity(
+        request.user,
+        "Salesperson Updated",
+        {
+            "salesperson_id": salesperson.pk,
+            "salesperson_name": salesperson.full_name,
+        },
+    )
+
+    if is_ajax:
+        return JsonResponse({
+            "success": True,
+            "message": "Salesperson updated successfully.",
+            "salesperson": {
+                "id": salesperson.pk,
+                "full_name": salesperson.full_name,
+                "contact_number": salesperson.contact_number,
+                "is_active": salesperson.is_active,
+            },
+        })
+
+    messages.success(
+        request,
+        "Salesperson updated successfully."
+    )
+
+    return redirect("checkout")
+
+
+@login_required
+@pos_access_required
+@require_POST
+def salesperson_toggle_status_view(request, salesperson_id):
+    if not is_owner_user(request.user):
+        raise PermissionDenied(
+            "Only the owner can change salesperson status."
+        )
+
+    salesperson = get_object_or_404(
+        Salesperson,
+        pk=salesperson_id,
+    )
+
+    salesperson.is_active = not salesperson.is_active
+    salesperson.save(update_fields=["is_active"])
+
+    status = "activated" if salesperson.is_active else "deactivated"
+
+    log_activity(
+        request.user,
+        f"Salesperson {status.title()}",
+        {
+            "salesperson_id": salesperson.pk,
+            "salesperson_name": salesperson.full_name,
+            "is_active": salesperson.is_active,
+        },
+    )
+
+    return JsonResponse({
+        "success": True,
+        "message": f"Salesperson {status} successfully.",
+        "salesperson": {
+            "id": salesperson.pk,
+            "full_name": salesperson.full_name,
+            "contact_number": salesperson.contact_number,
+            "is_active": salesperson.is_active,
+        },
+    })
+
+
+
 
 @login_required
 @pos_access_required
@@ -2128,22 +2422,22 @@ def change_fund_view(request):
             "message": "Reason cannot exceed 255 characters."
         }, status=400)
 
-    with transaction.atomic():
-        session = (
-            CashierSession.objects
-            .select_for_update()
-            .filter(
-                cashier=request.user,
-                status=CashierSession.Status.OPEN,
+        with transaction.atomic():
+            session = (
+                CashierSession.objects
+                .select_for_update()
+                .filter(
+                    cashier=request.user,
+                    status=CashierSession.Status.OPEN,
+                )
+                .first()
             )
-            .first()
-        )
 
-        if not session:
-            return JsonResponse({
-                "success": False,
-                "message": "You don't have an open cashier shift."
-            }, status=400)
+            if not session:
+                return JsonResponse({
+                    "success": False,
+                    "message": "You don't have an open cashier shift."
+                }, status=400)
 
             movement = CashFundMovement.objects.create(
                 session=session,

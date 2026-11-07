@@ -1,4 +1,3 @@
-
 from decimal import Decimal, ROUND_HALF_UP
 from uuid import uuid4
 
@@ -10,13 +9,14 @@ from django.utils import timezone
 from products.models import Product
 from inventory.models import StockBatch, StockMovement
 from .models import (
-    Sale,
-    SaleItem,
-    SaleCharge,
-    CashierSession,
-    RewardSettings,
-    RewardAccount,
-    RewardTransaction,
+Sale,
+SaleItem,
+SaleCharge,
+CashierSession,
+RewardSettings,
+RewardAccount,
+RewardTransaction,
+Salesperson,
 )
 
 
@@ -37,6 +37,7 @@ def process_sale(
     cart_items,
     cashier,
     customer=None,
+    salesperson=None,
     amount_tendered,
     payment_method,
     discount_type="none",
@@ -66,6 +67,15 @@ def process_sale(
         raise ValidationError(
             "You must open your cashier shift before making sales."
         )
+
+    # ========================================
+    # VALIDATE ASSIGNED SALESPERSON
+    # ========================================
+    if salesperson is not None:
+        if not salesperson.is_active:
+            raise ValidationError(
+                "Selected salesperson is inactive."
+            )
 
     today = timezone.localdate()
 
@@ -461,6 +471,7 @@ def process_sale(
         receipt_number=receipt_number,
         cashier=cashier,
         customer=customer,
+        salesperson=salesperson,
         cashier_session=cashier_session,
         subtotal=subtotal,
         discount=discount,

@@ -47,6 +47,14 @@ class Sale(models.Model):
         related_name="sales",
     )
 
+    salesperson = models.ForeignKey(
+        "Salesperson",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="sales",
+    )
+
     subtotal = models.DecimalField(
         max_digits=12,
         decimal_places=2,
@@ -806,3 +814,21 @@ class RewardTransaction(models.Model):
             f"{self.get_transaction_type_display()} - "
             f"{self.points} points"
         )
+
+class Salesperson(models.Model):
+    full_name = models.CharField(max_length=200)
+
+    contact_number = models.CharField(
+        max_length=30,
+        blank=True,
+    )
+
+    is_active = models.BooleanField(default=True)
+
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["full_name"]
+
+    def __str__(self):
+        return self.full_name

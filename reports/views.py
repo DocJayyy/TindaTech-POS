@@ -31,6 +31,7 @@ from inventory.models import StockBatch
 from sales.models import (
     Sale,
     SaleItem,
+    Salesperson,
     SaleAdjustment,
     SaleAdjustmentItem,
     ReceiptSettings,
@@ -102,6 +103,30 @@ def dashboard_view(request):
 
     estimated_profit = today_total_sales - today_cost
 
+    # ========================================
+    # SALESPERSON SALES SUMMARY (TODAY)
+    # ========================================
+    salesperson_sales = (
+        today_sales
+        .filter(salesperson__isnull=False)
+        .values(
+            "salesperson__id",
+            "salesperson__full_name",
+        )
+        .annotate(
+            total_sales=Coalesce(
+                Sum("total_amount"),
+                Decimal("0.00"),
+                output_field=DecimalField(
+                    max_digits=24,
+                    decimal_places=2,
+                ),
+            ),
+            transaction_count=Count("id"),
+        )
+        .order_by("-total_sales")
+    )
+
     inventory_value_expression = ExpressionWrapper(
         F("quantity_remaining") * F("unit_cost"),
         output_field=DecimalField(
@@ -150,6 +175,7 @@ def dashboard_view(request):
         "inventory_value": inventory_value,
         "low_stock_count": low_stock_products.count(),
         "low_stock_products": low_stock_products[:10],
+        "salesperson_sales": salesperson_sales,
     }
 
     return render(request, "reports/dashboard.html", context)

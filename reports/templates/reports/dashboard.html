@@ -590,6 +590,79 @@
                 </dl>
             </section>
 
+            <!-- Salesperson Sales Summary -->
+            <section class="mb-6 overflow-hidden rounded-3xl bg-white shadow-sm">
+
+                <div class="flex flex-wrap items-center justify-between gap-3 px-6 pb-3 pt-6">
+                    <div>
+                        <h2 class="text-xl font-semibold text-ink">
+                            Salesperson Sales Summary
+                        </h2>
+                        <p class="mt-1 text-sm text-slate-500">
+                            Today's completed sales grouped by salesperson.
+                        </p>
+                    </div>
+
+                    <span class="rounded-full bg-brand-soft px-3 py-1 text-xs font-medium text-brand">
+                        Today
+                    </span>
+                </div>
+
+                <div class="overflow-x-auto px-3 pb-4">
+                    <table class="min-w-full text-sm">
+
+                        <thead class="text-left text-xs font-medium text-slate-400">
+                            <tr>
+                                <th scope="col" class="px-4 py-3">Salesperson</th>
+                                <th scope="col" class="px-4 py-3 text-right">
+                                    Transactions
+                                </th>
+                                <th scope="col" class="px-4 py-3 text-right">
+                                    Total Sales
+                                </th>
+                            </tr>
+                        </thead>
+
+                        <tbody>
+                            {% for item in salesperson_sales %}
+                                <tr class="transition hover:bg-canvas/60">
+
+                                    <td class="whitespace-nowrap rounded-l-2xl px-4 py-3.5">
+                                        <p class="font-medium text-ink">
+                                            {{ item.salesperson__full_name }}
+                                        </p>
+                                    </td>
+
+                                    <td class="tabular whitespace-nowrap px-4 py-3.5 text-right text-slate-600">
+                                        {{ item.transaction_count }}
+                                    </td>
+
+                                    <td class="tabular whitespace-nowrap rounded-r-2xl px-4 py-3.5 text-right">
+                                        <span class="font-semibold text-emerald-600">
+                                            ₱{{ item.total_sales|floatformat:2 }}
+                                        </span>
+                                    </td>
+
+                                </tr>
+
+                            {% empty %}
+                                <tr>
+                                    <td colspan="3" class="px-5 py-12 text-center">
+                                        <p class="font-medium text-slate-700">
+                                            No salesperson sales yet
+                                        </p>
+                                        <p class="mt-1 text-sm text-slate-500">
+                                            Completed transactions assigned to a salesperson will appear here.
+                                        </p>
+                                    </td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+
+                    </table>
+                </div>
+            </section>
+
             <!-- Products to restock -->
             <section class="overflow-hidden rounded-3xl bg-white shadow-sm">
                 <div class="flex flex-wrap items-center justify-between gap-3 px-6 pb-3 pt-6">

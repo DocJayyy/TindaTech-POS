@@ -39,4 +39,8 @@ urlpatterns = [
     path("customers/<int:customer_id>/reward-balance/",views.customer_reward_balance_view,name="customer_reward_balance"),
     path("pricelist/data/",views.pricelist_data_view,name="pricelist_data"),
     path("cash-takeout/", views.cash_takeout_view, name="cash_takeout"),
+    path("salespersons/data/",views.salesperson_management_data_view,name="salesperson_management_data"),
+    path("salespersons/add/",views.salesperson_create_view,name="salesperson_create"),
+    path("salespersons/<int:salesperson_id>/edit/",views.salesperson_update_view,name="salesperson_update"),
+    path("salespersons/<int:salesperson_id>/toggle-status/",views.salesperson_toggle_status_view,name="salesperson_toggle_status"),
 ]

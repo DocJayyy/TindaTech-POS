@@ -50,6 +50,7 @@
             4l. Add customer modal
             4m. Edit customer modal
             4n. Claim reward modal
+            4n. Salesperson management modal
 
         IMPORTANT: in CSS, the ORDER of rules matters (the later rule wins
         when specificity is equal). The relative order of all rules that
@@ -949,6 +950,124 @@
         .ec-btn:disabled { opacity: .5; cursor: not-allowed; }
         .ec-btn:disabled:hover { background: #16a34a; }
 
+        /* ---------- 4n. Salesperson management modal (salesperson list table) ---------- */
+
+        #salespersonManagementModal {
+            background: rgba(15, 23, 42, .6);
+            align-items: center;
+            justify-content: center;
+            padding: 1rem;
+        }
+        .spm-card {
+            display: flex;
+            flex-direction: column;
+            max-height: 90vh;
+            overflow: hidden;
+            box-shadow: 0 25px 60px -12px rgba(0,0,0,.55), 0 0 0 1px rgba(0,0,0,.08);
+        }
+        /* Body takes the remaining height */
+        .spm-body {
+            display: flex;
+            flex-direction: column;
+            flex: 1 1 auto;
+            min-height: 0;
+        }
+
+        /* Only this area scrolls */
+        .spm-scroll {
+            flex: 1 1 auto;
+            min-height: 0;
+            overflow: auto;
+        }
+
+        /* Keep column names visible while scrolling */
+        .spm-scroll thead th {
+            position: sticky;
+            top: 0;
+            z-index: 1;
+            background: #f9fafb;
+            box-shadow: 0 1px 0 #e5e7eb;
+        }
+        .spm-input:focus {
+            outline: none !important;
+            border-color: #22c55e !important;
+            box-shadow: 0 0 0 3px rgba(34,197,94,.2) !important;
+        }
+        .spm-btn {
+            background: #16a34a;
+            color: #fff;
+            border: 0;
+            cursor: pointer;
+            transition: background .15s, transform .1s;
+        }
+        .spm-btn:hover { background: #15803d; }
+        .spm-btn:active { transform: scale(.98); }
+        .spm-btn:focus-visible { outline: 2px solid #16a34a; outline-offset: 2px; }
+        .spm-btn:disabled { opacity: .5; cursor: not-allowed; }
+        .spm-btn:disabled:hover { background: #16a34a; }
+
+
+        /* ---------- 4o. Add salesperson modal ---------- */
+
+        #addSalespersonModal {
+            background: rgba(15, 23, 42, .6);
+            align-items: center;
+            justify-content: center;
+            padding: 1rem;
+        }
+        .asp-card {
+            max-width: 28rem;
+            box-shadow: 0 25px 60px -12px rgba(0,0,0,.55), 0 0 0 1px rgba(0,0,0,.08);
+        }
+        .asp-input:focus {
+            outline: none !important;
+            border-color: #22c55e !important;
+            box-shadow: 0 0 0 3px rgba(34,197,94,.2) !important;
+        }
+        .asp-btn {
+            background: #16a34a;
+            color: #fff;
+            border: 0;
+            cursor: pointer;
+            transition: background .15s, transform .1s;
+        }
+        .asp-btn:hover { background: #15803d; }
+        .asp-btn:active { transform: scale(.98); }
+        .asp-btn:focus-visible { outline: 2px solid #16a34a; outline-offset: 2px; }
+        .asp-btn:disabled { opacity: .5; cursor: not-allowed; }
+        .asp-btn:disabled:hover { background: #16a34a; }
+
+
+        /* ---------- 4p. Edit salesperson modal ---------- */
+
+        #editSalespersonModal {
+            background: rgba(15, 23, 42, .6);
+            align-items: center;
+            justify-content: center;
+            padding: 1rem;
+        }
+        .esp-card {
+            max-width: 28rem;
+            box-shadow: 0 25px 60px -12px rgba(0,0,0,.55), 0 0 0 1px rgba(0,0,0,.08);
+        }
+        .esp-input:focus {
+            outline: none !important;
+            border-color: #22c55e !important;
+            box-shadow: 0 0 0 3px rgba(34,197,94,.2) !important;
+        }
+        .esp-btn {
+            background: #16a34a;
+            color: #fff;
+            border: 0;
+            cursor: pointer;
+            transition: background .15s, transform .1s;
+        }
+        .esp-btn:hover { background: #15803d; }
+        .esp-btn:active { transform: scale(.98); }
+        .esp-btn:focus-visible { outline: 2px solid #16a34a; outline-offset: 2px; }
+        .esp-btn:disabled { opacity: .5; cursor: not-allowed; }
+        .esp-btn:disabled:hover { background: #16a34a; }
+
 
         /* ---------- 4n. Claim reward modal (same look as the General Note modal) ---------- */
 
@@ -1181,6 +1300,30 @@
                                         + Add
                                     </button>
 
+                                </div>
+                            </div>
+
+                            <!-- SALESPERSON SELECTION -->
+                            <div class="group" style="margin-top:.25rem">
+                                <p class="group-title">Salesperson</p>
+
+                                <div>
+                                    <label for="salesperson-select">
+                                        Assisted By
+                                    </label>
+
+                                    <select name="salesperson_id" id="salesperson-select">
+                                        <option value="">No Salesperson</option>
+
+                                        {% for salesperson in salespersons %}
+                                            <option value="{{ salesperson.id }}">
+                                                {{ salesperson.full_name }}
+                                                {% if salesperson.contact_number %}
+                                                    — {{ salesperson.contact_number }}
+                                                {% endif %}
+                                            </option>
+                                        {% endfor %}
+                                    </select>
                                 </div>
                             </div>
 
@@ -2481,6 +2624,270 @@
     </div>
 </div>
 
+<!-- SALESPERSON MANAGEMENT MODAL -->
+<div id="salespersonManagementModal"
+     class="fixed inset-0 z-[105] hidden items-center justify-center bg-black/50 p-4">
+
+    <div class="spm-card w-full max-w-5xl rounded-2xl bg-white">
+
+        <!-- Header -->
+        <div class="flex shrink-0 items-center justify-between border-b border-gray-200 px-6 py-4">
+            <div>
+                <h2 class="text-lg font-bold text-gray-800">Salesperson Management</h2>
+                <p class="text-sm text-gray-500">Manage salesperson information and status</p>
+            </div>
+
+            <button type="button"
+                    id="closeSalespersonManagementModal"
+                    class="text-2xl text-gray-400 hover:text-gray-700">
+                &times;
+            </button>
+        </div>
+
+        <!-- Toolbar -->
+        <div class="flex shrink-0 flex-wrap items-center justify-between gap-3 border-b border-gray-200 px-6 py-4">
+
+            <div>
+                <h3 class="font-semibold text-gray-800">Salesperson List</h3>
+                <p class="text-sm text-gray-500">
+                    <span id="salespersonManagementCount">0</span> salesperson(s)
+                </p>
+            </div>
+
+            <div class="flex flex-wrap gap-3">
+                <input type="search"
+                       id="salespersonManagementSearch"
+                       placeholder="Search salesperson..."
+                       class="spm-input w-56 rounded-xl border border-gray-300 px-4 py-2.5 text-sm outline-none">
+
+                <button type="button"
+                        id="refreshSalespersonManagement"
+                        class="rounded-xl border border-gray-300 px-5 py-2.5 text-sm font-semibold text-gray-600 hover:bg-gray-50">
+                    Refresh
+                </button>
+
+                <button type="button"
+                        id="addSalespersonFromManagement"
+                        class="spm-btn rounded-xl px-5 py-2.5 text-sm font-semibold">
+                    + Add Salesperson
+                </button>
+            </div>
+        </div>
+
+        <!-- Salesperson Table -->
+        <div class="spm-body p-6">
+
+            <div id="salespersonManagementLoading"
+                 class="hidden py-10 text-center text-sm text-gray-500">
+                Loading salespersons...
+            </div>
+
+            <div id="salespersonManagementEmpty"
+                 class="hidden py-12 text-center text-sm text-gray-500">
+                No salespersons found.
+            </div>
+
+            <!-- Scrollable area -->
+            <div class="spm-scroll rounded-xl border border-gray-200">
+                <table class="w-full min-w-[650px] text-left text-sm">
+
+                    <thead class="text-xs uppercase tracking-wide text-gray-500">
+                        <tr>
+                            <th class="px-4 py-3 font-semibold">Salesperson</th>
+                            <th class="px-4 py-3 font-semibold">Contact Number</th>
+                            <th class="px-4 py-3 font-semibold">Status</th>
+                            <th class="px-4 py-3 text-right font-semibold">Action</th>
+                        </tr>
+                    </thead>
+
+                    <tbody id="salespersonManagementTableBody"
+                           class="divide-y divide-gray-100">
+                        <tr>
+                            <td colspan="4"
+                                class="px-4 py-10 text-center text-gray-400">
+                                Open Salesperson Management to load salespersons.
+                            </td>
+                        </tr>
+                    </tbody>
+
+                </table>
+            </div>
+
+        </div>
+
+        <!-- Footer -->
+        <div class="flex shrink-0 justify-end border-t border-gray-200 px-6 py-4">
+            <button type="button"
+                    id="doneSalespersonManagement"
+                    class="rounded-xl border border-gray-300 px-5 py-2.5 font-semibold text-gray-600 hover:bg-gray-50">
+                Done
+            </button>
+        </div>
+
+    </div>
+</div>
+
+
+<!-- ADD SALESPERSON MODAL -->
+<div id="addSalespersonModal"
+     class="fixed inset-0 z-[120] hidden items-center justify-center bg-black/50 p-4">
+
+    <div class="asp-card flex max-h-[90vh] w-full max-w-md flex-col overflow-hidden rounded-2xl bg-white">
+
+        <!-- Header -->
+        <div class="flex items-center justify-between border-b border-gray-200 px-5 py-3">
+            <div>
+                <h2 class="text-base font-bold text-gray-800">Add Salesperson</h2>
+                <p class="text-xs text-gray-500">Enter the salesperson's information</p>
+            </div>
+
+            <button type="button"
+                    id="closeAddSalespersonModal"
+                    class="text-2xl leading-none text-gray-400 hover:text-gray-700">
+                &times;
+            </button>
+        </div>
+
+        <!-- Form -->
+        <form id="addSalespersonForm"
+              method="POST"
+              action="{% url 'salesperson_create' %}"
+              class="flex min-h-0 flex-1 flex-col">
+
+            {% csrf_token %}
+
+            <div class="min-h-0 flex-1 space-y-3.5 overflow-y-auto p-5">
+
+                <div>
+                    <label for="newSalespersonName"
+                           class="mb-1.5 block text-sm font-semibold text-gray-700">
+                        Full Name *
+                    </label>
+                    <input type="text"
+                           name="full_name"
+                           id="newSalespersonName"
+                           maxlength="200"
+                           required
+                           placeholder="Enter full name"
+                           class="asp-input w-full rounded-xl border border-gray-300 px-3 py-2 text-sm outline-none">
+                </div>
+
+                <div>
+                    <label for="newSalespersonContact"
+                           class="mb-1.5 block text-sm font-semibold text-gray-700">
+                        Contact Number
+                    </label>
+                    <input type="text"
+                           name="contact_number"
+                           id="newSalespersonContact"
+                           maxlength="30"
+                           placeholder="e.g. 09XX XXX XXXX"
+                           class="asp-input w-full rounded-xl border border-gray-300 px-3 py-2 text-sm outline-none">
+                </div>
+
+            </div>
+
+            <!-- Buttons -->
+            <div class="flex justify-end gap-2.5 border-t border-gray-200 px-5 py-3">
+                <button type="button"
+                        id="cancelAddSalesperson"
+                        class="rounded-xl border border-gray-300 px-4 py-2 text-sm font-semibold text-gray-600 hover:bg-gray-50">
+                    Cancel
+                </button>
+
+                <button type="submit"
+                        id="saveNewSalesperson"
+                        class="asp-btn rounded-xl px-4 py-2 text-sm font-semibold">
+                    Save Salesperson
+                </button>
+            </div>
+
+        </form>
+    </div>
+</div>
+
+
+<!-- EDIT SALESPERSON MODAL -->
+<div id="editSalespersonModal"
+     class="fixed inset-0 z-[130] hidden items-center justify-center bg-black/50 p-4">
+
+    <div class="esp-card flex max-h-[90vh] w-full max-w-md flex-col overflow-hidden rounded-2xl bg-white">
+
+        <!-- Header -->
+        <div class="flex items-center justify-between border-b border-gray-200 px-5 py-3">
+            <div>
+                <h2 class="text-base font-bold text-gray-800">Edit Salesperson</h2>
+                <p class="text-xs text-gray-500">Update salesperson information</p>
+            </div>
+
+            <button type="button"
+                    id="closeEditSalespersonModal"
+                    class="text-2xl leading-none text-gray-400 hover:text-gray-700">
+                &times;
+            </button>
+        </div>
+
+        <!-- Form -->
+        <form id="editSalespersonForm"
+              method="POST"
+              class="flex min-h-0 flex-1 flex-col">
+
+            {% csrf_token %}
+
+            <input type="hidden" id="editSalespersonId">
+
+            <div class="min-h-0 flex-1 space-y-3.5 overflow-y-auto p-5">
+
+                <div>
+                    <label for="editSalespersonName"
+                           class="mb-1.5 block text-sm font-semibold text-gray-700">
+                        Full Name *
+                    </label>
+                    <input type="text"
+                           name="full_name"
+                           id="editSalespersonName"
+                           maxlength="200"
+                           required
+                           placeholder="Enter full name"
+                           class="esp-input w-full rounded-xl border border-gray-300 px-3 py-2 text-sm outline-none">
+                </div>
+
+                <div>
+                    <label for="editSalespersonContact"
+                           class="mb-1.5 block text-sm font-semibold text-gray-700">
+                        Contact Number
+                    </label>
+                    <input type="text"
+                           name="contact_number"
+                           id="editSalespersonContact"
+                           maxlength="30"
+                           placeholder="e.g. 09XX XXX XXXX"
+                           class="esp-input w-full rounded-xl border border-gray-300 px-3 py-2 text-sm outline-none">
+                </div>
+
+            </div>
+
+            <!-- Buttons -->
+            <div class="flex justify-end gap-2.5 border-t border-gray-200 px-5 py-3">
+                <button type="button"
+                        id="cancelEditSalesperson"
+                        class="rounded-xl border border-gray-300 px-4 py-2 text-sm font-semibold text-gray-600 hover:bg-gray-50">
+                    Cancel
+                </button>
+
+                <button type="submit"
+                        id="saveEditSalesperson"
+                        class="esp-btn rounded-xl px-4 py-2 text-sm font-semibold">
+                    Save Changes
+                </button>
+            </div>
+
+        </form>
+    </div>
+</div>
+
+
+
     <!-- Message modal -->
     <div id="message-modal" class="msg-modal" role="alertdialog" aria-modal="true"
          aria-labelledby="message-modal-title" aria-describedby="message-modal-body"
@@ -2663,8 +3070,9 @@
    19. Customer note modal
    20. Customer management / Edit customer / Add customer
    21. Reward points modal
-   22. Pricelist modal
-   23. Cash Checkout
+   22. Cash Checkout
+   23. Pricelist modal
+   24. Salesperson management 
    22. Checkout (form submit) validation
    23. Keyboard: Escape handlers
    24. Keyboard: POS shortcuts (Alt + key, F-keys, cart navigation)
@@ -3260,8 +3668,9 @@ actionTiles.forEach(tile => {
                 break;
 
             case "salesperson":
-                showMessage("Assign a salesperson to this sale.", "Salesperson");
+                openSalespersonManagement();
                 break;
+
             case "govt-discount":
                 openGovtDiscountModal();
                 break;
@@ -5749,7 +6158,7 @@ checkoutForm.addEventListener("submit", event => {
 });
 
 /* =========================================================
-   22. PRICELIST MODAL
+   23. PRICELIST MODAL
    ========================================================= */
 
 const pricelistModal = document.getElementById("pricelist-modal");
@@ -6016,6 +6425,562 @@ pricelistModal.addEventListener("click", event => {
         closePricelistModal();
     }
 });
+
+
+
+
+/* =====================================================================
+   24. SALESPERSON MANAGEMENT
+   ===================================================================== */
+
+// ---------- SALESPERSON MANAGEMENT MODAL ----------
+
+const salespersonManagementModal = document.getElementById(
+    "salespersonManagementModal"
+);
+
+const closeSalespersonManagementModalBtn = document.getElementById(
+    "closeSalespersonManagementModal"
+);
+
+const doneSalespersonManagementBtn = document.getElementById(
+    "doneSalespersonManagement"
+);
+
+const salespersonManagementSearch = document.getElementById(
+    "salespersonManagementSearch"
+);
+
+const salespersonManagementTableBody = document.getElementById(
+    "salespersonManagementTableBody"
+);
+
+const salespersonManagementCount = document.getElementById(
+    "salespersonManagementCount"
+);
+
+const salespersonManagementLoading = document.getElementById(
+    "salespersonManagementLoading"
+);
+
+const salespersonManagementEmpty = document.getElementById(
+    "salespersonManagementEmpty"
+);
+
+const refreshSalespersonManagementBtn = document.getElementById(
+    "refreshSalespersonManagement"
+);
+
+const addSalespersonFromManagementBtn = document.getElementById(
+    "addSalespersonFromManagement"
+);
+
+
+function openSalespersonManagement() {
+
+    // Close More Actions Modal
+    if (actionsModal) {
+        actionsModal.classList.add("hidden");
+        actionsModal.classList.remove("flex");
+    }
+
+    // Open Salesperson Management Modal
+    salespersonManagementModal.classList.remove("hidden");
+    salespersonManagementModal.classList.add("flex");
+
+    loadSalespersonManagement();
+}
+
+
+function closeSalespersonManagement() {
+    salespersonManagementModal.classList.add("hidden");
+    salespersonManagementModal.classList.remove("flex");
+}
+
+
+// Load salespersons from the server
+async function loadSalespersonManagement() {
+    const search = salespersonManagementSearch.value.trim();
+
+    salespersonManagementLoading.classList.remove("hidden");
+    salespersonManagementEmpty.classList.add("hidden");
+    salespersonManagementTableBody.innerHTML = "";
+
+    try {
+        const response = await fetch(
+            "{% url 'salesperson_management_data' %}?q=" +
+            encodeURIComponent(search)
+        );
+
+        const data = await response.json();
+
+        if (!response.ok || !data.success) {
+            throw new Error(
+                data.message || "Unable to load salespersons."
+            );
+        }
+
+        salespersonManagementCount.textContent = data.count;
+
+        if (data.salespersons.length === 0) {
+            salespersonManagementEmpty.classList.remove("hidden");
+            return;
+        }
+
+        data.salespersons.forEach(salesperson => {
+            const row = document.createElement("tr");
+
+            row.className =
+                "border-b border-gray-100 hover:bg-gray-50";
+
+            const nameCell = document.createElement("td");
+            nameCell.className = "px-4 py-4 font-semibold";
+            nameCell.textContent = salesperson.full_name;
+
+            const contactCell = document.createElement("td");
+            contactCell.className = "px-4 py-4";
+            contactCell.textContent =
+                salesperson.contact_number || "—";
+
+            const statusCell = document.createElement("td");
+            statusCell.className = "px-4 py-4";
+
+            const statusBadge = document.createElement("span");
+
+            statusBadge.textContent =
+                salesperson.is_active ? "Active" : "Inactive";
+
+            statusBadge.className = salesperson.is_active
+                ? "rounded-full bg-green-100 px-3 py-1 text-xs font-semibold text-green-700"
+                : "rounded-full bg-gray-100 px-3 py-1 text-xs font-semibold text-gray-600";
+
+            statusCell.appendChild(statusBadge);
+
+            const actionCell = document.createElement("td");
+            actionCell.className = "px-4 py-4 text-right";
+
+            // EDIT BUTTON
+            const editButton = document.createElement("button");
+
+            editButton.type = "button";
+            editButton.textContent = "Edit";
+
+            editButton.className =
+                "rounded-lg border border-blue-200 px-4 py-2 font-semibold text-blue-600 hover:bg-blue-50";
+
+            editButton.addEventListener("click", function() {
+                openEditSalespersonModal(salesperson);
+            });
+
+
+            // ACTIVATE / DEACTIVATE BUTTON
+            const toggleButton = document.createElement("button");
+
+            toggleButton.type = "button";
+
+            toggleButton.textContent = salesperson.is_active
+                ? "Deactivate"
+                : "Activate";
+
+            toggleButton.className = salesperson.is_active
+                ? "rounded-lg border border-red-200 px-4 py-2 font-semibold text-red-600 hover:bg-red-50"
+                : "rounded-lg border border-green-200 px-4 py-2 font-semibold text-green-600 hover:bg-green-50";
+
+            toggleButton.addEventListener("click", function() {
+                toggleSalespersonStatus(salesperson);
+            });
+
+            const actionButtons = document.createElement("div");
+
+            actionButtons.className = "flex justify-end gap-2";
+
+            actionButtons.appendChild(editButton);
+            actionButtons.appendChild(toggleButton);
+
+            actionCell.appendChild(actionButtons);
+
+            row.appendChild(nameCell);
+            row.appendChild(contactCell);
+            row.appendChild(statusCell);
+            row.appendChild(actionCell);
+
+            salespersonManagementTableBody.appendChild(row);
+        });
+
+    } catch (error) {
+        console.error("Salesperson Management Error:", error);
+
+        salespersonManagementTableBody.innerHTML = `
+            <tr>
+                <td colspan="4" class="px-4 py-10 text-center text-red-500">
+                    Unable to load salespersons. Please try again.
+                </td>
+            </tr>
+        `;
+
+    } finally {
+        salespersonManagementLoading.classList.add("hidden");
+    }
+}
+
+
+// CLOSE BUTTONS
+
+closeSalespersonManagementModalBtn.addEventListener(
+    "click",
+    closeSalespersonManagement
+);
+
+doneSalespersonManagementBtn.addEventListener(
+    "click",
+    closeSalespersonManagement
+);
+
+
+// CLOSE WHEN CLICKING BACKGROUND
+
+salespersonManagementModal.addEventListener("click", function(event) {
+    if (event.target === salespersonManagementModal) {
+        closeSalespersonManagement();
+    }
+});
+
+
+// SEARCH
+
+salespersonManagementSearch.addEventListener("input", function() {
+    loadSalespersonManagement();
+});
+
+
+// REFRESH
+
+refreshSalespersonManagementBtn.addEventListener(
+    "click",
+    loadSalespersonManagement
+);
+
+
+/* =====================================================================
+   ADD / EDIT SALESPERSON
+   ===================================================================== */
+
+// ---------- MODAL ELEMENTS ----------
+
+const addSalespersonModal = document.getElementById(
+    "addSalespersonModal"
+);
+
+const editSalespersonModal = document.getElementById(
+    "editSalespersonModal"
+);
+
+const addSalespersonForm = document.getElementById(
+    "addSalespersonForm"
+);
+
+const editSalespersonForm = document.getElementById(
+    "editSalespersonForm"
+);
+
+const saveNewSalespersonBtn = document.getElementById(
+    "saveNewSalesperson"
+);
+
+const saveEditSalespersonBtn = document.getElementById(
+    "saveEditSalesperson"
+);
+
+const closeAddSalespersonModalBtn = document.getElementById(
+    "closeAddSalespersonModal"
+);
+
+const cancelAddSalespersonBtn = document.getElementById(
+    "cancelAddSalesperson"
+);
+
+const closeEditSalespersonModalBtn = document.getElementById(
+    "closeEditSalespersonModal"
+);
+
+const cancelEditSalespersonBtn = document.getElementById(
+    "cancelEditSalesperson"
+);
+
+
+// ---------- ADD SALESPERSON ----------
+
+function openAddSalespersonModal() {
+    addSalespersonForm.reset();
+
+    salespersonManagementModal.classList.add("hidden");
+    salespersonManagementModal.classList.remove("flex");
+
+    addSalespersonModal.classList.remove("hidden");
+    addSalespersonModal.classList.add("flex");
+
+    document.getElementById("newSalespersonName").focus();
+}
+
+function closeAddSalespersonModal() {
+    addSalespersonModal.classList.add("hidden");
+    addSalespersonModal.classList.remove("flex");
+}
+
+
+// ---------- EDIT SALESPERSON ----------
+
+function openEditSalespersonModal(salesperson) {
+    document.getElementById("editSalespersonId").value =
+        salesperson.id;
+
+    document.getElementById("editSalespersonName").value =
+        salesperson.full_name;
+
+    document.getElementById("editSalespersonContact").value =
+        salesperson.contact_number || "";
+
+    editSalespersonForm.dataset.salespersonId = salesperson.id;
+
+    salespersonManagementModal.classList.add("hidden");
+    salespersonManagementModal.classList.remove("flex");
+
+    editSalespersonModal.classList.remove("hidden");
+    editSalespersonModal.classList.add("flex");
+
+    document.getElementById("editSalespersonName").focus();
+}
+
+function closeEditSalespersonModal() {
+    editSalespersonModal.classList.add("hidden");
+    editSalespersonModal.classList.remove("flex");
+}
+
+
+// ---------- ADD SALESPERSON EVENTS ----------
+
+addSalespersonFromManagementBtn.addEventListener(
+    "click",
+    openAddSalespersonModal
+);
+
+closeAddSalespersonModalBtn.addEventListener(
+    "click",
+    closeAddSalespersonModal
+);
+
+cancelAddSalespersonBtn.addEventListener(
+    "click",
+    closeAddSalespersonModal
+);
+
+addSalespersonModal.addEventListener("click", function(event) {
+    if (event.target === addSalespersonModal) {
+        closeAddSalespersonModal();
+    }
+});
+
+
+// ---------- EDIT SALESPERSON EVENTS ----------
+
+closeEditSalespersonModalBtn.addEventListener(
+    "click",
+    closeEditSalespersonModal
+);
+
+cancelEditSalespersonBtn.addEventListener(
+    "click",
+    closeEditSalespersonModal
+);
+
+editSalespersonModal.addEventListener("click", function(event) {
+    if (event.target === editSalespersonModal) {
+        closeEditSalespersonModal();
+    }
+});
+
+
+// ---------- ADD SALESPERSON SUBMIT ----------
+
+addSalespersonForm.addEventListener("submit", async function(event) {
+    event.preventDefault();
+
+    saveNewSalespersonBtn.disabled = true;
+    saveNewSalespersonBtn.textContent = "Saving...";
+
+    const formData = new FormData(addSalespersonForm);
+
+    try {
+        const response = await fetch(addSalespersonForm.action, {
+            method: "POST",
+            headers: {
+                "X-Requested-With": "XMLHttpRequest"
+            },
+            body: formData
+        });
+
+        const data = await response.json();
+
+        if (!response.ok || !data.success) {
+            throw new Error(
+                data.message || "Unable to save salesperson."
+            );
+        }
+
+        addSalespersonForm.reset();
+
+        closeAddSalespersonModal();
+
+        salespersonManagementModal.classList.remove("hidden");
+        salespersonManagementModal.classList.add("flex");
+
+        await loadSalespersonManagement();
+
+        showMessage(
+            "Salesperson added successfully.",
+            "Salesperson Management"
+        );
+
+    } catch (error) {
+        console.error("Add Salesperson Error:", error);
+
+        showMessage(
+            error.message || "Something went wrong.",
+            "Add Salesperson"
+        );
+
+    } finally {
+        saveNewSalespersonBtn.disabled = false;
+        saveNewSalespersonBtn.textContent = "Save Salesperson";
+    }
+});
+
+
+
+// ---------- EDIT SALESPERSON SUBMIT ----------
+
+editSalespersonForm.addEventListener("submit", async function(event) {
+    event.preventDefault();
+
+    const salespersonId = editSalespersonForm.dataset.salespersonId;
+
+    if (!salespersonId) {
+        showMessage("Salesperson ID is missing.", "Edit Salesperson");
+        return;
+    }
+
+    const csrfToken = editSalespersonForm.querySelector(
+        '[name="csrfmiddlewaretoken"]'
+    ).value;
+
+    const formData = new FormData(editSalespersonForm);
+
+    saveEditSalespersonBtn.disabled = true;
+    saveEditSalespersonBtn.textContent = "Saving...";
+
+    try {
+        const response = await fetch(
+            `/sales/salespersons/${salespersonId}/edit/`,
+            {
+                method: "POST",
+                headers: {
+                    "X-Requested-With": "XMLHttpRequest",
+                    "X-CSRFToken": csrfToken
+                },
+                body: formData
+            }
+        );
+
+        const data = await response.json();
+
+        if (!response.ok || !data.success) {
+            throw new Error(
+                data.message || "Unable to update salesperson."
+            );
+        }
+
+        closeEditSalespersonModal();
+
+        salespersonManagementModal.classList.remove("hidden");
+        salespersonManagementModal.classList.add("flex");
+
+        await loadSalespersonManagement();
+
+        showMessage(
+            "Salesperson information updated successfully.",
+            "Edit Salesperson"
+        );
+
+    } catch (error) {
+        console.error("Edit Salesperson Error:", error);
+
+        showMessage(
+            error.message || "Something went wrong.",
+            "Edit Salesperson"
+        );
+
+    } finally {
+        saveEditSalespersonBtn.disabled = false;
+        saveEditSalespersonBtn.textContent = "Save Changes";
+    }
+});
+
+// ---------- TOGGLE SALESPERSON STATUS ----------
+
+async function toggleSalespersonStatus(salesperson) {
+
+    const action = salesperson.is_active
+        ? "deactivate"
+        : "activate";
+
+    const confirmed = confirm(
+        `Are you sure you want to ${action} ${salesperson.full_name}?`
+    );
+
+    if (!confirmed) {
+        return;
+    }
+
+    const csrfToken = document.querySelector(
+        '[name="csrfmiddlewaretoken"]'
+    ).value;
+
+    try {
+        const response = await fetch(
+            `/sales/salespersons/${salesperson.id}/toggle-status/`,
+            {
+                method: "POST",
+                headers: {
+                    "X-Requested-With": "XMLHttpRequest",
+                    "X-CSRFToken": csrfToken
+                }
+            }
+        );
+
+        const data = await response.json();
+
+        if (!response.ok || !data.success) {
+            throw new Error(
+                data.message || "Unable to update salesperson status."
+            );
+        }
+
+        await loadSalespersonManagement();
+
+        showMessage(
+            data.message,
+            "Salesperson Management"
+        );
+
+    } catch (error) {
+        console.error("Toggle Salesperson Error:", error);
+
+        showMessage(
+            error.message || "Something went wrong.",
+            "Salesperson Management"
+        );
+    }
+}
 
 
 /* =====================================================================
