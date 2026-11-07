@@ -1165,6 +1165,7 @@ def z_reading_view(request):
         "cashier",
     ).order_by(
         "-closed_at",
+        "-id",
     )
 
     # Owners can view all saved Z Readings.
@@ -1173,6 +1174,10 @@ def z_reading_view(request):
         saved_z_readings = saved_z_readings.filter(
             cashier=request.user,
         )
+
+    # Show 10 saved Z Readings per page.
+    paginator = Paginator(saved_z_readings, 10)
+    saved_z_page = paginator.get_page(request.GET.get("page"))
 
     # Prepare the current shift report.
     if session.status == CashierSession.Status.OPEN:
@@ -1283,7 +1288,7 @@ def z_reading_view(request):
             "voided_count": sales.filter(
                 status=Sale.Status.VOIDED,
             ).count(),
-            "saved_z_readings": saved_z_readings,
+            "saved_z_readings": saved_z_page,
         }
 
     else:
@@ -1293,7 +1298,7 @@ def z_reading_view(request):
             "session": session,
             "is_closed": True,
             "report": report,
-            "saved_z_readings": saved_z_readings,
+            "saved_z_readings": saved_z_page,
         }
 
     return render(

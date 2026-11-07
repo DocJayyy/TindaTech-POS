@@ -861,7 +861,7 @@
             {% endif %}
 
             <!-- Saved Z Readings -->
-            <section class="overflow-hidden rounded-3xl bg-white shadow-sm">
+            <section id="saved-z-readings" class="overflow-hidden rounded-3xl bg-white shadow-sm">
 
                 <div class="flex flex-wrap items-center justify-between gap-3 px-6 pb-3 pt-6">
 
@@ -876,8 +876,8 @@
                     </div>
 
                     <span class="rounded-full bg-brand-soft px-3 py-1 text-xs font-medium text-brand">
-                        {{ saved_z_readings|length }}
-                        report{{ saved_z_readings|length|pluralize }}
+                        {{ saved_z_readings.paginator.count }}
+                        report{{ saved_z_readings.paginator.count|pluralize }}
                     </span>
 
                 </div>
@@ -954,6 +954,50 @@
                     {% endfor %}
 
                 </div>
+
+                <!-- Pagination: 10 per page -->
+                {% if saved_z_readings.paginator.count %}
+                    <div class="flex flex-wrap items-center justify-between gap-3 border-t border-slate-100 px-6 py-4">
+
+                        <p class="text-sm text-slate-500">
+                            Showing
+                            <span class="tabular font-medium text-ink">{{ saved_z_readings.start_index }}&ndash;{{ saved_z_readings.end_index }}</span>
+                            of
+                            <span class="tabular font-medium text-ink">{{ saved_z_readings.paginator.count }}</span>
+                        </p>
+
+                        {% if saved_z_readings.paginator.num_pages > 1 %}
+                            <nav class="flex flex-wrap items-center gap-1" aria-label="Pagination">
+
+                                {% if saved_z_readings.has_previous %}
+                                    <a href="?page={{ saved_z_readings.previous_page_number }}#saved-z-readings"
+                                       class="rounded-full px-3.5 py-1.5 text-sm font-medium text-slate-600 transition hover:bg-brand-soft hover:text-brand">Previous</a>
+                                {% else %}
+                                    <span class="rounded-full px-3.5 py-1.5 text-sm font-medium text-slate-300">Previous</span>
+                                {% endif %}
+
+                                {% for p in saved_z_readings.paginator.page_range %}
+                                    {% if p == saved_z_readings.number %}
+                                        <span aria-current="page"
+                                              class="tabular rounded-full bg-brand px-3 py-1.5 text-sm font-semibold text-white shadow-md shadow-brand/30">{{ p }}</span>
+                                    {% elif p == 1 or p == saved_z_readings.paginator.num_pages or p|add:"2" >= saved_z_readings.number and p <= saved_z_readings.number|add:"2" %}
+                                        <a href="?page={{ p }}#saved-z-readings"
+                                           class="tabular rounded-full px-3 py-1.5 text-sm font-medium text-slate-600 transition hover:bg-brand-soft hover:text-brand">{{ p }}</a>
+                                    {% endif %}
+                                {% endfor %}
+
+                                {% if saved_z_readings.has_next %}
+                                    <a href="?page={{ saved_z_readings.next_page_number }}#saved-z-readings"
+                                       class="rounded-full px-3.5 py-1.5 text-sm font-medium text-slate-600 transition hover:bg-brand-soft hover:text-brand">Next</a>
+                                {% else %}
+                                    <span class="rounded-full px-3.5 py-1.5 text-sm font-medium text-slate-300">Next</span>
+                                {% endif %}
+
+                            </nav>
+                        {% endif %}
+
+                    </div>
+                {% endif %}
             </section>
 
         </div>
